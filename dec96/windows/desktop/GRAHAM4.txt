@@ -1,0 +1,33 @@
+Listing 4. 
+
+BOOL Create3DSoundBuffer(DWORD dwBuf, DWORD dwBufSize, DWORD dwFreq, DWORD dwBitsPerSample, DWORD dwBlkAlign)
+{
+    PCMWAVEFORMAT pcmwf;
+    DSBUFFERDESC dsBDesc;
+    
+    // Set up wave format structure.
+    memset( &pcmwf, 0, sizeof(PCMWAVEFORMAT) );
+    pcmwf.wf.wFormatTag         = WAVE_FORMAT_PCM;      
+    pcmwf.wf.nChannels          =  1; // mono format for efficiency
+    pcmwf.wf.nSamplesPerSec     = dwFreq;
+    pcmwf.wf.nBlockAlign        = (WORD)dwBlkAlign;
+    pcmwf.wf.nAvgBytesPerSec    = pcmwf.wf.nSamplesPerSec * pcmwf.wf.nBlockAlign;
+    pcmwf.wBitsPerSample        = (WORD)dwBitsPerSample;
+
+    // Set up DSBUFFERDESC structure.
+    memset(&dsBDesc, 0, sizeof(DSBUFFERDESC));  
+    dsBDesc.dwSize              = sizeof(DSBUFFERDESC);
+    dsBDesc.dwFlags             = DSBCAPS_CTRL3D; 
+    dsBDesc.dwBufferBytes       = dwBufSize; 
+    dsBDesc.lpwfxFormat         = (LPWAVEFORMATEX)&pcmwf;
+
+    if (DS_OK != g_lpDS->CreateSoundBuffer(&dsBDesc, &g_lpSounds[dwBuf], NULL))
+        return FALSE;
+    
+    // Query for the 3D Sound Buffer interface.
+    if (DS_OK != g_lpSounds[dwBuf]->QueryInterface(IID_IDirectSound3DBuffer, 
+        (void**) &g_lp3dSounds[dwBuf]))
+        return FALSE;
+
+    return TRUE;
+}

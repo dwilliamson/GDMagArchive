@@ -1,0 +1,53 @@
+LISTING 1. Triangle rendering using an execute buffer.
+   // this code lets us lock a previously allocated execute buffer
+   // so that we can fill it in with the relevant data
+   memset( &d3dExeBufDesc, 0, sizeof( d3dExeBufDesc ) );
+   d3dExeBufDesc.dwSize = sizeof( d3dExeBufDesc );
+   lpd3dExecuteBuffer->Lock( &d3dExeBufDesc );
+   memset( d3dExeBufDesc.lpData, 0, EXECUTEBUFFERSIZE );
+
+   // we fill in our vertices
+   lpVertex = (LPD3DTLVERTEX)d3dExeBufDesc.lpData;
+   memcpy( lpVertex[0], &appvertex[0], sizeof( D3DTLVERTEX ) );
+   memcpy( lpVertex[1], &appvertex[1], sizeof( D3DTLVERTEX ) );
+   memcpy( lpVertex[2], &appvertex[2], sizeof( D3DTLVERTEX ) );
+   lpVertex += 3;
+
+   // this is the command to process the vertices
+   lpInstruction = ( LPD3DINSTRUCTION ) lpVertex;
+   lpInstruction->bOpcode = D3DOP_PROCESSVERTICES;
+   lpInstruction->bSize   = sizeof( D3DPROCESSVERTICES );
+   lpInstruction->wCount  = 1U;
+   lpInstruction++;
+   lpProcessVertices = ( LPD3DPROCESSVERTICES ) lpInstruction;
+   lpProcessVertices->dwFlags       = D3DPROCESSVERTICES_COPY;
+   lpProcessVertices->wStart        = 0U;
+   lpProcessVertices->wDest         = 0U;
+   lpProcessVertices->dwCount       = 3; // number of vertices
+   lpProcessVertices->dwReserved    = 0;
+   lpProcessVertices++;
+
+   // this is the command to draw a triangle
+   lpInstruction = (LPD3DINSTRUCTION) lpProcessVertices;
+   lpInstruction->bOpcode = D3DOP_TRIANGLE;
+   lpInstruction->bSize   = sizeof(D3DTRIANGLE);
+   lpInstruction->wCount  = 1U;
+   lpInstruction++;
+   lpTriangle = (LPD3DTRIANGLE)lpInstruction;
+   lpTriangle->wV1    = 0U; 
+   lpTriangle->wV2    = 1U;
+   lpTriangle->wV3    = 2U;
+   lpTriangle->wFlags = D3DTRIFLAG_EDGEENABLETRIANGLE;
+   lpTriangle++;
+
+   // close the execute buffer
+   lpInstruction = (LPD3DINSTRUCTION)lpTriangle;
+   lpInstruction->bOpcode = D3DOP_EXIT;
+   lpInstruction->bSize   = 0;
+   lpInstruction->wCount  = 0U;
+
+   // unlock the execute buffer
+   lpd3dExecuteBuffer->Unlock( lpd3dExecuteBuffer );
+
+   // execute it
+   lpD3DDevice->Execute( lpd3dExecuteBuffer, lpViewport, D3DEXECUTE_UNCLIPPED );

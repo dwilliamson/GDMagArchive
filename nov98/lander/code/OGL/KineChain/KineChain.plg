@@ -1,0 +1,70 @@
+--------------------Configuration: KineChain - Win32 Release--------------------
+Begining build with project "D:\code\OGL\KineChain\KineChain.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/KineChain.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "NDEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x409 /fo"Release/KineChain.res" /d "NDEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Release/KineChain.bsc" "
+			"COFF Linker for 80x86" with flags "opengl32.lib glu32.lib glaux.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/KineChain.pdb" /machine:I386 /out:"Release/KineChain.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating command line "rc.exe /l 0x409 /fo"Release/KineChain.res" /d "NDEBUG" "D:\code\OGL\KineChain\KineChain.rc"" 
+Creating temp file "c:\windows\TEMP\RSP2081.TMP" with contents </nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/KineChain.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\code\OGL\KineChain\Bitmap.cpp"
+"D:\code\OGL\KineChain\KineChain.cpp"
+"D:\code\OGL\KineChain\MainFrm.cpp"
+"D:\code\OGL\KineChain\MathDefs.cpp"
+"D:\code\OGL\KineChain\OGLView.cpp"
+"D:\code\OGL\KineChain\Quatern.cpp"
+"D:\code\OGL\KineChain\Restrict.cpp"
+"D:\code\OGL\KineChain\Skeleton.cpp"
+>
+Creating command line "cl.exe @c:\windows\TEMP\RSP2081.TMP" 
+Creating temp file "c:\windows\TEMP\RSP2082.TMP" with contents </nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/KineChain.pch" /Yc"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\code\OGL\KineChain\StdAfx.cpp"
+>
+Creating command line "cl.exe @c:\windows\TEMP\RSP2082.TMP" 
+Creating temp file "c:\windows\TEMP\RSP2083.TMP" with contents <opengl32.lib glu32.lib glaux.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/KineChain.pdb" /machine:I386 /out:"Release/KineChain.exe" 
+.\Release\Bitmap.obj
+.\Release\KineChain.obj
+.\Release\MainFrm.obj
+.\Release\MathDefs.obj
+.\Release\OGLView.obj
+.\Release\Quatern.obj
+.\Release\Restrict.obj
+.\Release\Skeleton.obj
+.\Release\StdAfx.obj
+.\Release\KineChain.res>
+Creating command line "link.exe @c:\windows\TEMP\RSP2083.TMP" 
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+Bitmap.cpp
+D:\code\OGL\KineChain\Bitmap.cpp(86) : warning C4018: '<' : signed/unsigned mismatch
+D:\code\OGL\KineChain\Bitmap.cpp(118) : warning C4018: '<' : signed/unsigned mismatch
+D:\code\OGL\KineChain\Bitmap.cpp(197) : warning C4101: 'temp' : unreferenced local variable
+KineChain.cpp
+MainFrm.cpp
+MathDefs.cpp
+OGLView.cpp
+Quatern.cpp
+D:\code\OGL\KineChain\Quatern.cpp(346) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(347) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(348) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(349) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(359) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(360) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(361) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+D:\code\OGL\KineChain\Quatern.cpp(362) : warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+Restrict.cpp
+Skeleton.cpp
+Generating Code...
+Linking...
+
+
+
+KineChain.exe - 0 error(s), 11 warning(s)

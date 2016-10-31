@@ -1,0 +1,146 @@
+/// Quaternion Definitions ////////////////////////////////////////////////////
+typedef struct
+{
+	float x,y,z;
+} tVector;
+
+typedef struct
+{
+	float x,y,z,w;
+} tQuaternion;
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	CopyVector
+// Purpose:		Copy a vector
+// Arguments:	pointer to destination and source
+///////////////////////////////////////////////////////////////////////////////
+void CopyVector(tVector *dest, tVector *src)
+{
+	dest->x = src->x;
+	dest->y = src->y;
+	dest->z = src->z;
+}
+//// CopyVector ///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	ScaleVector
+// Purpose:		Scale a vector
+// Arguments:	pointer to vector and scale factor
+///////////////////////////////////////////////////////////////////////////////
+void ScaleVector(tVector *vect, float scale)
+{
+	vect->x *= scale;
+	vect->y *= scale;
+	vect->z *= scale;
+}
+//// ScaleVector ///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	AddVectors
+// Purpose:		Add two vectors
+// Arguments:	pointer to vectors and dest
+///////////////////////////////////////////////////////////////////////////////
+void AddVectors(tVector *vect1, tVector *vect2, tVector *dest)
+{
+	dest->x = vect1->x + vect2->x;
+	dest->y = vect1->y + vect2->y;
+	dest->z = vect1->z + vect2->z;
+}
+//// AddVectors ///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	DotVectors
+// Purpose:		Compute the dot product of two vectors
+// Arguments:	pointer to vectors
+// Returns:		Dot product
+///////////////////////////////////////////////////////////////////////////////
+float DotVectors(tVector *vect1, tVector *vect2)
+{
+	return	(vect1->x * vect2->x) + 
+			(vect1->y * vect2->y) + 
+			(vect1->z * vect2->z);
+}
+//// DotVectors ///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	CrossVectors
+// Purpose:		Computes the cross product of two vectors
+// Arguments:	pointer to vectors and dest
+///////////////////////////////////////////////////////////////////////////////
+void CrossVectors(tVector *vect1, tVector *vect2, tVector *dest)
+{
+	// COMPUTE THE CROSS PRODUCT
+	dest->x = (vect1->y * vect2->z) - (vect1->z * vect2->y);
+	dest->y = (vect1->z * vect2->x) - (vect1->x * vect2->z);
+	dest->z = (vect1->x * vect2->y) - (vect1->y * vect2->x);
+}
+//// CrossVectors /////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	MultQuaternions
+// Purpose:		Computes the product of two quaternions
+// Arguments:	pointer to quaternions and dest
+///////////////////////////////////////////////////////////////////////////////
+void MultQuaternions(tQuaternion *quat1, tQuaternion *quat2, tQuaternion *dest)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	tQuaternion v1,v2,v3,vf;
+///////////////////////////////////////////////////////////////////////////////
+
+	CopyVector((tVector *)&v1, (tVector *)quat1);		// COPY OFF THE VECTOR PART OF THE QUAT1
+	ScaleVector((tVector *)&v1,quat2->w);	// MULTIPLY IT BY THE SCALAR PART OF QUAT2
+
+	CopyVector((tVector *)&v2, (tVector *)quat2);		// COPY OFF THE VECTOR PART OF THE QUAT1
+	ScaleVector((tVector *)&v2,quat1->w);	// MULTIPLY IT BY THE SCALAR PART OF QUAT2
+
+	CrossVectors((tVector *)quat2,(tVector *)quat1,(tVector *)&v3);
+
+	AddVectors((tVector *)&v1, (tVector *)&v2, (tVector *)&vf);
+	AddVectors((tVector *)&v3, (tVector *)&vf, (tVector *)&vf);
+
+	vf.w = (quat1->w * quat2->w) - DotVectors((tVector *)quat1,(tVector *)quat2);
+
+	dest->x = vf.x;
+	dest->y = vf.y;
+	dest->z = vf.z;
+	dest->w = vf.w;
+}
+//// MultQuaternions //////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	EulerToQuaternion
+// Purpose:		Convert a set of Euler angles to a Quaternion
+// Arguments:	A rotation set of 3 angles, a quaternion to set
+// Discussion:  This creates a Series of quaternions and multiplies them 
+//				together in the X Y Z order.
+///////////////////////////////////////////////////////////////////////////////
+void EulerToQuaternion(tVector *rot, tQuaternion *quat)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	float rx,ry,rz,ti,tj,tk;
+	tQuaternion qx,qy,qz,qf;
+///////////////////////////////////////////////////////////////////////////////
+	// FIRST STEP, CONVERT ANGLES TO RADIANS
+	rx =  (rot->x * M_PI) / (360 / 2);
+	ry =  (rot->y * M_PI) / (360 / 2);
+	rz =  (rot->z * M_PI) / (360 / 2);
+	// GET THE HALF ANGLES
+	ti = rx * 0.5;
+	tj = ry * 0.5;
+	tk = rz * 0.5;
+
+	qx.x = sin(ti); qx.y = 0.0; qx.z = 0.0; qx.w = cos(ti);
+	qy.x = 0.0; qy.y = sin(tj); qy.z = 0.0; qy.w = cos(tj);
+	qz.x = 0.0; qz.y = 0.0; qz.z = sin(tk); qz.w = cos(tk);
+
+	MultQuaternions(&qx,&qy,&qf);
+	MultQuaternions(&qf,&qz,&qf);
+
+	quat->x = qf.x;
+	quat->y = qf.y;
+	quat->z = qf.z;
+	quat->w = qf.w;
+
+}
+// EulerToQuaternion  /////////////////////////////////////////////////////////

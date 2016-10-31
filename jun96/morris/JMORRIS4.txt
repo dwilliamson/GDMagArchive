@@ -1,0 +1,40 @@
+Listing 4. The CGame::DPConnectSession Member Function for TicTacToe
+BOOL
+CGame::DPConnectSession()
+{
+  if (m_pDirectPlay)
+  {
+    // Select a DP session
+    CSessionSelDlg dlgSessionSel(m_pDirectPlay);
+    if (dlgSessionSel.DoModal() == IDOK)
+    {
+      // Open remote DP session
+      DPSESSIONDESC dpsdDesc;
+      ::ZeroMemory(&dpsdDesc, sizeof(DPSESSIONDESC));
+      dpsdDesc.dwSize = sizeof(DPSESSIONDESC);
+      dpsdDesc.dwFlags = DPOPEN_OPENSESSION;
+      dpsdDesc.guidSession = TICTACTOE_10;
+      dpsdDesc.dwSession = dlgSessionSel.GetSelSession();
+      if (m_pDirectPlay->Open(&dpsdDesc) == DP_OK)
+      {
+        // Prompt user to select the remote player
+        CPlayerSelDlg dlgPlayerSel(m_pDirectPlay);
+        if (dlgPlayerSel.DoModal() == IDOK)
+        {
+          // Set remote player
+          m_dpidPlayer[1] = dlgPlayerSel.GetSelPlayer();
+          // Create local player and set game info
+          m_pDirectPlay->EnableNewPlayers(TRUE);
+          if (DPCreateLocalPlayer())
+          {
+            DPCreateEventThread();
+            m_bMyTurn = FALSE;
+            NewGame();
+            return TRUE;
+          }
+        }
+      }
+    }
+  }
+  return FALSE;
+}

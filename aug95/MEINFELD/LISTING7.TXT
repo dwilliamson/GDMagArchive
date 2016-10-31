@@ -1,0 +1,40 @@
+Listing 7: The player descriptor, DESC:
+
+typedef struct descriptor_data DESC;
+
+struct descriptor_data {
+
+int descriptor;         /* the socket descriptor */
+int flags;                      /* Is the player AUTODARKed, or Connected? */
+int retries_left;       /* connect retries remaining */
+int command_count;      /* commands performed in timeslice */
+int timeout;            /* time since last activity */
+int host_info;          /* Site set Registration, Suspect, or Forbidden? */
+char addr[51];          /* Hostname or IP address, if no nameserver */
+char doing[DOING_LEN];  /* A player statement for the WHO list */
+dbref player;           /* Index to the database, where the info is */
+char *output_prefix;/* For bots, text that preceeds each command */
+char *output_suffix;/* Like out_prefix, follows */
+int output_size;        /* Amount of pending output */
+int output_tot;         /* Total amount of bytes sent to player */
+int output_lost;        /* Amount of bytes Òdropped on the floorÓ */
+TBLOCK *output_head;/* Pointer to head of player output */
+TBLOCK *output_tail;/* Like out_put head, points to the last item */
+int input_size;         /* Length of the buffer storing input commands */
+int input_tot;          /* Amount of input pending */
+int input_lost;         /* Amount of input lost to buffer limitations */
+CBLK *input_head;       /* Pointer to head of linked list for input */
+CBLK *input_tail;       /* Like input_head, but points to the tail */
+CBLK *raw_input;        /* A linked list of \n separated commands */
+char *raw_input_at;     /* stores the atcual text */
+time_t connected_at;/* Time connected */
+time_t last_time;       /* Last time active */
+int quota;              /* As long as > 0, commands may be executed */
+struct sockaddr_in address;                 /* Remote host address information */
+struct descriptor_data *hashnext;       /* player is logged on many times */
+struct descriptor_data *next;           /* Next item in list of descriptors */
+struct descriptor_data **prev;          /* Previous item in descriptors list */
+
+};
+
+

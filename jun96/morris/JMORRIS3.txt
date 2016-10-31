@@ -1,0 +1,13 @@
+Listing 3.  The CGameDPCreateLocalPlayer Member Function for TicTacToe
+BOOL
+CGame::DPCreateLocalPlayer()
+{
+  // Create local DP player
+  CPlayerInfoDlg dlgPlayerInfo;
+  if (dlgPlayerInfo.DoModal() == IDOK)
+    return (m_pDirectPlay->CreatePlayer(&m_dpidPlayer[0],
+      dlgPlayerInfo.GetFriendlyName(),
+      dlgPlayerInfo.GetFormalName(), &m_hDPEvent) == DP_OK);
+
+  return FALSE;
+}

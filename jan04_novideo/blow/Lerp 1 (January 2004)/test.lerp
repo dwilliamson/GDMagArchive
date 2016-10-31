@@ -1,0 +1,143 @@
+//
+//
+// Logic stuff here...
+//
+//
+
+struct Database {
+    [(1..)  |  ?Float];    
+}
+
+proc do_logic_stuff {
+    print("Starting logic tests....\n\n");
+
+    // Instead of Strings, you could declare these to be game Entities
+    // with a lot of supplementary data, etc.
+    String mark = 'Mark;
+    String don = 'Don;
+    String jane = 'Jane;
+    String ann = 'Ann;
+    String enoch = 'Enoch;
+
+    Database db;
+    db .+ ['parent jane don];
+    db .+ ['parent ann don];
+    db .+ ['parent don mark];
+    db .+ ['parent mark enoch];
+
+    db .+ ['ancestor ?x ?y] <- ['parent ?x ?y];
+    db .+ ['ancestor ?x ?y] <- ['parent ?x ?p] & ['ancestor ?p ?y];
+
+    print("Solutions in inline form:\n");
+    each db.['parent ?x ?y] {
+        print("    ", y, " is a parent of ", x, ".\n");
+    }
+
+    print("\n");
+
+    each db.['ancestor ?x ?y] {
+        print("    ", y, " is an ancestor of ", x, ".\n");
+    }
+
+
+    print("\nHere are the ancestors of Jane:\n");
+    each db.['ancestor jane ?x] print("    ", x, "\n");
+
+
+    answer = db.['ancestor ?x ?y];
+    print("\nAncestor mappings in $0 form:\n");
+    each answer {
+        print("    ", $0, "\n");
+    }
+
+    print("\nDone with logic tests.\n\n");
+}
+
+
+
+
+//
+//
+// Vector stuff here...
+//
+//
+
+struct Vector {
+    [(1..)  |  ?Float];
+}; 
+
+struct Matrix {
+    [(1..) (1..)  |  ?Float];
+};
+
+
+proc dot_product(Vector a, Vector b) {
+    return + each a[?i]  a[i] * b[i];
+}
+
+
+proc trace(Matrix m) {
+    return + each m[?i ?i] m[i i];
+};
+
+proc +(Vector a, Vector b) {
+    Vector c;
+    each b[?i] c[i] = a[i] + b[i];
+    return c;
+};
+
+proc vector_to_string(Vector v) {
+    return concat("(", v[1], ", ", v[2], ", ", v[3], ")");
+}
+
+proc do_vector_stuff {
+
+    print("Starting matrix/vector tests....\n\n");
+
+    Matrix m;
+    m[1 1] = -0.3;
+    m[2 1] = 0.5;
+    m[2 2] = 1.1;
+    m[3 1] = 0.2;
+    m[4 1] = 100.2;
+
+    m[2 3] = -0.33;
+
+    Vector a;
+    a[1] = 0.5;
+    a[2] = 0.5;
+    a[3] = 0.2;
+         
+    Vector b;
+    b[1] = 1.0;
+    b[2] = 0.0;
+    b[3] = 1.0;
+
+    // Testing wildcard...
+    each m.[?i ?*] {
+        print("(wildcard test)  $0 is: ", $0, "   first index is: ", i, "\n");
+    };
+
+    tr = + each m.[?i ?i ?f] f;
+    print("Trace (inline eval, query syntax) is: ", tr, "\n");
+    print("Trace (procedure call, array syntax) is: ", trace(m), "\n");
+
+
+    print("Vector a is: ", vector_to_string(a), "\n");
+    print("Vector b is: ", vector_to_string(b), "\n");
+
+    dot = dot_product(a, b);
+    print("Dot is: ", dot, "\n");
+
+    print("Vector sum is: ", vector_to_string(a + b), "\n");
+
+    print("\nDone with matrix/vector tests.\n\n");
+};
+
+
+
+proc main {
+    do_logic_stuff();
+    do_vector_stuff();
+    print("\n\nDone with tests.\n");
+}

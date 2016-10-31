@@ -1,0 +1,17 @@
+Listing  1. Determining if joystick is attached
+
+MMRESULT  joy_error;	    // Joystick Status/Error
+LPJOYCAPS joy_cap;	    // Joystick capabilities structure
+UINT 	joysizestruct;  // Size of Joystick Structure
+		       unsigned int joy_num;
+ 
+    joy_cap = malloc(joysizestruct=sizeof(*joy_cap));
+    for(joy_num=0;joy_num<16;joy_num++)
+         {
+	if(!(joy_error=joyGetDevCaps(joy_num,joy_cap,joy
+	sizestruct)))
+   	    {
+                /* Found a Joystick Extract Name and axes from
+	         registry*/
+	     }
+	 }

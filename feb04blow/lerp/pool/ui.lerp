@@ -1,0 +1,114 @@
+proc add_window(x, y, width, height, title) {
+    Integer win = Windows.create_window();  // @Refactor
+    win.x = x;
+    win.y = y;
+    win.width = width;
+    win.height = height;
+    win.title = title;
+    win.update();
+    win.show(1);
+
+    return win;
+}
+
+proc my_load_texture(String name) {
+    String full_name = concat("data/", name, ".jpg");
+    print("Loading texture '", full_name, "'.\n");
+    Integer handle = Windows.load_texture(full_name);
+    print("    ... handle is ", handle, "\n");
+    return handle;
+}
+
+
+proc handle_mouse(Float dt) {
+    // @Features: Think of the best way to simplify this kind of gate-detection behavior.
+
+    has_focus_this_frame = (Windows.focus_window == gl_window);
+    if !has_focus_this_frame {
+        if had_focus_last_frame {
+            Mouse_Pointer.visible = 1;
+            Mouse_Pointer.update();
+        }
+
+        return;
+    }
+
+    Integer x = Mouse_Pointer.x;
+    Integer y = Mouse_Pointer.y;
+    if !had_focus_last_frame {
+        last_cursor_x = x;
+        last_cursor_y = y;
+        return;
+    }   
+ 
+    Float dx = x - last_cursor_x;
+    Float dy = y - last_cursor_y;
+
+    view_theta += dx * DEGREES_PER_MICKEY_X;
+    view_phi -= dy * DEGREES_PER_MICKEY_Y;
+
+    //
+    // Set the mouse pointer back to the middle of the screen
+    //
+
+    Mouse_Pointer.x = gl_window.width / 2;
+    Mouse_Pointer.y = gl_window.height / 2;
+    Mouse_Pointer.visible = 0;
+    Mouse_Pointer.update();
+
+    last_cursor_x = Mouse_Pointer.x;
+    last_cursor_y = Mouse_Pointer.y;
+}
+
+proc init_ui {
+    // @Incomplete: Need way to declare constant in global scope.
+
+    DEGREES_PER_MICKEY_X = 0.2;
+    DEGREES_PER_MICKEY_Y = 0.2;
+    PI = 3.141592653589;
+
+    last_cursor_x = Mouse_Pointer.x;
+    last_cursor_y = Mouse_Pointer.y;
+
+    mouselook = 1;
+
+    has_focus_this_frame = 0;
+    had_focus_last_frame = 0;
+
+    view_direction = make_vector3(1, 0, 0);
+    g_random_seed = 13489851;
+
+    view_theta = 0.0;
+    view_phi = 0;
+
+    AMBIENT_STRENGTH = 0.5;
+
+    last_frame_time = seconds_since_startup();
+
+    screen_width = 800;
+    screen_height = 600;
+
+    gl_window = add_window(100, 100, screen_width, screen_height, "This is the window.");
+
+    GL.makeCurrent(gl_window);
+    GL.clearColor(0.5, 0.5, 0.8, 1.0);
+
+
+    // @Robustness: We can't load a texture before creating a window?!?
+    // Hmm... should be fixed when we put GL into a dll.
+    ground_texture = my_load_texture("ground");
+
+    Float s = 150.0;
+    point_of_interest = make_vector3(400.0, 400.0, 0.0);
+
+    light_direction = make_vector3(0.7, 0.3, 0.6);
+    normalize(light_direction);
+
+    big_font = Windows.load_font("data/Century Big");
+    small_font = Windows.load_font("data/Century Small");
+
+    print("big_font is: ", big_font, "\n");
+}
+
+
+

@@ -1,0 +1,20 @@
+Listing 9: atr_raw_get(), the function that retrieves text from the
+cache/database.
+
+atr_raw_get()
+char *atr_get_raw(dbref thing, int atr)
+{
+DBT     key, con;
+char    okey[KEY_SIZE];
+
+        makekey(thing, atr, okey);
+        key.data = okey;
+        key.size = strlen(okey) + 1;
+        if (!FETCH(key, con)) {
+                return con.data;
+        } else {
+                return NULL;
+        }
+}
+
+

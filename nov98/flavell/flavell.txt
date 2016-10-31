@@ -1,0 +1,726 @@
+/***************************************************************
+ **															  **
+ **		Algorithm 1: MIP-map generation for an 8-bit texture  **
+ **															  **
+ ***************************************************************/
+bool	MMTexture8::BuildMMTextureLevels(const dib_info *texture)
+{	
+	if(mmLevels==NULL||texture==NULL||mmPalette==NULL) return false;
+	if(mmLevels[0]==NULL) return false;
+	
+	short		width,height,count;
+	unsigned char	*currLevel,*prevLevel;
+	
+	CopyTextureToMM(texture);
+		
+	width=mmWidth;
+	height=mmHeight;
+	count=1;
+	prevLevel=(unsigned char*)mmLevels[0];
+	
+	while (count<mmNumLevels)
+	{
+		mmLevels[count]=currLevel=prevLevel+(width*height);
+		width>>=1;
+		height>>=1;
+		BuildLevel(prevLevel,currLevel,width,height);
+		prevLevel=currLevel;
+		count++;
+	}
+	
+	return true;
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 2: Building a single 8-bit MIP-map level    **
+ **															  **
+ ***************************************************************/
+
+void	MMTexture8::BuildLevel(void *prevLevel,void *currLevel,
+							   short width, short height)
+
+{
+	unsigned char *srcPtr=(unsigned char*)prevLevel;
+	unsigned char *dstPtr=(unsigned char*)currLevel;
+	short srcStep=width<<1;
+		
+	for (int i=0;i<height;i++)
+	{	
+		for (int j=0;j<width;j++)
+		{	RGBAColor	c0,c1,c2,c3;
+				
+			c0=mmPalette[*srcPtr];
+			c1=mmPalette[*(srcPtr+srcStep)];
+			srcPtr++;
+			c2=mmPalette[*srcPtr];
+			c3=mmPalette[*(srcPtr+srcStep)];
+			srcPtr++;
+										
+			short	r,g,b;
+
+			r=c0.r+c1.r+c2.r+c3.r;
+			g=c0.g+c1.g+c2.r+c3.g;
+			b=c0.b+c1.b+c2.r+c3.b;
+								
+			c0.r=(unsigned char)(r>>2);
+			c0.g=(unsigned char)(g>>2);
+			c0.b=(unsigned char)(b>>2);
+
+			*dstPtr++=FindClosestPaletteEntry(c0);
+		}
+		srcPtr+=srcStep;
+	}
+
+	return;
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 3: Finding the closest palette match        **
+ **															  **
+ ***************************************************************/
+
+short	MMTexture8::FindClosestPaletteEntry( RGBAColor color)
+{	
+	short			red,green,blue;
+	short			closestColorIndex;
+	long			minError;
+	
+	red=color.r;
+	green=color.g;
+	blue=color.b;
+	minError=0xfffff;
+	closestColorIndex=-1;
+	
+	
+	for (int i=0;i<256;i++)
+	{	long	redError,greenError,blueError;
+		long	currentError;
+		
+		redError=mmPalette[i].r-red;
+		greenError=mmPalette[i].g-green;
+		blueError=mmPalette[i].b-blue;
+				
+		currentError = (redError*redError) + 
+					   (greenError*greenError) +
+					   (blueError*blueError);
+		
+		if (currentError==0)
+		{	closestColorIndex=i;
+			break;
+		}
+		
+		else if (currentError<minError)
+		{	minError=currentError;
+			closestColorIndex=i;
+		}
+	}
+	
+	return closestColorIndex;
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 4: Building a single 16-bit MIP-map level   **
+ **															  **
+ ***************************************************************/
+
+void MMTexture16::BuildLevel(void *prevLevel, void *currLevel,
+							 short width, short height)
+
+{
+	unsigned short *srcPtr=(unsigned short*)prevLevel;
+	unsigned short *dstPtr=(unsigned short*)currLevel;
+	short srcStep=width<<1;
+		
+	for (int i=0;i<height;i++)
+	{	
+		for (int j=0;j<width;j++)
+		{	unsigned long	p0,p1,p2,p3,r,g,b;
+				
+			p0=*srcPtr;
+			p1=*(srcPtr+srcStep);
+			srcPtr++;
+			p2=*srcPtr;
+			p3=*(srcPtr+srcStep);
+			srcPtr++;
+										
+			r=(p0&mmRMask)+(p1&mmRMask)+(p2&mmRMask)+(p3&mmRMask);
+			g=(p0&mmGMask)+(p1&mmGMask)+(p2&mmGMask)+(p3&mmGMask);
+			b=(p0&mmBMask)+(p1&mmBMask)+(p2&mmBMask)+(p3&mmBMask);
+								
+			r>>=2;
+			g>>=2;
+			b>>=2;
+
+			*dstPtr++=(unsigned short)((r&mmRMask)|
+									   (g&mmGMask)|
+									   (b&mmBMask));
+		}
+		srcPtr+=srcStep;
+	}
+
+	return;
+}
+
+/***************************************************************
+ **															  **
+ **		Algorithm 5: Select LOD using polygon and texture	  **
+ **					 areas									  **
+ **															  **
+ ***************************************************************/
+
+short	MMTexture::SelectLevelByPolyArea(POINT3D *v, short count)
+{
+	float		screenArea,texelArea;
+	long		texelRatio;
+	short		LOD;
+	POINT3D		pCurr,pLast;
+	pLast=v[count-1];
+	screenArea=texelArea=0;
+	
+	// Calculate the polygon and texture areas
+	for(int i=0;i<count;i++)
+	{
+		pCurr=v[i];
+		screenArea+=(pCurr.fxfl.X+pLast.fxfl.X)*(pCurr.fxfl.Y-pLast.fxfl.Y);
+		texelArea+=(pCurr.fxfl.U+pLast.fxfl.U)*(pCurr.fxfl.V-pLast.fxfl.V);
+		pLast=pCurr;
+	}
+
+	if(screenArea==0.0)
+		return mmNumLevels-1;
+
+	// Get texture-to polgon ratio
+	texelRatio=(texelArea/screenArea);
+	texelRatio=(texelRatio>0)?texelRatio:-texelRatio;
+
+	// Calculate the LOD
+	for(LOD=0;texelRatio>3;texelRatio>>=2) LOD++;
+
+	if(LOD>mmNumLevels) LOD=mmNumLevels-1;
+	
+	return LOD;
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 6: Calculate texture gradients and contants **
+ **					 for MIP-mapping						  **
+ **															  **
+ ***************************************************************/
+
+gradients_mipmap::gradients_mipmap( POINT3D const *pVertices )
+{
+	int Counter;
+	
+	float OneOverdX = 1.0 / (((pVertices[1].ifl.X - pVertices[2].ifl.X) *
+			(pVertices[0].ifl.Y - pVertices[2].ifl.Y)) -
+			((pVertices[0].ifl.X - pVertices[2].ifl.X) *
+			(pVertices[1].ifl.Y - pVertices[2].ifl.Y)));
+
+	float OneOverdY = -OneOverdX;
+
+	for(Counter = 0;Counter < 3;Counter++)
+	{
+		float const OneOverZ = 1.0/pVertices[Counter].ifl.Z;
+		aOneOverZ[Counter] = OneOverZ;
+		aUOverZ[Counter] = pVertices[Counter].ifl.U * OneOverZ;
+		aVOverZ[Counter] = pVertices[Counter].ifl.V * OneOverZ;
+	}
+
+	dOneOverZdX = OneOverdX * (((aOneOverZ[1] - aOneOverZ[2]) *
+			(pVertices[0].ifl.Y - pVertices[2].ifl.Y)) -
+			((aOneOverZ[0] - aOneOverZ[2]) *
+			(pVertices[1].ifl.Y - pVertices[2].ifl.Y)));
+	dOneOverZdY = OneOverdY * (((aOneOverZ[1] - aOneOverZ[2]) *
+			(pVertices[0].ifl.X - pVertices[2].ifl.X)) -
+			((aOneOverZ[0] - aOneOverZ[2]) *
+			(pVertices[1].ifl.X - pVertices[2].ifl.X)));
+
+	dUOverZdX = OneOverdX * (((aUOverZ[1] - aUOverZ[2]) *
+			(pVertices[0].ifl.Y - pVertices[2].ifl.Y)) -
+			((aUOverZ[0] - aUOverZ[2]) *
+			(pVertices[1].ifl.Y - pVertices[2].ifl.Y)));
+	dUOverZdY = OneOverdY * (((aUOverZ[1] - aUOverZ[2]) *
+			(pVertices[0].ifl.X - pVertices[2].ifl.X)) -
+			((aUOverZ[0] - aUOverZ[2]) *
+			(pVertices[1].ifl.X - pVertices[2].ifl.X)));
+
+	dVOverZdX = OneOverdX * (((aVOverZ[1] - aVOverZ[2]) *
+			(pVertices[0].ifl.Y - pVertices[2].ifl.Y)) -
+			((aVOverZ[0] - aVOverZ[2]) *
+			(pVertices[1].ifl.Y - pVertices[2].ifl.Y)));
+	dVOverZdY = OneOverdY * (((aVOverZ[1] - aVOverZ[2]) *
+			(pVertices[0].ifl.X - pVertices[2].ifl.X)) -
+			((aVOverZ[0] - aVOverZ[2]) *
+			(pVertices[1].ifl.X - pVertices[2].ifl.X)));
+
+	OneOverZ0 = dOneOverZdX*(-pVertices[0].ifl.X) + 
+				dOneOverZdY*(-pVertices[0].ifl.Y) + aOneOverZ[0];
+
+	UOverZ0 = dUOverZdX*(-pVertices[0].ifl.X) + 
+			  dUOverZdY*(-pVertices[0].ifl.Y) + aUOverZ[0];
+	
+	VOverZ0 = dVOverZdX*(-pVertices[0].ifl.X) + 
+			  dVOverZdY*(-pVertices[0].ifl.Y) + aVOverZ[0];
+			  
+	a = dUOverZdX*dOneOverZdY-dOneOverZdX*dUOverZdY;
+	b = dVOverZdX*dOneOverZdY-dOneOverZdX*dVOverZdY;
+	c = dUOverZdX*OneOverZ0-dOneOverZdX*UOverZ0;
+	d = dVOverZdX*OneOverZ0-dOneOverZdX*VOverZ0;
+	e = dUOverZdY*OneOverZ0-dOneOverZdY*UOverZ0;
+	f = dVOverZdY*OneOverZ0-dOneOverZdY*VOverZ0;
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 7: Texture map the trianlge using MIP-map   **
+ **					 and point sampling						  **
+ **															  **
+ ***************************************************************/
+
+void TextureMapTriangle_point_sample( dib_info const &Dest,
+		POINT3D const *pVertices, MMTexture16 const *Texture )
+{
+	int Top, Middle, Bottom, MiddleForCompare, BottomForCompare;
+	int Y0 = pVertices[0].ifl.Y, Y1 = pVertices[1].ifl.Y,
+					Y2 = pVertices[2].ifl.Y;
+	int X0 = pVertices[0].ifl.X, X1 = pVertices[1].ifl.X,
+					X2 = pVertices[2].ifl.X;
+
+	// sort vertices in y
+	if(Y0 < Y1) {
+		if(Y2 < Y0) {
+			Top = 2; Middle = 0; Bottom = 1;
+			MiddleForCompare = 0; BottomForCompare = 1;
+		} else {
+			Top = 0;
+			if(Y1 < Y2) {
+				Middle = 1; Bottom = 2;
+				MiddleForCompare = 1; BottomForCompare = 2;
+			} else {
+				Middle = 2; Bottom = 1;
+				MiddleForCompare = 2; BottomForCompare = 1;
+			}
+		}
+	} else {
+		if(Y2 < Y1) {
+			Top = 2; Middle = 1; Bottom = 0;
+			MiddleForCompare = 1; BottomForCompare = 0;
+		} else {
+			Top = 1;
+			if(Y0 < Y2) {
+				Middle = 0; Bottom = 2;
+				MiddleForCompare = 3; BottomForCompare = 2;
+			} else {
+				Middle = 2; Bottom = 0;
+				MiddleForCompare = 2; BottomForCompare = 3;
+			}
+		}
+	}
+
+	gradients_mipmap Gradients(pVertices);
+	edge_i_fl TopToBottom(Gradients,pVertices,Top,Bottom);
+	edge_i_fl TopToMiddle(Gradients,pVertices,Top,Middle);
+	edge_i_fl MiddleToBottom(Gradients,pVertices,Middle,Bottom);
+	edge_i_fl *pLeft, *pRight;
+	int MiddleIsLeft;
+	int xMin, xMax;
+	
+	if(X0 < X1) {
+		if(X2 < X0) {
+			xMin = X2; xMax = X1;
+		} else {
+			xMin = X0;
+			if(X1 < X2) xMax = X2;
+			  else xMax = X1;
+		}
+	} else {
+		if(X2 < X1) {
+			xMin = X2; xMax = X0;
+		} else {
+			xMin = X1;
+			if(X0 < X2) xMax = X2;
+			  else xMax = X0;
+		}
+	}
+	
+	// Calculate the yLengths for range of x-values
+	for(;xMin<=xMax;xMin++) {
+		float eax, fbx;
+		eax=Gradients.e-(Gradients.a*xMin);
+		fbx=Gradients.f-(Gradients.b*xMin);
+		yLength[xMin]=sqrt(eax*eax+fbx*fbx);
+	}
+
+	if(BottomForCompare > MiddleForCompare) {
+		MiddleIsLeft = 0;
+		pLeft = &TopToBottom; pRight = &TopToMiddle;
+	} else {
+		MiddleIsLeft = 1;
+		pLeft = &TopToMiddle; pRight = &TopToBottom;
+	}
+
+	int Height = TopToMiddle.Height;
+	float xLength, cay, dby;
+
+	while(Height--) {
+		// Calculate the xLengths for this scan line
+		cay = Gradients.c+Gradients.a*pLeft->Y;
+		dby = Gradients.d+Gradients.b*pLeft->Y;
+		xLength = sqrt(cay*cay+dby*dby);
+			
+		DrawScanLine_PointSample(Dest,Gradients,pLeft,pRight,Texture,xLength);
+		TopToMiddle.Step(); TopToBottom.Step();
+	}
+
+	Height = MiddleToBottom.Height;
+
+	if(MiddleIsLeft) {
+		pLeft = &MiddleToBottom; pRight = &TopToBottom;
+	} else {
+		pLeft = &TopToBottom; pRight = &MiddleToBottom;
+	}
+	
+	while(Height--) {
+		// Calculate the xLengths for this scan line
+		cay = Gradients.c+Gradients.a*pLeft->Y;
+		dby = Gradients.d+Gradients.b*pLeft->Y;
+		xLength = sqrt(cay*cay+dby*dby);
+
+		DrawScanLine_PointSample(Dest,Gradients,pLeft,pRight,Texture,xLength);
+		MiddleToBottom.Step(); TopToBottom.Step();
+	}
+}
+
+/***************************************************************
+ **															  **
+ **		Algorithm 8: Point sampled per-pixel MIP-mapping	  **
+ **															  **
+ ***************************************************************/
+
+void DrawScanLine_PointSample( dib_info const &Dest, gradients_mipmap const &Gradients,
+	edge_i_fl *pLeft, edge_i_fl *pRight, MMTexture16 const *Texture, float xLength )
+{
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+	int PixelX = XStart;
+
+	unsigned short *pDestBits = (unsigned short*)Dest.pBits;
+	pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
+
+	float OneOverZ = pLeft->OneOverZ;
+	float UOverZ = pLeft->UOverZ;
+	float VOverZ = pLeft->VOverZ;
+
+	while(Width-- > 0)
+	{
+		float Z = 1/OneOverZ;
+		float U = UOverZ * Z;
+		float V = VOverZ * Z;
+		
+		// Find compression
+		float d = ((xLength>yLength[PixelX])?xLength:yLength[PixelX])*Z*Z;
+				
+		if(d<0.0) d=0.0;
+		else if(d>1.0) d=1.0;
+		
+		int TexDim = Texture->GetWidth();
+		
+		// Scale compression by texture dimensions
+		int height = d*TexDim;
+		int lod;
+		
+		// Find the right LOD		
+		for(lod=0;height>1;height>>=1,TexDim>>=1,lod++);
+		
+		
+		const unsigned short *pTextureBits = (unsigned short*)Texture->GetMipmapLevelPtr(lod);
+
+		int mask=TexDim-1;
+		int UI = ((int)(U*mask)&mask;
+		int VI = ((int)(V*mask)&mask;
+
+		*(pDestBits++) = *(pTextureBits + UI + (VI * TexDim));
+
+		OneOverZ += Gradients.dOneOverZdX;
+		UOverZ += Gradients.dUOverZdX;
+		VOverZ += Gradients.dVOverZdX;
+		PixelX++;
+	}
+}
+
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 9: Bilinear filtered per-pixel MIP-mapping  **
+ **															  **
+ ***************************************************************/
+
+void DrawScanLine_BilinearFilter( dib_info const &Dest, gradients_mipmap const &Gradients,
+	edge_i_fl *pLeft, edge_i_fl *pRight, MMTexture16 const *Texture, float xLength )
+{
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+	int PixelX = XStart;
+
+	unsigned short *pDestBits = (unsigned short*)Dest.pBits;
+	pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
+
+	float OneOverZ = pLeft->OneOverZ;
+	float UOverZ = pLeft->UOverZ;
+	float VOverZ = pLeft->VOverZ;
+
+	const unsigned short rMask = Texture->GetRMask();
+	const unsigned short gMask = Texture->GetGMask();
+	const unsigned short bMask = Texture->GetBMask();
+	
+	float Z = 1/OneOverZ;
+	float U = UOverZ * Z;
+	float V = VOverZ * Z;
+	
+	while(Width-- > 0)
+	{
+		
+		// Find compression
+		float d = ((xLength>yLength[PixelX])?xLength:yLength[PixelX])*Z*Z;
+		
+		if(d<0.0) d=0.0;
+		else if(d>1.0) d=1.0;
+		
+		// Scale compression by texture dimensions
+		int TexDim = Texture->GetWidth();
+		int height = d*TexDim;
+		int lod;
+		
+		OneOverZ += Gradients.dOneOverZdX;
+		UOverZ += Gradients.dUOverZdX;
+		VOverZ += Gradients.dVOverZdX;
+		
+		// Find the right LOD		
+		for(lod=0;height>1;height>>=1,TexDim>>=1,lod++);
+		
+		Z = 1/OneOverZ;
+		
+		const unsigned short *pTextureBits = (unsigned short*)Texture->GetMipmapLevelPtr(lod);
+
+		int mask=TexDim-1;
+		
+		int UI = (int)(U*mask);
+		int VI = (int)(V*mask);
+		int UIN = (UI+1)&mask;
+		int VIN = (VI+1)&mask;
+
+		float ru = U*mask - UI;
+		float rv = V*mask - VI;
+
+		VI&=mask;
+		UI&=mask;
+		
+		// Get four adjacent texels
+		unsigned short T00 = *(pTextureBits + UI + (VI * TexDim));
+		unsigned short T10 = *(pTextureBits + UIN + (VI * TexDim));
+		unsigned short T01 = *(pTextureBits + UI + (VIN * TexDim));
+		unsigned short T11 = *(pTextureBits + UIN + (VIN * TexDim));
+		
+		unsigned short red,green,blue;
+		
+		// Bilinear filter red component
+		float T0=(T00&rMask)+ru*((T10&rMask)-(T00&rMask));
+		float T1=(T01&rMask)+ru*((T11&rMask)-(T01&rMask));
+		red = (unsigned short)(T0+rv*(T1-T0));
+		red&=rMask;
+		
+		// Bilinear filter green component
+		T0=(T00&gMask)+ru*((T10&gMask)-(T00&gMask));
+		T1=(T01&gMask)+ru*((T11&gMask)-(T01&gMask));
+		green = (unsigned short)(T0+rv*(T1-T0));
+		green&=gMask;
+		
+		// Bilinear filter blue component
+		T0=(T00&bMask)+ru*((T10&bMask)-(T00&bMask));
+		T1=(T01&bMask)+ru*((T11&bMask)-(T01&bMask));
+		blue = (unsigned short)(T0+rv*(T1-T0));
+		blue&=bMask;
+		
+		*(pDestBits++) = red|green|blue;
+
+		U = UOverZ * Z;
+		V = VOverZ * Z;
+		PixelX++;
+	}
+}
+
+
+/***************************************************************
+ **															  **
+ **		Algorithm 10: Tilinear filtered per-pixel MIP-mapping **
+ **															  **
+ ***************************************************************/
+ 
+void DrawScanLine_TrilinearFilter( dib_info const &Dest, gradients_mipmap const &Gradients,
+	edge_i_fl *pLeft, edge_i_fl *pRight, MMTexture16 const *Texture, float xLength )
+{
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+	int PixelX = XStart;
+
+	unsigned short *pDestBits = (unsigned short*)Dest.pBits;
+	pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
+
+	float OneOverZ = pLeft->OneOverZ;
+	float UOverZ = pLeft->UOverZ;
+	float VOverZ = pLeft->VOverZ;
+	
+	const unsigned short rMask = Texture->GetRMask();
+	const unsigned short gMask = Texture->GetGMask();
+	const unsigned short bMask = Texture->GetBMask();
+
+	float Z = 1/OneOverZ;
+	float U = UOverZ * Z;
+	float V = VOverZ * Z;
+	
+	unsigned short rl,gl,bl;
+	
+	while(Width-- > 0)
+	{
+		bool OneLOD;
+		
+		// Find compression
+		float d = ((xLength>yLength[PixelX])?xLength:yLength[PixelX])*Z*Z;
+		if(d<0.0) d=0.0;
+		else if(d>1.0) d=1.0;		
+		
+		// Scale compression by texture dimensions
+		int TexDim = Texture->GetWidth();
+		int height = TexDim*d;
+
+		int lod;
+		
+		OneLOD=((height==0)||(height==TexDim));
+
+		OneOverZ += Gradients.dOneOverZdX;
+		UOverZ += Gradients.dUOverZdX;
+		VOverZ += Gradients.dVOverZdX;
+		
+		
+		// Find the right LOD		
+		for(lod=0;height>1;height>>=1,TexDim>>=1,lod++);
+		
+		Z = 1/OneOverZ;
+		
+		const unsigned short *pTextureBits = (unsigned short*)Texture->GetMipmapLevelPtr(lod);
+
+		int mask=TexDim-1;
+		
+		int UI = (int)(U*mask);
+		int VI = (int)(V*mask);
+		int UIN = (UI+1)&mask;
+		int VIN = (VI+1)&mask;
+
+		float ru = U*mask - UI;
+		float rv = V*mask - VI;
+
+		VI&=mask;
+		UI&=mask;
+		
+		// Get four adjacent texels
+		unsigned short C00 = *(pTextureBits + UI + (VI * TexDim));
+		unsigned short C10 = *(pTextureBits + UIN + (VI * TexDim));
+		unsigned short C01 = *(pTextureBits + UI + (VIN * TexDim));
+		unsigned short C11 = *(pTextureBits + UIN + (VIN * TexDim));
+				
+		// Bilinear filter red component
+		float C0=(C00&rMask)+ru*((C10&rMask)-(C00&rMask));
+		float C1=(C01&rMask)+ru*((C11&rMask)-(C01&rMask));
+		rl = (unsigned short)(C0+rv*(C1-C0));
+		
+		// Bilinear filter green component
+		C0=(C00&gMask)+ru*((C10&gMask)-(C00&gMask));
+		C1=(C01&gMask)+ru*((C11&gMask)-(C01&gMask));
+		gl = (unsigned short)(C0+rv*(C1-C0));
+		
+		// Bilinear filter blue component
+		C0=(C00&bMask)+ru*((C10&bMask)-(C00&bMask));
+		C1=(C01&bMask)+ru*((C11&bMask)-(C01&bMask));
+		bl = (unsigned short)(C0+rv*(C1-C0));
+		
+		
+		if(OneLOD) *(pDestBits++) = ((rl&rMask)|(gl&gMask)|(bl&bMask));
+		else {
+						
+			float triD = TexDim*d;
+			
+			// Calculate final interpolant
+			if(lod==0) triD/=2.0;
+			else triD-=1;
+			
+			TexDim>>=1;
+			mask>>=1;
+			
+			UI = (int)(U*mask);
+			VI = (int)(V*mask);
+			UIN = (UI+1)&mask;
+			VIN = (VI+1)&mask;
+
+			ru = U*mask - UI;
+			rv = V*mask - VI;
+
+			VI&=mask;
+			UI&=mask;
+			
+			pTextureBits = (unsigned short*)Texture->GetMipmapLevelPtr(lod+1);
+			
+			unsigned short rh,gh,bh;
+
+			// Get four adjacent texels
+			C00 = *(pTextureBits + UI + (VI * TexDim));
+			C10 = *(pTextureBits + UIN + (VI * TexDim));
+			C01 = *(pTextureBits + UI + (VIN * TexDim));
+			C11 = *(pTextureBits + UIN + (VIN * TexDim));
+		
+			// Bilinear filter red component
+			C0=(C00&rMask)+ru*((C10&rMask)-(C00&rMask));
+			C1=(C01&rMask)+ru*((C11&rMask)-(C01&rMask));
+			rh = (unsigned short)(C0+rv*(C1-C0));
+		
+			// Bilinear filter green component
+			C0=(C00&gMask)+ru*((C10&gMask)-(C00&gMask));
+			C1=(C01&gMask)+ru*((C11&gMask)-(C01&gMask));
+			gh = (unsigned short)(C0+rv*(C1-C0));
+		
+			// Bilinear filter blue component
+			C0=(C00&bMask)+ru*((C10&bMask)-(C00&bMask));
+			C1=(C01&bMask)+ru*((C11&bMask)-(C01&bMask));
+			bh = (unsigned short)(C0+rv*(C1-C0));
+						
+			
+
+			unsigned short red,green,blue;
+
+			// Trilinear filter
+			red = (unsigned short)(rl+triD*(rh-rl));
+			green = (unsigned short)(gl+triD*(gh-gl));
+			blue = (unsigned short)(bl+triD*(bh-bl));
+
+			*(pDestBits++) = (red&rMask)|(green&gMask)|(blue&bMask);
+		}
+
+		U = UOverZ * Z;
+		V = VOverZ * Z;
+		PixelX++;
+	}
+}

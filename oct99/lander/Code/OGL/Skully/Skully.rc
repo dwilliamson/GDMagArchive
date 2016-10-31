@@ -1,0 +1,437 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif\r\n"
+    "#include ""res\\Skully.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU PRELOAD DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                ID_FILE_NEW
+        MENUITEM "&Open Skeleton...\tCtrl+O",   ID_FILE_OPEN
+        MENUITEM "Open &Mesh File",             ID_FILE_OPENCHARACTERMESH
+        MENUITEM "Open &Weight File",           ID_FILE_OPENWEIGHT
+        MENUITEM "&Save Weight File \tCtrl+S",  ID_FILE_SAVE
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 ID_FILE_MRU_FILE1, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_APP_EXIT
+    END
+    POPUP "&Skeleton"
+    BEGIN
+        MENUITEM "&Reset Skeleton",             ID_SKELETON_RESETSKELETON
+        MENUITEM "&Set Rest Pose",              ID_SKELETON_SETRESTPOSE
+        MENUITEM "Set &Bone Weights",           ID_SKELETON_SETBONEWEIGHTS
+        MENUITEM "&Clear Selected Weights",     ID_SKELETON_CLEARSELECTEDWEIGHTS
+
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Wireframe Mode",             ID_VIEW_OUTLINE
+        MENUITEM "View &Skeleton",              ID_VIEW_VIEWSKELETON
+        MENUITEM "Draw &Deformed",              ID_VIEW_DRAWDEFORMED
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About Skully...",            ID_APP_ABOUT
+        MENUITEM "&Which OpenGL?",              ID_WHICHOGL
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS PRELOAD MOVEABLE PURE 
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 166, 193
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Skully"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "Skully Version 1.0",IDC_STATIC,40,10,67,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 1999 Darwin 3D",IDC_STATIC,40,23,119,8
+    LTEXT           "SHIFT- Rotate XY -  CTRL Rotate Z",IDC_STATIC,13,71,136,
+                    8
+    DEFPUSHBUTTON   "OK",IDOK,127,7,32,14,WS_GROUP
+    LTEXT           "Right Mouse Button to Manipulate View",IDC_STATIC,13,96,
+                    136,8
+    LTEXT           "jeffl@darwin3d.com",IDC_STATIC,53,32,67,8
+    LTEXT           "Select a Bone from Left Window",IDC_STATIC,13,54,136,8
+    LTEXT           "Drag to Rotate in X and Y",IDC_STATIC,13,105,136,8
+    LTEXT           "CTRL+Drag Translates View in X and Y",IDC_STATIC,13,114,
+                    136,8
+    LTEXT           "SHIFT+Drag Translates View in Z",IDC_STATIC,13,125,136,
+                    8
+    GROUPBOX        "Bone Control",IDC_STATIC,7,44,152,39
+    GROUPBOX        "Camera Control",IDC_STATIC,7,86,152,50
+    GROUPBOX        "Weight Selection",IDC_STATIC,7,141,152,41
+    LTEXT           "Left Mouse Button Drag to Select Vertices",IDC_STATIC,
+                    14,161,136,8
+    LTEXT           "Set Weights by Double Click in Tree Control",IDC_STATIC,
+                    13,151,140,8
+    LTEXT           "Select ""Set Weights"" from Menu",IDC_STATIC,13,171,136,
+                    8
+    LTEXT           "Left Mouse Button Drag while holding",IDC_STATIC,13,63,
+                    136,8
+END
+
+IDD_BONE_INFO DIALOG DISCARDABLE  0, 0, 255, 138
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Bone"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,7,117,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,198,117,50,14
+    LTEXT           "Bone Name",IDC_STATIC,10,10,46,9
+    EDITTEXT        IDC_BONE_NAME,56,7,87,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TRANS_X,20,40,44,12,ES_AUTOHSCROLL
+    LTEXT           "Translation",IDC_STATIC,26,27,38,9
+    LTEXT           "X",IDC_STATIC,8,42,8,8
+    EDITTEXT        IDC_TRANS_Y,20,55,44,12,ES_AUTOHSCROLL
+    LTEXT           "Y",IDC_STATIC,8,57,8,8
+    EDITTEXT        IDC_TRANS_Z,20,70,44,12,ES_AUTOHSCROLL
+    LTEXT           "Z",IDC_STATIC,8,72,8,8
+    EDITTEXT        IDC_ROT_X,106,40,44,12,ES_AUTOHSCROLL
+    LTEXT           "Rotation",IDC_STATIC,112,27,38,9
+    LTEXT           "X (Pitch)",IDC_STATIC,72,42,31,8
+    EDITTEXT        IDC_ROT_Y,106,55,44,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ROT_Z,106,70,44,12,ES_AUTOHSCROLL
+    LTEXT           "Y (Yaw)",IDC_STATIC,71,57,31,8
+    LTEXT           "Z (Roll)",IDC_STATIC,71,72,31,8
+    CTEXT           "Min            Max",IDC_STATIC,163,28,71,9
+    EDITTEXT        IDC_MIN_X,166,40,32,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_X,203,40,32,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MIN_Y,166,55,32,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_Y,204,55,32,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MIN_Z,165,70,32,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_Z,203,70,32,12,ES_AUTOHSCROLL
+    CONTROL         "DOF Restriction",IDC_DOF_ACTIVE,"Button",
+                    BS_AUTOCHECKBOX | BS_PUSHLIKE | WS_TABSTOP,170,9,57,16
+    EDITTEXT        IDC_BONEWEIGHT,109,95,44,12,ES_AUTOHSCROLL
+    LTEXT           "Bone Weighting",IDC_STATIC,19,97,77,8
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,2,1
+ PRODUCTVERSION 1,0,2,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Darwin 3D\0"
+            VALUE "FileDescription", "Skully\0"
+            VALUE "FileVersion", "1, 0, 2, 1\0"
+            VALUE "InternalName", "Skully\0"
+            VALUE "LegalCopyright", "Copyright (C) 1997-1998\0"
+            VALUE "OriginalFilename", "Skully.EXE\0"
+            VALUE "ProductName", "Skully Application\0"
+            VALUE "ProductVersion", "1, 0, 2, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 159
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 186
+    END
+
+    IDD_BONE_INFO, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 248
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 131
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\SkinApp.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE PRELOAD DISCARDABLE 
+BEGIN
+    IDR_MAINFRAME           "Skully\n\nSkully\nSkully Files (*.skl)\n.skl\nSkully.Document\nSkully Document"
+END
+
+STRINGTABLE PRELOAD DISCARDABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "Skully"
+    AFX_IDS_IDLEMESSAGE     "Ready"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+    ID_INDICATOR_FRAME      "No Bone Currently Selected"
+    ID_INDICATOR_FRAME2     "No Bone Currently Selected"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_NEW             "Create a new document\nNew"
+    ID_FILE_OPEN            "Open an existing document\nOpen"
+    ID_FILE_CLOSE           "Close the active document\nClose"
+    ID_FILE_SAVE            "Save the active document\nSave"
+    ID_FILE_SAVE_AS         "Save the active document with a new name\nSave As"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_APP_ABOUT            "Display program information, version number and copyright\nAbout"
+    ID_APP_EXIT             "Quit the application; prompts to save documents\nExit"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "Open this document"
+    ID_FILE_MRU_FILE2       "Open this document"
+    ID_FILE_MRU_FILE3       "Open this document"
+    ID_FILE_MRU_FILE4       "Open this document"
+    ID_FILE_MRU_FILE5       "Open this document"
+    ID_FILE_MRU_FILE6       "Open this document"
+    ID_FILE_MRU_FILE7       "Open this document"
+    ID_FILE_MRU_FILE8       "Open this document"
+    ID_FILE_MRU_FILE9       "Open this document"
+    ID_FILE_MRU_FILE10      "Open this document"
+    ID_FILE_MRU_FILE11      "Open this document"
+    ID_FILE_MRU_FILE12      "Open this document"
+    ID_FILE_MRU_FILE13      "Open this document"
+    ID_FILE_MRU_FILE14      "Open this document"
+    ID_FILE_MRU_FILE15      "Open this document"
+    ID_FILE_MRU_FILE16      "Open this document"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_NEXT_PANE            "Switch to the next window pane\nNext Pane"
+    ID_PREV_PANE            "Switch back to the previous window pane\nPrevious Pane"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_WINDOW_SPLIT         "Split the active window into panes\nSplit"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_EDIT_CLEAR           "Erase the selection\nErase"
+    ID_EDIT_CLEAR_ALL       "Erase everything\nErase All"
+    ID_EDIT_COPY            "Copy the selection and put it on the Clipboard\nCopy"
+    ID_EDIT_CUT             "Cut the selection and put it on the Clipboard\nCut"
+    ID_EDIT_FIND            "Find the specified text\nFind"
+    ID_EDIT_PASTE           "Insert Clipboard contents\nPaste"
+    ID_EDIT_REPEAT          "Repeat the last action\nRepeat"
+    ID_EDIT_REPLACE         "Replace specific text with different text\nReplace"
+    ID_EDIT_SELECT_ALL      "Select the entire document\nSelect All"
+    ID_EDIT_UNDO            "Undo the last action\nUndo"
+    ID_EDIT_REDO            "Redo the previously undone action\nRedo"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_TOOLBAR         "Show or hide the toolbar\nToggle ToolBar"
+    ID_VIEW_STATUS_BAR      "Show or hide the status bar\nToggle StatusBar"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "Change the window size"
+    AFX_IDS_SCMOVE          "Change the window position"
+    AFX_IDS_SCMINIMIZE      "Reduce the window to an icon"
+    AFX_IDS_SCMAXIMIZE      "Enlarge the window to full size"
+    AFX_IDS_SCNEXTWINDOW    "Switch to the next document window"
+    AFX_IDS_SCPREVWINDOW    "Switch to the previous document window"
+    AFX_IDS_SCCLOSE         "Close the active window and prompts to save the documents"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "Restore the window to normal size"
+    AFX_IDS_SCTASKLIST      "Activate Task List"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_PLAY_FORWARD         "Play Forward\nPlay Forward"
+    ID_FORWARD_FRAME        "Forward One Frame\nForward One Frame"
+    ID_STOP                 "Stop Playback\nStop Playback"
+    ID_BACK_FRAME           "Back One Frame\nBack One Frame"
+    ID_PLAY_BACK            "Play Backward\nPlay Backward"
+    ID_ADD_BONE             "Add a Bone to the Skeleton"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_SKELETON_RESETSKELETON 
+                            "Reset the Skeleton\nReset Skeleton to Initial Positions"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_VIEW_DRAWDEFORMED    "Draw the Mesh deformed by the Skeleton"
+    ID_SKELETON_SETBONEWEIGHTS "Set Weights for Selected Vertices"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif
+#include "res\Skully.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

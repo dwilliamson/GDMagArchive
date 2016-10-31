@@ -1,0 +1,19 @@
+Set all units' internal group movement priorities to the same low priority value.
+Set state to cStateForming.
+While state is cStateForming:
+   {
+   Find the unfilled position that's closest to the center of the formation.
+   If no unit was available
+      Set the state to cStateFormed and break out of forming loop.
+
+   Select a unit to fill that slot using a game specific heuristic that:
+      Minimizes the distance the unit has to travel.
+      Will collide with the fewest number of other formation members.
+      Has the lowest overall travel time.
+
+   Set unit's movement priority to a medium priority value.
+   Wait (across multiple game updates) until unit is in position.
+   Set unit's movement priority to highest possible value.  This ensures that
+      subsequently formed units will not dislodge this unit.
+   }
+

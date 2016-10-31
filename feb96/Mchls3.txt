@@ -1,0 +1,162 @@
+;**
+;** void MCITF_init (s16 max_x, s16 max_y, 
+;**				s16 bytes_per_scanline, 
+;**				u32 (far *active_page) (void))
+;**   
+
+_MCITF_init proc far
+		arg _max_x:word, _max_y:word, _bytes_per_scanline:word,\
+			_active_page:dword
+
+		push	bp
+		mov	bp, sp
+
+		mov	ax, _max_x
+		mov	max_x, ax
+		mov	ax, _max_y
+		mov	max_y, ax
+		mov	ax, _bytes_per_scanline
+		mov	bytes_per_scanline, ax
+		mov	eax, _active_page
+		mov	active_page, eax
+
+		pop	bp
+		ret
+
+_MCITF_init endp
+
+;**
+;** BOOLEAN MCITF_shape (u8 far *bitmap,
+;**					u16 width, u16 height,
+;**					u16 hotspot_x, u16 hotspot_y,
+;**					u16 bits_per_pixel, u8 transparent)
+;**   
+
+_MCITF_shape proc far
+		arg	bitmap:dword, width:word, height:word, \
+				hotspot_x:word, hotspot_y:word, bits_per_pixel:word,\
+				transparent:word
+		local	mask_size:word, direct:word=AUTO_SIZE
+
+		push	bp
+		mov	bp, sp
+		sub	sp, AUTO_SIZE
+
+		push	di
+		push	si
+		push	ax
+		push	bx
+		push	cx
+		push	ds
+
+		mov	ax, width
+		cmp	ax, MAX_CURSOR_WIDTH
+		jg		@@error_exit
+		mov	cursor_width, ax
+
+		mov	ax, height
+		cmp	ax, MAX_CURSOR_HEIGHT
+		jg		@@error_exit
+		mov	cursor_height, ax
+
+		mov	ax, hotspot_x
+		mov	bx, hotspot_y
+		mov	hot_x, ax
+		mov	hot_y, bx
+
+		mov	ax, transparent
+		mov	mtransparent, al
+
+		mov	ax, seg and_mask
+		mov	es, ax
+		mov	di, offset and_mask
+
+		mov	ax, cursor_width		; calculate number of bytes
+		mov	cx, cursor_height		; in the packed representation
+		mul	cx
+		mov	mask_size, ax
+
+		mov	direct, 0
+
+		lds	si, bitmap
+
+		cmp	bits_per_pixel, 1
+		jne	@@eight_bits_per_pixel
+
+@@one_bit_per_pixel:
+		;
+		; es:di						-> and_mask
+		; es:di+CURSOR_SAVE_SIZE	-> xor_mask
+		; ds:si						-> and bitmap
+		; ds:si+bx					-> xor bitmap
+		;
+		mov	cx, ax
+		shr	cx, 3
+		mov	bx, cx		; cx is count, bx is offset
+		mov	al, 80h
+@@set_mask:
+		test	byte ptr [si], al
+		jnz	@@set_and_mask
+		mov	byte ptr es:[di], 0
+		jmp	@@do_xor_mask
+@@set_and_mask:
+		mov	byte ptr es:[di], 0FFh
+@@do_xor_mask:
+		test	byte ptr [si+bx], al
+		jnz	@@set_xor_mask
+		mov	byte ptr es:[di+CURSOR_SAVE_SIZE], 0
+		jmp	@@next_mask
+@@set_xor_mask:
+		mov	byte ptr es:[di+CURSOR_SAVE_SIZE], 0Fh
+@@next_mask:
+		inc	di
+		shr	al, 1
+		jnz	@@set_mask
+
+		dec	cx
+		jz		@@fini
+		
+		mov	al, 80h
+		inc	si
+		jmp	@@set_mask
+
+@@eight_bits_per_pixel:
+		; In 8-bits/pixel mode, there is no and/xor masking going on.  We just copy the bytes as-is to the and_mask location and put them
+		; directly to the display when we draw the cursor.
+		;
+		; es:di -> and_mask
+		; ds:si -> bitmap
+		;
+		cmp	bits_per_pixel, 8
+		jne	@@error_exit
+
+		mov	cx, mask_size
+		rep	movsb
+
+		mov	direct, 1
+		jmp	@@fini
+
+@@error_exit:
+		mov	ax, 0
+		jmp	@@final_exit
+
+@@fini:
+		mov	ax, 1
+
+@@final_exit:
+		pop	ds
+
+		mov	bx, direct
+		mov	direct_draw, bx
+
+		pop	cx
+		pop	bx
+		pop	ax
+		pop	si
+		pop	di
+
+		mov	sp, bp
+		pop	bp
+		ret
+
+_MCITF_shape endp

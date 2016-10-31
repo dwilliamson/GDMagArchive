@@ -1,0 +1,122 @@
+--------------------Configuration: consoletest - Win32 Release--------------------
+Begining build with project "D:\bsrc\exceptionhandler\consoletest\consoletest.dsp", at root.
+Active configuration is Win32 (x86) Console Application (based on Win32 (x86) Console Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MD /W4 /Gm /GX /Zi /O2 /I "..\exceptionhandler" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "WIN32" /D "STRICT" /Fp"Release/consoletest.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /d "NDEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Release/consoletest.bsc" "
+			"COFF Linker for 80x86" with flags "kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:no /pdb:"Release/consoletest.pdb" /debug /machine:I386 /out:"Release/consoletest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+
+
+
+consoletest.exe - 0 error(s), 0 warning(s)
+--------------------Configuration: consoletest - Win32 Debug--------------------
+Begining build with project "D:\bsrc\exceptionhandler\consoletest\consoletest.dsp", at root.
+Active configuration is Win32 (x86) Console Application (based on Win32 (x86) Console Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MDd /W3 /Gm /GX /Zi /Od /I "..\exceptionhandler" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "WIN32" /D "STRICT" /Fp"Debug/consoletest.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /c "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /d "_DEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Debug/consoletest.bsc" "
+			"COFF Linker for 80x86" with flags "kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/consoletest.pdb" /debug /machine:I386 /out:"Debug/consoletest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+
+
+
+consoletest.exe - 0 error(s), 0 warning(s)
+--------------------Configuration: mfctest - Win32 Release--------------------
+Begining build with project "D:\bsrc\exceptionhandler\mfctest\mfctest.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MD /W4 /GX /Zi /O2 /I "..\exceptionhandler" /D "NDEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "WIN32" /D "STRICT" /Fp"Release/mfctest.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "NDEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /fo"Release/mfctest.res" /d "NDEBUG" /d "_AFXDLL" "
+			"Browser Database Maker" with flags "/nologo /o"Release/mfctest.bsc" "
+			"COFF Linker for 80x86" with flags "/nologo /subsystem:windows /incremental:no /pdb:"Release/mfctest.pdb" /debug /machine:I386 /out:"Release/mfctest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+
+
+
+mfctest.exe - 0 error(s), 0 warning(s)
+--------------------Configuration: mfctest - Win32 Debug--------------------
+Begining build with project "D:\bsrc\exceptionhandler\mfctest\mfctest.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MDd /W3 /Gm /GX /Zi /Od /I "..\exceptionhandler" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "WIN32" /D "STRICT" /Fp"Debug/mfctest.pch" /Yu"stdafx.h" /Fo"Debug/" /Fd"Debug/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "_DEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /fo"Debug/mfctest.res" /d "_DEBUG" /d "_AFXDLL" "
+			"Browser Database Maker" with flags "/nologo /o"Debug/mfctest.bsc" "
+			"COFF Linker for 80x86" with flags "/nologo /subsystem:windows /incremental:yes /pdb:"Debug/mfctest.pdb" /debug /machine:I386 /out:"Debug/mfctest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+
+
+
+mfctest.exe - 0 error(s), 0 warning(s)
+--------------------Configuration: winmaintest - Win32 Release--------------------
+Begining build with project "D:\bsrc\exceptionhandler\winmaintest\winmaintest.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MD /W4 /GX /Zi /O2 /I "..\exceptionhandler" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "STRICT" /Fp"Release/winmaintest.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "NDEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /d "NDEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Release/winmaintest.bsc" "
+			"COFF Linker for 80x86" with flags "kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/winmaintest.pdb" /debug /machine:I386 /out:"Release/winmaintest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating temp file "d:\temp\RSP48.tmp" with contents </nologo /MD /W4 /GX /Zi /O2 /I "..\exceptionhandler" /D "NDEBUG" /D "_WINDOWS" /D "WIN32" /D "STRICT" /Fp"Release/winmaintest.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\bsrc\exceptionhandler\winmaintest\winmain.cpp"
+>
+Creating command line "cl.exe @d:\temp\RSP48.tmp" 
+Creating temp file "d:\temp\RSP49.tmp" with contents <kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/winmaintest.pdb" /debug /machine:I386 /out:"Release/winmaintest.exe" 
+.\Release\winmain.obj
+\bsrc\exceptionhandler\exceptionhandler\Release\exceptionhandler.lib>
+Creating command line "link.exe @d:\temp\RSP49.tmp" 
+Compiling...
+winmain.cpp
+Linking...
+
+
+
+winmaintest.exe - 0 error(s), 0 warning(s)
+--------------------Configuration: winmaintest - Win32 Debug--------------------
+Begining build with project "D:\bsrc\exceptionhandler\winmaintest\winmaintest.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MDd /W3 /Gm /GX /Zi /Od /I "..\exceptionhandler" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "STRICT" /Fp"Debug/winmaintest.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "_DEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x1009 /d "_DEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Debug/winmaintest.bsc" "
+			"COFF Linker for 80x86" with flags "kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/winmaintest.pdb" /debug /machine:I386 /out:"Debug/winmaintest.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating temp file "d:\temp\RSP4A.tmp" with contents </nologo /MDd /W3 /Gm /GX /Zi /Od /I "..\exceptionhandler" /D "_DEBUG" /D "_WINDOWS" /D "WIN32" /D "STRICT" /Fp"Debug/winmaintest.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /c 
+"D:\bsrc\exceptionhandler\winmaintest\winmain.cpp"
+>
+Creating command line "cl.exe @d:\temp\RSP4A.tmp" 
+Creating temp file "d:\temp\RSP4B.tmp" with contents <kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/winmaintest.pdb" /debug /machine:I386 /out:"Debug/winmaintest.exe" 
+.\Debug\winmain.obj
+\bsrc\exceptionhandler\exceptionhandler\Debug\exceptionhandler.lib>
+Creating command line "link.exe @d:\temp\RSP4B.tmp" 
+Compiling...
+winmain.cpp
+Linking...
+
+
+
+winmaintest.exe - 0 error(s), 0 warning(s)

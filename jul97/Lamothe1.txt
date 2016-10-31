@@ -1,0 +1,10 @@
+LISTING 1. The form of the thread function.
+DWORD WINAPI My_Thread(LPVOID data)
+{
+// .. do work
+
+// return an exit code at end, whatever is appropriate for your app
+
+return(26);
+
+} // end My_Thread

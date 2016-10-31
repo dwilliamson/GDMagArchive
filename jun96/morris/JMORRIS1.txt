@@ -1,0 +1,15 @@
+Listing 1.  The CGame::DPInit Member Function for TicTacToeBOOL
+CGame::DPInit()
+{
+  // Clear the players
+  m_dpidPlayer[0] = 0;
+  m_dpidPlayer[1] = 0;
+
+  // Prompt user to select a DP server, then create the DP object
+  CServerSelDlg dlgServerSel;
+  if (dlgServerSel.DoModal() == IDOK)
+    return (::DirectPlayCreate(dlgServerSel.GetSelServer(),
+      &m_pDirectPlay, NULL) == DP_OK);
+    
+  return FALSE;
+}

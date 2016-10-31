@@ -1,0 +1,41 @@
+unsigned sb_ReadDSP(unsigned baseport)
+ while(!(0x80 & inp(baseport +
+  sb_READ_STATUS))); //waiting for the
+		  //MSB to be set
+ return((unsigned)inp(baseport +
+  sb_READ_DATA));
+}
+
+To write to the DSP, read from sb_COMMAND_STATUS until the msb is reset. Then, write the desired command (or command data) to sb_WRITE_COMMAND:
+
+void sb_WriteDSP(unsigned baseport, 
+ unsigned value) {
+  while(0x80 & inp
+  (baseport +sb_WRITE_STATUS));
+  // wait for the MSB to be clear
+}
+  outp(baseport + sb_WRITE_COMMAND,
+   (int)value);
+}
+
+lowbyte = (unsigned char)(buffsize - 1);
+highbyte = (unsigned char)((buffsize - 1) 
+ >> 8));
+sb_WriteDSP(baseport, sb_PLAY8BITMONO);
+sb_WriteDSP(baseport, lowbyte);
+sb_WriteDSP(baseport, highbyte);
+
+lowbyte = (unsigned char)(buffsize - 1);
+highbyte = (unsigned char)((buffsize - 1) 
+ >> 8));
+sb_WriteDSP(baseport, sb_PLAY8BITMONO);
+sb_WriteDSP(baseport, lowbyte);
+sb_WriteDSP(baseport, highbyte);
+
+off = (*((unsigned _far *)&(sound)));
+seg = (*((unsigned _far *)&(sound) + 1));
+seg <<= 4;
+padd = seg + off; 	// calc physical
+		address
+page = padd >> 16;	// calc page number
+

@@ -1,0 +1,70 @@
+Listing  3. Displaying a list of attached devices
+
+/*---------------------------------------------------------------------*/    
+int GetJoystickName(UINT joy_num,BYTE szRegKey[MAX_PATH],BYTE szReturnName[MAX_PATH])
+/* 
+   Description :  	Opens the MediaResources\Joysitick\mjstick.drv<xxxx>\JoystickSettings and 
+		extracts Joystick%dOEMName string
+   Arguments :     	joy_num    (r/o) - Joystick Number
+	              szRegKey   (r/o) - Registry Key of the msjstick.drv
+                         ReturnName (r/w) - Return String for name listed in Control Panel                                               
+   Returns :             0 for success 1 for failure
+/*-----------------------------------------------------------------------*/ 
+{
+   BYTE KeyStr[MAX_PATH] = REGSTR_PATH_JOYCONFIG;       	// found in regstr.h
+   BYTE KeyJoySetStr[MAX_PATH] = REGSTR_KEY_JOYSETTINGS; 	// found in Regstr.h
+   BYTE szOEMName[MAX_PATH];                             	// OEM name from Current Settings
+   HKEY ConfigKey;
+   HKEY JoyConfigKey;                                    	// Joystick Configuration
+   HKEY DriverKey;                                       	// Joystick Driver Key
+   HKEY OEMPropKey;
+   HKEY PropKey;
+   MMRESULT test;
+   DWORD Length;
+   BYTE Crap[MAX_PATH];	// Opens msjstick.drv <xxxx>
+   if( ERROR_SUCCESS != RegOpenKey( HKEY_LOCAL_MACHINE,REGSTR_PATH_JOYCONFIG,&ConfigKey ) )
+
+      {
+      return( 1 );                	// It should never get here key received from Caps
+      }                              
+  
+   if( ERROR_SUCCESS != RegOpenKey( ConfigKey, szRegKey, &DriverKey ) )
+      {
+      return( 1 );       	// It should never get here key received from Caps
+      }                              
+                                                	// Open CurrentSettings Key
+   
+   if( ERROR_SUCCESS != RegOpenKey( DriverKey, REGSTR_KEY_JOYCURR, &JoyConfigKey ) )
+      {
+      return( 1 );                  	// It should never get here always a Current Settings
+      }
+   sprintf(KeyStr,REGSTR_VAL_JOYNOEMNAME,joy_num+1);   
+   Length=sizeof(szOEMName);                        	// Get OEMNAME Configuration
+   
+   if( ERROR_SUCCESS != RegQueryValueEx( JoyConfigKey,KeyStr,NULL,NULL,(unsigned char *)&szOEMName,&Length))
+      {
+        return( 1 );                                	// No OEM name listed return error
+      }
+   RegCloseKey( REGSTR_PATH_JOYCONFIG);      	// Closes the registry Key
+                                                    	
+	// Open OEM Properties Key
+    if( ERROR_SUCCESS != RegOpenKey(HKEY_LOCAL_MACHINE,REGSTR_PATH_JOYOEM,&PropKey ) )
+      {
+      return( 1 );                  	// It should never get here key received from Caps
+      }                              
+   
+   if( ERROR_SUCCESS != RegOpenKey( PropKey, szOEMName, &OEMPropKey ) )
+      {
+      return( 1 );                  	// It should never get here if device is selected
+      }
+   Length=MAX_PATH;                        	// Get Name as listed in Control Panel
+   
+   if( ERROR_SUCCESS != RegQueryValueEx( OEMPropKey,REGSTR_VAL_JOYOEMNAME,NULL,NULL,(unsigned char *)szReturn-   
+      Name,&Length)))
+      {
+        return( 1 );                              	 // No OEM name listed return error
+      }
+   RegCloseKey( REGSTR_PATH_JOYOEM);         	// Closes the registry Key
+   return 0;
+
+} /* End GetJoystickName */

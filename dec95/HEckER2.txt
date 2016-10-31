@@ -1,0 +1,109 @@
+Listing 2.  The Subdividing Affine DrawScanLine (Continued on p. 24)
+void DrawScanLine_suba( dib_info const &Dest,
+	gradients_fx_fl_a const &Gradients,
+	edge_fx_fl_a *pLeft, edge_fx_fl_a *pRight,
+	dib_info const &Texture )
+{
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+
+	char unsigned *pDestBits = Dest.pBits;
+	char unsigned * const pTextureBits = Texture.pBits;
+	pDestBits += pLeft->Y * Dest.DeltaScan + XStart;
+	long TextureDeltaScan = Texture.DeltaScan;
+
+	int const AffineLength = 8;
+
+	float OneOverZLeft = pLeft->OneOverZ;
+	float UOverZLeft = pLeft->UOverZ;
+	float VOverZLeft = pLeft->VOverZ;
+
+	float dOneOverZdXAff = Gradients.dOneOverZdX * AffineLength;
+	float dUOverZdXAff = Gradients.dUOverZdX * AffineLength;
+	float dVOverZdXAff = Gradients.dVOverZdX * AffineLength;
+
+	float OneOverZRight = OneOverZLeft + dOneOverZdXAff;
+	float UOverZRight = UOverZLeft + dUOverZdXAff;
+	float VOverZRight = VOverZLeft + dVOverZdXAff;
+
+	float ZLeft = 1/OneOverZLeft;
+	float ULeft = ZLeft * UOverZLeft;
+	float VLeft = ZLeft * VOverZLeft;
+
+	float ZRight, URight, VRight;
+	fixed16_16 U, V, DeltaU, DeltaV;
+
+	if(Width > 0) {
+		int Subdivisions = Width / AffineLength;
+		int WidthModLength = Width % AffineLength;
+
+		if(!WidthModLength) {
+			Subdivisions--;
+			WidthModLength = AffineLength;
+		}
+
+		while(Subdivisions-- > 0) {
+			ZRight = 1/OneOverZRight;
+			URight = ZRight * UOverZRight;
+			VRight = ZRight * VOverZRight;
+	
+			U = FloatToFixed16_16(ULeft) + Gradients.dUdXModifier;
+			V = FloatToFixed16_16(VLeft) + Gradients.dVdXModifier;
+			DeltaU =
+				FloatToFixed16_16(URight - ULeft)/AffineLength;
+			DeltaV =
+				FloatToFixed16_16(VRight - VLeft)/AffineLength;
+	
+			for(int Counter = 0;Counter < AffineLength;Counter++){
+				int UInt = U>>16;
+				int VInt = V>>16;
+	
+				*(pDestBits++) = *(pTextureBits + UInt +
+						(VInt * TextureDeltaScan));
+
+				U += DeltaU;
+				V += DeltaV;
+			}
+	
+			ZLeft = ZRight;
+			ULeft = URight;
+			VLeft = VRight;
+			OneOverZRight += dOneOverZdXAff;
+			UOverZRight += dUOverZdXAff;
+			VOverZRight += dVOverZdXAff;
+		}
+	
+		if(WidthModLength) {
+			ZRight = 1/(pRight->OneOverZ - Gradients.dOneOverZdX);
+			URight = ZRight *
+				(pRight->UOverZ - Gradients.dUOverZdX);
+			VRight = ZRight *
+				(pRight->VOverZ - Gradients.dVOverZdX);
+
+			U = FloatToFixed16_16(ULeft) + Gradients.dUdXModifier;
+			V = FloatToFixed16_16(VLeft) + Gradients.dVdXModifier;
+
+			if(--WidthModLength) {
+				// guard against div-by-0 for 1 pixel lines
+				DeltaU =
+					FloatToFixed16_16(URight - Uleft)
+					/ WidthModLength;
+				DeltaV =
+					FloatToFixed16_16(VRight - Vleft)
+					/ WidthModLength;
+			}
+	
+			for(int Counter = 0;
+				Counter <= WidthModLength;Counter++) {
+				int UInt = U>>16;
+				int VInt = V>>16;
+	
+				*(pDestBits++) = *(pTextureBits + UInt +
+						(VInt * TextureDeltaScan));
+		
+				U += DeltaU;
+				V += DeltaV;
+			}
+		}
+	}
+}

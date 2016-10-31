@@ -1,0 +1,17 @@
+Listing 2.  
+
+Create a Primary 3D Sound Buffer.IDirectSoundBuffer *CreatePrimarySoundBuffer3D()
+{
+    IDirectSoundBuffer *pDSBuffer = NULL;
+    DSBUFFERDESC dsBDesc = {0};
+
+    memset( &dsBDesc, 0,sizeof(DSBUFFERDESC));
+    dsBDesc.dwSize = sizeof(dsBDesc);
+    dsBDesc.dwFlags = DSBCAPS_CTRL3D | DSBCAPS_PRIMARYBUFFER;
+    dsBDesc.dwBufferBytes = 0; // Zero required for primary buffer
+
+    if (g_pDirectSound->CreateSoundBuffer(&dsBDesc, &pDSBuffer, NULL) != DS_OK)
+        pDSBuffer = NULL;
+
+    return pDSBuffer;
+}

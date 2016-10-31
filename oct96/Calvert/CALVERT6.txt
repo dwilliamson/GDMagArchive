@@ -1,0 +1,12 @@
+Listing 6. USECOM is defined; TSpeedDraw properties aren't compiled
+
+ {$IFDEF USECOM}
+    procedure MakeActive(Value: Boolean); virtual; stdcall;
+    procedure SetTimerOdd(Value: Boolean); virtual; stdcall;
+    procedure SetBackOrigin(Value: TPoint); virtual; stdcall;
+    {$ELSE}
+    property Active: Boolean read fActive write SetActive;
+    property BackOrigin: TPoint read FBackOrigin write FBackOrigin;
+    property TimerOdd: Boolean read FTimerOdd write FTimerOdd;
+    ... // Other properties omitted
+   {$ENDIF}

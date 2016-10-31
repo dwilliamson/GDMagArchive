@@ -1,0 +1,56 @@
+Listing 13: dddb_alloc() 
+
+/* bitmap growth increment in BLOCKS not bytes (512 is 64 BYTES) */
+#define DDDB_BITBLOCK   512
+
+static char *bitm = (char *) NULL;
+static int bitblox = 0;
+
+
+int
+dddb_alloc(siz)
+    int siz;
+{
+    int bcnt;                   /* # of blocks to operate on */
+    int lbn;                    /* logical block offset */
+    int tbcnt;
+    int slbn;
+    int overthetop = 0;
+
+    lbn = last_free;
+    bcnt = siz % bsiz ? (siz / bsiz) + 1 : (siz / bsiz);
+
+    while (1) {
+        if (lbn >= bitblox - 32) {
+            /* only check here. canÕt break around the top */
+            if (!overthetop) {
+                lbn = 0;
+                overthetop++;
+            } else {
+                growbit(lbn + DDDB_BITBLOCK);
+            }
+        }
+        slbn = lbn;
+        tbcnt = bcnt;
+
+        while (1) {
+            if ((bitm[lbn >> 3] & (1 << (lbn & 7))) != 0)
+                break;
+
+            /* enough free blocks - mark and done */
+            if (--tbcnt == 0) {
+                for (tbcnt = slbn; bcnt > 0; tbcnt++, bcnt--)
+                    bitm[tbcnt >> 3] |= (1 << (tbcnt & 7));
+
+                last_free = lbn;
+                return (slbn);
+            }
+            lbn++;
+            if (lbn >= bitblox - 32)
+                growbit(lbn + DDDB_BITBLOCK);
+        }
+        lbn++;
+    }
+}
+
+

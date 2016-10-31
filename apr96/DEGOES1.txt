@@ -1,0 +1,173 @@
+Listing 1. Classes to Aid in Making a Z Buffer (Visual Surface Determination Algorithm implementation)
+
+#include <Math.H>
+#include <Windows.H>
+
+// The precision to the right of the imaginary decimal point:
+const ZPREC = 26; // s00000.00000000000000000000000000 = 0.000000015
+
+class ZBuffer {
+protected:
+  long *ZBuff, ZTrans;
+  WORD Init, Code;
+  unsigned int Width, Height;
+public:
+  enum { NoMem = 0, Success };
+
+  // Sets defaults:
+  ZBuffer () : Init ( 0 ), Code ( NoMem ),
+               ZBuff ( NULL ), ZTrans ( 0 ) { }
+
+  // Accepts width and height for Z buffer creation:
+  ZBuffer ( int W, int H ) : Init ( 0 ), Code ( NoMem ),
+                             ZBuff ( NULL ), ZTrans ( 0 )
+                             { Create ( W, H ); }
+
+  // Deallocates memory:
+  ~ZBuffer () { delete [] ZBuff; }
+
+  // Initializes the Z buffer:
+  inline BOOL Create ( int W, int H );
+
+  // Width and height member functions:
+  unsigned int GetWidth () { return Width; }
+  unsigned int GetHeight () { return Height; }
+
+  // Returns the 1/Z translate value:
+  long GetZTrans () { return ZTrans; }
+
+  // Returns the error code:
+  WORD GetCode () { return Code; }
+
+  // Returns a pointer to the Z buffer (use with caution):
+  long *GetPtr () { return ZBuff; }
+
+  // Performs a "safe", slow Z buffer write:
+  // (Dest must be a 256 color buffer equal in dimensions
+  //  to the Z buffer.)
+  void Write ( WORD X, WORD Y, long Z, BYTE Val, BYTE *Dest )
+     {
+     unsigned int Index;
+     if ( ( Init ) && ( X < Width ) && ( Y < Height ) )
+        {
+        Index = X + Y * Width;
+        if ( ZBuff [ Index ] < Z )
+           {
+           ZBuff [ Index ] = Z;
+           Dest  [ Index ] = Val;
+           }
+        }
+     }
+
+  // Performs a "safe", slow Z buffer read:
+  long Read ( WORD X, WORD Y )
+     {
+     if ( ( Init ) && ( X < Width ) && ( Y < Height ) )
+        return ZBuff [ X + Y * Width ];
+     return 0;
+     }
+
+  // Performs an "unsafe", fast Z buffer write:
+  // (Dest must be a 256 color buffer equal in dimensions
+  //  to the Z buffer.)
+  void FastWrite ( unsigned int Index, long Z, BYTE Val, BYTE *Dest )
+     {
+     if ( ZBuff [ Index ] < Z )
+        {
+        ZBuff [ Index ] = Z;
+        Dest  [ Index ] = Val;
+        }
+     }
+
+  // Performs an "unsafe", fast Z buffer read:
+  long FastRead ( unsigned int Index )
+     {
+     return ZBuff [ Index ];
+     }
+
+  // Clears the Z buffer to zero:
+  // (Optionally accepts the number of completed
+  //  frames to aid in the clear reduction algorithm.)
+  BOOL Clear ( unsigned int FrameCount = 0 );
+};
+
+inline BOOL ZBuffer::Create ( int W, int H )
+  {
+  // Function creates a Z-buffer - can be called
+  // in succession:
+  delete [] ZBuff;
+  ZBuff  = NULL;
+  Init   = 0;
+  ZTrans = 0;
+
+  if ( ( ZBuff = new long [ W * H ] ) == NULL )
+     {
+     Code = NoMem;
+     Width = 0; Height = 0;
+     return 0;
+     }
+  Init = 1; Code = Success;
+  Width = W; Height = H;
+  
+  // Clear the Z buffer:
+  return Clear ();
+  }
+
+class ZEdge {
+protected:
+  long Z, ZStep;
+public:
+  ZEdge () : Z ( 0 ), ZStep ( 0 ) { }
+  // Clip function for clipping a coordinate to boundary:
+  void Clip ( int C, const B )
+     {
+     // Takes advantage of the fact that
+     // ( ( a * ( b * c ) ) / c ) is equal to ( a * b ):
+     if ( C < B )
+        Z += ZStep * ( B - C );
+     }
+  // Init function for stepping along polygon edges:
+  inline void Init ( float OneOverZ1, float OneOverZ2,
+                     int Length, ZBuffer &ZBuff );
+  // Init function for stepping along scanlines:
+  inline void Init ( ZEdge &Left, ZEdge &Right,
+                     unsigned int Width );
+  // Step operators:
+  void operator ++ ( )     { Z += ZStep; }
+  void operator ++ ( int ) { Z += ZStep; }
+  // Function returns the current fixed-point Z value:
+  long GetZ () { return Z; }
+};
+
+inline void ZEdge::Init ( float OneOverZ1, float OneOverZ2,
+                          int Length, ZBuffer &ZBuff )
+   {
+   // Calculate the steps for a polygon edge:
+   long FixedZ1, FixedZ2;
+   if ( Length )
+      {
+      FixedZ1 = long ( OneOverZ1 * float ( 1 << ZPREC ) );
+      FixedZ2 = long ( OneOverZ2 * float ( 1 << ZPREC ) );
+      Z       = FixedZ1 + ZBuff.GetZTrans ();
+      ZStep   = ( FixedZ2 - FixedZ1 ) / Length;
+      }
+   else {
+        Z = 0; ZStep = 0;
+        }
+   }
+
+inline void ZEdge::Init ( ZEdge &Left, ZEdge &Right,
+                          unsigned int Width )
+   {
+   // Calculate the steps for a scan-line:
+   if ( Width )
+      {
+      Z     = Left.GetZ ();
+      ZStep = ( Right.GetZ () - Z ) / Width;
+      }
+   else {
+        Z = 0; ZStep = 0;
+        }
+   }
+
+//

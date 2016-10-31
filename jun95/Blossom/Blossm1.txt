@@ -1,0 +1,18 @@
+Listing 1. Public Functions
+class COffscreenBuffer
+{
+public:
+	// Basic information access
+	char unsigned *GetBits(void);
+	long GetStride(void) const;
+	int GetWidth(void) const;
+	int GetHeight(void) const;
+
+	// Displaying the buffer
+	void SwapBuffer(void) const;
+
+	// Pixel access control
+	void Lock(void) const;
+	void Unlock(void) const;
+};
+

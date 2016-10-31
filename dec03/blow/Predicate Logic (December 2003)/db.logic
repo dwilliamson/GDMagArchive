@@ -1,0 +1,18 @@
+//
+// This file contains a bunch of facts that get asserted into the database,
+// and inference rules that can be used to infer new facts.
+//
+
+(female ann);
+(male mark);
+(male don);
+(male enoch);
+(female little_janey);
+
+(parent mark don);
+(parent ann don);
+(parent don enoch);
+(parent little_janey ann);
+
+(sister ?x ?y) <- (female ?y), (parent ?x ?p), (parent ?y ?p), (notequal ?x ?y);
+(grandparent ?x ?y) <- (parent ?x ?p), (parent ?p ?y);

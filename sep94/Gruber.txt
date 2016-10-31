@@ -1,0 +1,246 @@
+Listing 1. Relationship Between 1C hex and 08 hex
+
+         еееее-
+ INT 08h |  .      |  BIOS clock tick interrupt
+         |  .      |  invoked 18.2 times per second
+         |  .      |
+         | int 1Ch |
+         | iret    |
+         еееее-
+ INT 1Ch еееее-  User-definable interrupt vector
+         | iret    |  called at end of INT 08 hex
+         еееее-
+Listing 2. Revectored Interrupt
+
+         еееее-
+ INT 08h |	.		|	Replacement handler for BIOS clock tick interrupt
+         |	.		|	invoked 36.4 times per second
+         |	.		|
+         | call		|	Every other invocation, call original 08h to
+         | original|	update the time of day clock and call INT 1Ch
+         | int 08h |
+         |         |
+         | int 1Ch |	On alternate invocations, just issue INT 1Ch
+         | iret    |
+         еееее-
+ INT 1Ch еееее  User-definable interrupt vector
+         | iret    |  called at end of original INT 08h
+         еееее-
+         еееее-
+         |	.		|	BIOS clock tick interrupt
+         |	.		|	originally at INT 08
+         |	.		|
+         | int 1Ch |
+         | iret		|
+         еееее-
+
+Lising 3. Timer. ASM
+
+; Copyright (c) 1993-1994 Ted Gruber Software.  All rights reserved.
+;
+; This is a C-callable function illustrating a simple way to change the 
+; BIOS clock tick interrupt rate under DOS while maintaining an accurate 
+; time of day clock value.
+;
+; To accelerate the clock tick interrupt rate, use
+;
+;         set_rate(factor);
+;
+; where OfactorO represents the acceleration factor for the clock tick 
+; rate. For example, to quadruple the clock tick rate, specify a factor 
+; of 4. If the clock tick rate is already accelerated, nothing further 
+; happens.
+;
+; To revert to the normal clock tick rate, use
+;
+;         set_rate(0);
+;
+; If the clock is already running at its normal rate, nothing happens. 
+; You must restore the normal clock tick rate before your program exits 
+; to DOS.
+;
+; This function is written for the medium or large memory models.
+; It can be modified to support the small memory model if you do the
+; following:
+;
+;   - Change the segment name from Otime_TEXTO to O_TEXTO.
+;   - Change the OfarO reference in the PROC declaration to OnearO.
+;   - Change the arg1 definition from O[bp+6]O to O[bp+4]O.
+;
+;***********************************************************************
+ 
+rate_TEXT SEGMENT byte public OCODEO
+          ASSUME  cs:rate_TEXT
+ 
+_set_rate PROC    far
+          PUBLIC  _set_rate
+ 
+arg1      equ     [bp+6]        ; address of the functionOs argument
+chan_0    equ     40h           ; port address for channel 0
+cmd_reg   equ     43h           ; port address for command register
+fp        equ     <far ptr>     ; shorthand for far pointer override
+ 
+          push    bp            ; save callerOs BP register
+          mov     bp,sp         ; make BP point to argument list
+ 
+          mov     dx,arg1       ; DX = clock acceleration factor
+          cmp     dx,1          ; restore clock to normal rate?
+          jle     regular       ; yes, go do it
+ 
+accel:    cmp     cs:speed,1    ; clock already accelerated?
+          jg      return        ; yes, nothing more to do
+          mov     cs:speed,dx   ; set speed indicator to accelerated
+          mov     cs:countdown,dx ; initialize the timer countdown value
+          call    fast          ; accelerate clock tick interrupt rate
+          jmp     short return  ; and return to the caller
+ 
+regular:  cmp     cs:speed,1    ; clock already at normal speed?
+          jle     return        ; yes, nothing to do
+          mov     cs:speed,dx   ; set speed indicator to normal
+          call    normal        ; restore clock to 18.2 ticks/second
+ 
+return:   xor     ax,ax         ; set function return value to zero
+          pop     bp            ; restore callerOs BP register
+          ret                   ; return to the caller
+ 
+countdown dw      ?             ; clock tick interrupt countdown value
+old_int08 dd      ?             ; address of original INT 08h handler
+speed     dw      0             ; clock acceleration factor
+ 
+_set_rate ENDP
+ 
+;еееееееееееееееееееееееееееееееееее-
+ 
+fastclock PROC    far           ; interrupt handler to replace INT 08h
+ 
+          push    ax            ; save altered registers
+ 
+          dec     cs:countdown  ; decrement the countdown value
+          jz      blastoff      ; update time when countdown expires
+          int     1Ch           ; otherwise just call interrupt 1Ch
+          mov     al,20h
+          out     20h,al        ; re-enable lower level interrupts
+          pop     ax            ; restore altered registers
+          iret                  ; go back where we came from
+ 
+blastoff: pushf                 ; simulate next call as an interrupt
+          call    cs:[old_int08]; call original clock tick interrupt
+          mov     ax,cs:speed   ; AX = clock acceleration factor
+          mov     cs:countdown,ax; reset countdown value
+          mov     al,20h
+          out     20h,al        ; re-enable lower level interrupts
+          pop     ax            ; restore altered registers
+          iret                  ; go back where we came from
+ 
+fastclock ENDP
+ 
+;еееееееееееееееееееееееееееееееееее-
+ 
+fast      PROC    near          ; accelerate the clock by a factor of DX
+ 
+          cli                   ; disable interrupts
+          xor     ax,ax         ; zero AX
+          mov     es,ax         ; point ES to start of memory
+ 
+          mov     bx,08h*4      ; interrupt vector 08h
+          mov     ax,es:[bx]    ; put the interrupt vector offset in AX
+          mov     cx,es:[bx+2]  ; put the interrupt vector segment in CX
+          lea     bx,old_int08  ; where to save original INT 08h handler
+          mov     cs:[bx],ax    ; save original INT 08h offset
+          mov     cs:[bx+2],cx  ; save original INT 08h segment
+ 
+          mov     bx,08h*4      ; interrupt vector 08h
+         
+	lea     ax,fastclock  ; CS:AX = addr of accelerated clock handler
+          mov     es:[bx],ax
+          mov     es:[bx+2],cs  ; point INT 08h to the new handler
+ 
+          mov     al,36h        ; initialize channel 0 for mode 3
+          out     cmd_reg,al    ; send above byte to command register
+ 
+          mov     bx,dx         ; BX = the clock acceleration factor
+          mov     dx,1
+          xor     ax,ax         ; DX:AX = 65,536
+          div     bx            ; AX = counter for desired acceleration
+          out     chan_0,al     ; send low byte of counter to channel 0
+          mov     al,ah         ; put high byte of counter in AL
+          out     chan_0,al     ; send high byte
+ 
+          sti                   ; re-enable interrupts
+          ret
+ 
+fast      ENDP
+ 
+;еееееееееееееееееееееееееееееееееее-
+ 
+normal    PROC    near          ; reset clock to 18.2 ticks/second
+ 
+          cli                   ; disable interrupts
+          mov     al,36h        ; initialize channel 0 for mode 3
+          out     cmd_reg,al    ; send above byte to command register
+ 
+          xor     ax,ax         ; counter for 18.2 ticks per second
+          mov     es,ax         ; point ES to start of memory
+ 
+          out     chan_0,al     ; send low byte of counter to channel 0
+          out     chan_0,al     ; send high byte (same as low byte)
+ 
+          lea     bx,old_int08  ; address of original INT 08h handler
+          mov     ax,cs:[bx]    ; AX = original INT 08h offset
+          mov     cx,cs:[bx+2]  ; CX = original INT 08h segment
+          mov     bx,08h*4      ; interrupt vector 08h
+          mov     es:[bx],ax
+          mov     es:[bx+2],cx  ; restore original INT 08h vector
+ 
+          sti                   ; re-enable interrupts
+          ret
+ 
+normal    ENDP
+ 
+;еееееееееееееееееееееееееееееееееее-
+ 
+rate_TEXT ENDS
+          END
+ 
+ 
+ 
+
+
+Listing 4 Game.C
+
+#include <dos.h>
+void  interrupt increment_timer(void);
+void  interrupt (*oldhandler) (void);
+long game_time; 
+void main()
+{
+	unsigned long time1, time2;
+
+	/* get the current interrupt vector for 0X1C */
+	oldhandler = _dos_getvect(0x1C);
+
+	/* revector the interrupt to myu function */
+	_dos_setvect(0x1C,increment_timer);
+
+	/* initialize the global */
+	game_time = 0;
+
+	/* speed up the clock rate */
+	set_rate(8);
+
+	/*** do the game ***/
+
+	/* slow down the clock rate to normal */
+	set_rate(0);
+
+	/* put the interrupt back the way it was */
+	_dos_setvect(0x1C,oldhandler);
+
+	exit
+}
+/*****************************************************************/
+void interrupt increment_timer()
+{
+	game_time++;
+}
+

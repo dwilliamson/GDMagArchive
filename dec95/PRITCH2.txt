@@ -1,0 +1,13 @@
+Listing 2.  The Weighted Variance Calculation
+static uint variance(uint tw, uint tt_sum,
+		uint t_ur, uint t_ug, uint t_ub)
+{
+	double temp;
+
+	temp  = (double)t_ur * (double)t_ur;
+	temp += (double)t_ug * (double)t_ug;
+	temp += (double)t_ub * (double)t_ub;
+	temp /= (double)tw;
+
+	return ((uint)((double)tt_sum - temp));
+}

@@ -1,0 +1,144 @@
+EXAMPLE 3
+	C interface to DART for the quake server.  This code snippet shows how DART hooks into the quake server and records the information about objects and their properties for efficient delta processing.
+
+
+	Copyright 1996-1997 T E Network, Inc.  All Rights Reserved
+
+*/
+
+#include "quakedef.h"
+#include "debuglib.h"
+#include "sv_dart.h"
+#include "quakedart.h"
+
+// Globals
+
+static quakeFrame *pgCurFrame;		// holds information about each object at a
+particular time
+static quakeEntity *pgCurEntity;		// the current object we're processing
+static float pgCurTime;			// time in the world
+
+// Functions
+
+// a client is being sent an update of a new frame. Create a blank frame to
+hold the
+// entities and their attributes for delta processing.  Record the time of the
+frame for later
+// use when we see which frame the client has received (this lets us do delta
+analysis
+// in the presence of packet loss).
+void dartNewEntityFrame(client_t *client, float pingTime)
+{
+	float prevTime;
+
+	verify(!pgCurFrame);
+	pgCurFrame = new quakeFrame;
+	pgCurTime = pingTime;
+	prevTime = client->prevPings[kMaxFrameDepth - 1];
+
+	// The clock gets reset when you go up a level, so if we notice
+	// this, reset the client's fields.
+	if (prevTime && prevTime > pingTime)
+	{
+		printf("reset dart for client %s\n", client->name);
+		for (int tenI = 0; tenI < kMaxFrameDepth; tenI++)
+		{
+			client->prevFrames[tenI] = 0;
+			client->prevPings[tenI] = 0;
+			client->prevKeys[tenI] = 0;
+		}
+	}
+	// Due to lingering packets in the network, better ensure that
+	// we have good time ordering.
+	if (client->lastAckedPingTime > pingTime)
+		client->lastAckedPingTime = 0;
+}
+
+// The server is finished spitting out the information for this frame. Now we
+can do DART
+// compression on the information we've recorded.
+void dartEntityFrameDone(client_t *client, sizebuf_t *msg)
+{
+	quakeFrame *lastAckedFrame = 0;
+	int lastAckedKey = 0;
+	unsigned char curKey;
+	wpacket wp(128);
+	int i;
+
+	verify(pgCurFrame);
+	verify(client->lastAckedPingTime < pgCurTime);
+
+	// find the last acked frame in the frame list. This is a frame that it is
+safe to do delta
+	// processing with because we know the client received it.
+	for (i = kMaxFrameDepth - 1; i >= 0; i--)
+	{
+		if (client->prevPings[i] <= client->lastAckedPingTime + 0.001)
+		{
+			if (client->prevPings[i])
+			{
+				lastAckedFrame = (quakeFrame *) 
+					client->prevFrames[i];
+				lastAckedKey = client->prevKeys[i];
+			}
+			break;
+		}
+	}
+
+	curKey = client->keyCounter++ % 128 + 1;
+	verify(curKey > 0 && curKey <= 129);
+
+	// send the serialized and delta processed frame
+	MSG_WriteByte(msg, svc_dart);
+	MSG_WriteByte(msg, curKey);
+	MSG_WriteByte(msg, lastAckedKey);
+	// this is the DART call that calculates the delta between two frames and
+encodes
+	// it in a packet.
+	pgCurFrame->serialize(lastAckedFrame, wp);
+	SZ_Write(msg, wp.data(), wp.size());
+
+	// maintain list of frames
+	if (client->prevFrames[0])
+	{
+		quakeFrame *castFrame = (quakeFrame *) client->prevFrames[0];
+		delete castFrame;
+	}
+	for (i = 0; i < kMaxFrameDepth - 1; i++)
+	{
+		client->prevFrames[i] = client->prevFrames[i + 1];
+		client->prevPings[i] = client->prevPings[i + 1];
+		client->prevKeys[i] = client->prevKeys[i + 1];
+	}
+	client->prevFrames[kMaxFrameDepth - 1] = pgCurFrame;
+	client->prevPings[kMaxFrameDepth - 1] = pgCurTime;
+	client->prevKeys[kMaxFrameDepth - 1] = curKey;
+
+	pgCurFrame = 0;		// owned elsewhere
+}
+
+// The server is sending us information for a new entity in the current frame.
+void dartNewEntity(int entKey)
+{
+	verify(!pgCurEntity);
+	pgCurEntity = new quakeEntity(entKey);
+}
+
+// The entity has all of its information added, so now we can submit it into
+the frame.
+void dartEntityDone(void)
+{
+	pgCurFrame->addEntity(pgCurEntity);
+	pgCurEntity = 0;		// owned elsewhere
+}
+// There are a bunch of functions like this that take data directly from the
+quake server and encode it into
+// the current entity.  Each data type is tagged and the type of data (and
+method of serializing it) is
+// done through a derived class.
+void dartAddAttMod(int val)
+{
+	pgCurEntity->mod.data = val;
+	pgCurEntity->addAttribute(&pgCurEntity->mod);
+}
+

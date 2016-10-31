@@ -1,0 +1,705 @@
+Listing 1. Modex.C
+
+#include <stdio.h>
+#include "setmodex.h"
+ 
+void show_X_Mode(int Mode_Num, int X_Res, int Y_Res, int Scroll_Flag);
+void modex_rect (int UL_X, int UL_Y, int LR_X, int LR_Y, int Color);
+void modex_hline (int Left_X, int Right_X, int Y, int Color);
+void modex_vline (int Top_Y, int Bottom_Y, int X, int Color);
+ 
+void main (void)
+{
+    show_X_Mode(Mode_320x200, 320, 200, 0);
+    show_X_Mode(Mode_320x240, 320, 240, 0);
+    show_X_Mode(Mode_320x400, 320, 400, 0);
+    show_X_Mode(Mode_320x480, 320, 480, 0);
+ 
+    show_X_Mode(Mode_360x200, 360, 200, 0);
+    show_X_Mode(Mode_360x240, 360, 240, 0);
+    show_X_Mode(Mode_360x400, 360, 400, 0);
+    show_X_Mode(Mode_360x480, 360, 480, 0);
+ 
+    show_X_Mode(Mode_320x200, 512, 500, 1);
+ 
+    set_text_mode();
+    printf ("This Demo is finished\n");
+}
+ 
+void show_X_Mode(int Mode_Num, int X_Res, int Y_Res, int Scroll_Flag)
+{
+    int x, y;
+ 
+    set_text_mode();
+    if (Scroll_Flag == 0) {
+        printf ("\n\nPress any key to see Mode X at %d by %d resolution\n\n",
+                 X_Res, Y_Res);
+    } else {
+        printf ("\n\nPress any key to see a Mode X Scrolling window\n\n");
+    }
+    printf("(When done, press any key to end the mode X display)");
+    y = scan_keyboard();
+ 
+    set_vga_modex(Mode_Num, X_Res, Y_Res);
+ 
+    for (x = 0; x < 15; x++) {
+        modex_rect(x*3, x*3, X_Res-x*3-1, Y_Res-x*3-1, x+1);
+        modex_hline(32+x*4, X_Res-96+x*4, 20+x*10, x+1);
+        modex_vline(32+x*4, Y_Res-96+x*4, 20+x*10, x+1);
+    }
+ 
+    if (Scroll_Flag) {
+        for (x = 0, y = 0; x < 100; x++, y++)  set_window(x, y);
+        for (y = 100; y >= 0; y--)             set_window(100, y);
+        for (x = 100; x >= 0; x--)             set_window(x, 0);
+    }
+ 
+    y = scan_keyboard();
+    return;
+}
+ 
+/* =====  Simple Mode-X Line draw routines ===== */
+ 
+void modex_rect (int UL_X, int UL_Y, int LR_X, int LR_Y, int Color)
+{
+    modex_hline(UL_X, LR_X, UL_Y, Color);
+    modex_hline(UL_X, LR_X, LR_Y, Color);
+    modex_vline(UL_Y, LR_Y, UL_X, Color);
+    modex_vline(UL_Y, LR_Y, LR_X, Color);
+    return;
+}
+ 
+void modex_hline (int Left_X, int Right_X, int Y, int Color)
+{
+    int x;
+    for (x = Left_X; x <= Right_X; x++) set_point(x, Y, Color);
+    return;
+}
+ 
+void modex_vline (int Top_Y, int Bottom_Y, int X, int Color)
+{
+    int y;
+    for (y = Top_Y; y <= Bottom_Y; y++) set_point(X, y, Color);
+    return;
+}
+
+Listing 2: MODEX.H
+#ifndef __SETMODEX_H
+#define __SETMODEX_H
+ 
+    /* ===== SCREEN RESOLUTIONS ===== */
+ 
+#define Mode_320x200  0
+#define Mode_320x400  1
+#define Mode_360x200  2
+#define Mode_360x400  3
+#define Mode_320x240  4
+#define Mode_320x480  5
+#define Mode_360x240  6
+#define Mode_360x480  7
+ 
+    /* ===== MODE X SETUP ROUTINES ===== */
+ 
+int far pascal set_vga_modex (int Mode, int MaxXpos, int MaxYpos);
+void far pascal set_text_mode (void); 
+int far pascal scan_keyboard (void);
+
+    /* ===== BASIC GRAPHICS PRIMITIVES ===== */
+ 
+void far pascal set_point (int Xpos, int Ypos, int Color);
+int  far pascal read_point (int Xpos, int Ypos);
+void far pascal set_window (int XOffset, int YOffset);
+
+#endif
+
+Listing 3. Modex.asm
+
+SETMODEX.ASM
+
+
+
+    .MODEL Medium
+    .286
+
+    ; Macros to OUT 8 & 16 bit values to an I/O port
+ 
+OUT_16 MACRO Register, Value
+    IFDIFI <Register>, <DX>      ; If DX not setup
+        MOV  DX, Register        ; then Select Register
+    ENDIF
+    IFDIFI <Value>, <AX>         ; If AX not setup
+        MOV  AX, Value           ; then Get Data Value
+    ENDIF
+        OUT  DX, AX              ; Set I/O Register(s)
+ENDM
+ 
+OUT_8 MACRO Register, Value
+    IFDIFI <Register>, <DX>      ; If DX not setup
+        MOV  DX, Register        ; then Select Register
+    ENDIF
+    IFDIFI <Value>, <AL>         ; If AL not Setup
+        MOV  AL, Value           ; then Get Data Value
+    ENDIF
+        OUT  DX, AL              ; Set I/O Register
+ENDM
+
+    ; macros to PUSH and POP multiple registers
+ 
+PUSHx MACRO R1, R2, R3, R4
+    IFNB <R1>
+        PUSH  R1                 ; Save Register
+        PUSHx R2, R3, R4
+    ENDIF
+ENDM
+ 
+POPx MACRO R1, R2, R3, R4
+    IFNB <R1>
+        POP   R1                 ; Restore Register
+        POPx  R2, R3, R4
+    ENDIF
+ENDM
+
+    ; ===== VGA Register Addresses =====
+     
+    ATTRIB_Ctrl     EQU 03C0h   ; VGA Attribute Controller
+    GC_Index        EQU 03CEh   ; VGA Graphics Controller
+    SC_Index        EQU 03C4h   ; VGA Sequencer Controller
+    CRTC_Index      EQU 03D4h   ; VGA CRT Controller
+    MISC_OUTPUT     EQU 03C2h   ; VGA Misc Register
+    INPUT_1         EQU 03DAh   ; Input Status #1 Register
+
+    ; ===== VGA Register Index Values =======
+     
+    PIXEL_PAN_REG   EQU 033h    ; Atrb Index: Pixel Pan Reg
+    MAP_MASK        EQU 002h    ; Sequ Index: Map Mask Reg
+    READ_MAP        EQU 004h    ; GC Index: Read Map Reg
+    START_DISP_HI   EQU 00Ch    ; CRTC Index: Disp Start Hi
+    START_DISP_LO   EQU 00Dh    ; CRTC Index: Disp Start Lo
+ 
+    ; ===== other VGA Register Values & Constants =====
+
+    ALL_PLANES_ON   EQU 00F02h  ; Map Register + All Planes
+    CHAIN4_OFF      EQU 00604h  ; Chain 4 mode Off
+    ASYNC_RESET     EQU 00100h  ; (A)synchronous Reset
+    SEQU_RESTART    EQU 00300h  ; Sequencer Restart
+ 
+    VGA_Segment     EQU 0A000h  ; VGA Memory Segment
+    VERT_RETRACE    EQU 08h     ; INPUT_1: Vert Retrace Bit
+    PLANE_BITS      EQU 03h     ; Bits 0-1 of X = Plane #
+    nil             EQU 00h     ; Used to mark end of list
+
+    wptr            EQU WORD PTR    ; Shorthand text 
+    dptr            EQU DWORD PTR   ; macros for pointers
+ 
+    .DATA?    ;==== DGROUP STORAGE NEEDED (10 BYTES) ====
+ 
+CURRENT_PAGE    DW  0       ; Offset of current Page
+CURRENT_SEGMENT DW  0       ; Segment of VGA memory
+SCREEN_WIDTH    DW  0       ; Width of a line in Bytes
+MAX_XOFFSET     DW  0       ; Current Display X Offset
+MAX_YOFFSET     DW  0       ; Current Display Y Offset
+
+    ; Mode X Mode list data table format...
+ 
+Mode_Data_Table STRUC
+    M_MiscR     DB  ?,?     ; Value of MISC_OUTPUT register
+    M_XSize     DW  ?       ; X Size Displayed on screen
+    M_YSize     DW  ?       ; Y Size Displayed on screen
+    M_XMax      DW  ?       ; Maximum Possible X Size
+    M_YMax      DW  ?       ; Maximum Possible Y Size
+    M_CRTC      DW  ?       ; Table of CRTC register values
+Mode_Data_Table ENDS
+
+    .CODE       ; Data Tables put in CS for easy access
+ 
+    ; CRTC Register Values for Various Configurations
+ 
+MODE_Single_Line:   ; CRTC Data for 400/480 Line modes
+    DW  04009H      ; Cell Height (1 Scan Line)
+    DW  00014H      ; Dword Mode off
+    DW  0E317H      ; turn on Byte Mode
+    DW  nil         ; End of 400/480 line CRTC Data
+ 
+MODE_Double_Line:   ; CRTC Data for 200/240 Line modes
+    DW  04109H      ; Cell Height (2 Scan Lines)
+    DW  00014H      ; Dword Mode off
+    DW  0E317H      ; turn on Byte Mode
+    DW  nil         ; End of 200/240 Line CRTC Data
+ 
+MODE_320_Wide:      ; CRTC Data for 320 Pixels
+    DW  05F00H      ; Horz total
+    DW  04F01H      ; Horz Displayed
+    DW  05002H      ; Start Horz Blanking
+    DW  08203H      ; End Horz Blanking
+    DW  05404H      ; Start H Sync
+    DW  08005H      ; End H Sync
+    DW  nil         ; End of 320 pixel CRTC Data
+ 
+MODE_360_Wide:      ; CRTC Data for 360 Pixels
+    DW  06B00H      ; Horz total
+    DW  05901H      ; Horz Displayed
+    DW  05A02H      ; Start Horz Blanking
+    DW  08E03H      ; End Horz Blanking
+    DW  05E04H      ; Start H Sync
+    DW  08A05H      ; End H Sync
+    DW  nil         ; End of 360 pixel CRTC Data
+ 
+MODE_200_Tall:
+MODE_400_Tall:      ; CRTC Data for 200/400 Line modes
+    DW  0BF06H      ; Vertical Total
+    DW  01F07H      ; Overflow
+    DW  09C10H      ; V Sync Start
+    DW  08E11H      ; V Sync End/Prot Cr0 Cr7
+    DW  08F12H      ; Vertical Displayed
+    DW  09615H      ; V Blank Start
+    DW  0B916H      ; V Blank End
+    DW  nil         ; End of 200/400 Line CRTC Data
+ 
+MODE_240_Tall:
+MODE_480_Tall:      ; CRTC Data for 240/480 Line modes
+    DW  00D06H      ; Vertical Total
+    DW  03E07H      ; Overflow
+    DW  0EA10H      ; V Sync Start
+    DW  08C11H      ; V Sync End/Prot Cr0 Cr7
+    DW  0DF12H      ; Vertical Displayed
+    DW  0E715H      ; V Blank Start
+    DW  00616H      ; V Blank End
+    DW  nil         ; End of 240/480 Line CRTC Data
+
+    ; Table of Display Mode Components & Index Table
+     
+MODE_TABLE:       
+    DW  offset MODE_320x200, offset MODE_320x400
+    DW  offset MODE_360x200, offset MODE_360x400
+    DW  offset MODE_320x240, offset MODE_320x480
+    DW  offset MODE_360x240, offset MODE_360x480
+ 
+MODE_320x200:       ; Data for 320 by 200 Pixels
+    DB  063h, 0     ; 400 scan Lines & 25 Mhz Clock
+    DW  320, 200    ; Displayed Pixels (X,Y)
+    DW  1302, 816   ; Max Possible X and Y Sizes
+
+    DW  offset MODE_320_Wide, offset MODE_200_Tall
+    DW  offset MODE_Double_Line, nil
+ 
+MODE_320x400:       ; Data for 320 by 400 Pixels
+    DB  063h, 0     ; 400 scan Lines & 25 Mhz Clock
+    DW  320, 400    ; Displayed Pixels X,Y
+    DW  648, 816    ; Max Possible X and Y Sizes
+
+    DW  offset MODE_320_Wide, offset MODE_400_Tall
+    DW  offset MODE_Single_Line, nil
+ 
+MODE_360x240:       ; Data for 360 by 240 Pixels
+    DB  0E7h, 0     ; 480 scan Lines & 28 Mhz Clock
+    DW  360, 240    ; Displayed Pixels X,Y
+    DW  1092, 728   ; Max Possible X and Y Sizes
+
+    DW  offset MODE_360_Wide, offset MODE_240_Tall
+    DW  offset MODE_Double_Line , nil
+ 
+MODE_360x480:       ; Data for 360 by 480 Pixels
+    DB  0E7h, 0     ; 480 scan Lines & 28 Mhz Clock
+    DW  360, 480    ; Displayed Pixels X,Y
+    DW  544, 728    ; Max Possible X and Y Sizes
+
+    DW  offset MODE_360_Wide, offset MODE_480_Tall
+    DW  offset MODE_Single_Line , nil
+ 
+MODE_320x240:       ; Data for 320 by 240 Pixels
+    DB  0E3h, 0     ; 480 scan Lines & 25 Mhz Clock
+    DW  320, 240    ; Displayed Pixels X,Y
+    DW  1088, 818   ; Max Possible X and Y Sizes
+
+    DW  offset MODE_320_Wide, offset MODE_240_Tall
+    DW  offset MODE_Double_Line, nil
+ 
+MODE_320x480:       ; Data for 320 by 480 Pixels
+    DB  0E3h, 0     ; 480 scan Lines & 25 Mhz Clock
+    DW  320, 480    ; Displayed Pixels X,Y
+    DW  540, 818    ; Max Possible X and Y Sizes
+
+    DW  offset MODE_320_WIDE, offset MODE_480_Tall
+    DW  offset MODE_Single_Line, nil
+ 
+MODE_360x200:       ; Data for 360 by 200 Pixels
+    DB  067h, 0     ; 400 scan Lines & 28 Mhz Clock
+    DW  360, 200    ; Displayed Pixels (X,Y)
+    DW  1302, 728   ; Max Possible X and Y Sizes
+ 
+    DW  offset MODE_360_Wide, offset MODE_200_Tall
+    DW  offset MODE_Double_Line, nil
+ 
+MODE_360x400:       ; Data for 360 by 400 Pixels
+    DB  067h, 0     ; 400 scan Lines & 28 Mhz Clock
+    DW  360, 400    ; Displayed Pixels X,Y
+    DW  648, 816    ; Max Possible X and Y Sizes
+ 
+    DW  offset MODE_360_Wide, offset MODE_400_Tall
+    DW  offset MODE_Single_Line, nil
+ 
+;=========================================================
+; int SET_VGA_MODEX (int Mode, int Max_XPos, int Max_Ypos)
+;
+; Sets Up the specified version of Mode X.  Allows for
+; the setup of of a virtual screen which can be larger 
+; than the displayed screen.
+;
+; ENTRY: Mode_Type = Desired Screen Resolution (0-7)
+;         0 =  320 x 200    4 =  320 x 240
+;         1 =  320 x 400    5 =  320 x 480
+;         2 =  360 x 200    6 =  360 x 240
+;         3 =  360 x 400    7 =  360 x 480
+;                
+;        Max_Xpos = The Desired Virtual Screen Width
+;        Max_Ypos = The Desired Virtual Screen Height
+;
+; EXIT:  AX = Success Flag:  0 = Failure, -1 = Success
+ 
+SVM_STACK   STRUC
+    SVM_Table   DW  ?     ; Offset of Mode Info Table
+                DD  ?,?,? ; DI, SI, DS, BP, Caller
+    SVM_Ysize   DW  ?     ; Vertical Screen Size Desired
+    SVM_Xsize   DW  ?     ; Horizontal Screen Size Desired
+    SVM_Mode    DW  ?     ; Display Resolution Desired
+SVM_STACK   ENDS
+ 
+    PUBLIC  SET_VGA_MODEX
+ 
+SET_VGA_MODEX   PROC    FAR
+ 
+    PUSHx   BP, DS, SI, DI      ; Preserve Registers
+    SUB     SP, 2               ; Allocate workspace
+    MOV     BP, SP              ; Set up Stack Frame
+ 
+    ; Make Sure Mode, X and Y Sizes are legal
+ 
+    MOV     BX, [BP].SVM_Mode   ; Get Requested Mode #
+    CMP     BX, 8               ; 8 Modes max: Is it 0..7?
+    JAE     @SVM_BadModeSetup   ; If Not, Error out
+
+    SHL     BX, 1                   ; Scale BX to word
+    MOV     SI, wptr MODE_TABLE[BX] ; CS:SI -> Mode Info
+    MOV     [BP].SVM_Table, SI      ; Save ptr for later
+ 
+    AND     [BP].SVM_XSize, 0FFF8h  ; X size Mod 8 Must = 0
+    MOV     AX, [BP].SVM_XSize  ; Get Logical Screen Width
+    CMP     AX, CS:[SI].M_XSize ; Check against Displayed X
+    JB      @SVM_BadModeSetup   ; Report Error if too small
+    CMP     AX, CS:[SI].M_XMax  ; Check against Max X
+    JA      @SVM_BadModeSetup   ; Report Error if too big
+ 
+    MOV     BX, [BP].SVM_YSize  ; Get Logical Screen Height
+    CMP     BX, CS:[SI].M_YSize ; Check against Displayed Y
+    JB      @SVM_BadModeSetup   ; Report Error if too small
+    CMP     BX, CS:[SI].M_YMax  ; Check against Max Y
+    JA      @SVM_BadModeSetup   ; Report Error if too big
+ 
+    ; Make Sure there is Enough memory to Fit it all
+
+    SHR     AX, 2               ; # of Bytes:Line = XSize/4
+    MUL     BX                  ; DX:AX = Total mem needed
+    JNO     @SVM_Continue       ; Exit if Total Size > 256K
+    DEC     DX                  ; Was it Exactly 256K???
+    OR      DX, AX              ; (DX = 1, AX = 0000)
+    JZ      @SVM_Continue       ; if so, it's valid...
+ 
+@SVM_BadModeSetup:
+    XOR     AX, AX              ; Return Value = False
+    JMP     @SVM_Exit           ; Normal Exit
+ 
+@SVM_Continue:
+    MOV     AX, 13H             ; Start with Mode 13H
+    INT     10H                 ; Let BIOS Set the Mode
+ 
+    OUT_16  SC_INDEX, CHAIN4_OFF         ;Disable Chain 4
+    OUT_16  SC_INDEX, ASYNC_RESET        ;(A)sync Reset
+    OUT_8   MISC_OUTPUT, CS:[SI].M_MiscR ;Set New Timings
+    OUT_16  SC_INDEX, SEQU_RESTART       ;Restart Sequencer
+ 
+    OUT_8   CRTC_INDEX, 11H     ; Select Retrace End Reg
+    INC     DX                  ; Point to Data
+    IN      AL, DX              ; Get Data, Bit 7=Protect
+    AND     AL, 7FH             ; Mask out Write Protect
+    OUT     DX, AL              ; And send it back
+ 
+    MOV     DX, CRTC_INDEX      ; Vga Crtc Registers
+    ADD     SI, M_CRTC          ; SI->CRTC Parameter Data
+ 
+    ; Load Tables of CRTC Parameters from List of Tables
+ 
+@SVM_Setup_Table:
+    MOV     DI, CS:[SI]     ; Get Ptr to CRTC Data Table
+    ADD     SI, 2           ; Point to next Ptr Entry
+    OR      DI, DI          ; A nil Ptr means that we have
+    JZ      @SVM_Set_Data   ; finished CRTC programming
+ 
+@SVM_Setup_CRTC:
+    MOV     AX, CS:[DI]         ; Get CRTC Data from Table
+    ADD     DI, 2               ; Advance Pointer
+    OR      AX, AX              ; At End of Data Table?
+    JZ      @SVM_Setup_Table    ; If so, go get next Table
+ 
+    OUT     DX, AX                 ; Reprogram VGA CRTC reg
+    JMP     short @SVM_Setup_CRTC  ; Get next table entry
+ 
+    ; Initialize Page & Scroll info, DI = 0
+ 
+@SVM_Set_Data:
+    MOV     CURRENT_PAGE, DI    ; Offset into VGA memory=0
+    MOV     AX, VGA_SEGMENT     ; Segment for VGA memory
+    MOV     CURRENT_SEGMENT, AX ; Save for Future LES's
+ 
+    ; Set Logical Screen Width, X Scroll and Our Data
+ 
+    MOV     SI, [BP].SVM_Table  ; Get Saved Mode Info Ptr
+    MOV     AX, [BP].SVM_Xsize  ; Get Display Width
+    MOV     CX, AX              ; CX = Logical Width
+    SUB     CX, CS:[SI].M_XSize ; CX = Max X Scroll Value
+    MOV     MAX_XOFFSET, CX     ; Set Maximum X Scroll
+    SHR     AX, 2               ; Bytes = Pixels / 4
+    MOV     SCREEN_WIDTH, AX    ; Save Width in Pixels
+ 
+    SHR     AX, 1               ; Offset Value = Bytes / 2
+    MOV     AH, 13h             ; 13h=CRTC Offset Register
+    XCHG    AL, AH              ; Switch format for OUT
+    OUT     DX, AX              ; Set VGA CRTC Offset Reg
+ 
+    ; Setup Data table, Y Scroll, Misc for Other Routines
+ 
+    MOV     AX, [BP].SVM_Ysize  ; Get Logical Screen Height
+ 
+    MOV     CX, AX              ; CX = Logical Height
+    SUB     BX, CS:[SI].M_YSize ; CX = Max Y Scroll Value
+    MOV     MAX_YOFFSET, CX     ; Set Maximum Y Scroll
+ 
+    ; Clear all of VGA Memory
+ 
+    OUT_16  SC_INDEX, ALL_PLANES_ON ; Select All Planes
+    LES     DI, dptr CURRENT_PAGE   ; ES:DI -> A000:0
+
+    XOR     AX, AX              ; AX = 0
+    CLD                         ; Block Xfer Forwards
+    MOV     CX, 8000H           ; 32K * 4 * 2 = 256K
+    REP     STOSW               ; Clear video memory!
+    MOV     AX, 0FFFFh          ; Return Success Code -1
+ 
+@SVM_EXIT:
+    ADD     SP, 2               ; Deallocate workspace
+    POPx    DI, SI, DS, BP      ; Restore Saved Registers
+    RET     6                   ; Exit & Clean Up Stack
+ 
+SET_VGA_MODEX   ENDP
+ 
+;==========================================================
+; void SET_POINT (int X_pos, int Y_pos, int Color_Num)
+;
+; Plots a single Pixel on the active display page
+;
+; ENTRY: Xpos     = X position to plot pixel at
+;        Ypos     = Y position to plot pixel at
+;        ColorNum = Color to plot pixel with
+;
+; EXIT:  No meaningful values returned
+ 
+SP_STACK    STRUC
+                DD  ?,? ; BP, DI, Caller
+    SETP_Color  DB  ?,? ; Color of Point to Plot
+    SETP_Ypos   DW  ?   ; Y pos of Point to Plot
+    SETP_Xpos   DW  ?   ; X pos of Point to Plot
+SP_STACK    ENDS
+ 
+        PUBLIC SET_POINT, READ_POINT
+ 
+SET_POINT   PROC    FAR
+ 
+    PUSHx   BP, DI              ; Preserve Registers
+    MOV     BP, SP              ; Set up Stack Frame
+ 
+    LES     DI, dptr CURRENT_PAGE  ; ES:DI -> A000:0
+    MOV     AX, [BP].SETP_Ypos  ; Get Line # of Pixel
+    MUL     SCREEN_WIDTH        ; Get Offset to Line Start
+ 
+    MOV     BX, [BP].SETP_Xpos  ; Get Xpos
+    MOV     CX, BX              ; Save to get shift Plane #
+    SHR     BX, 2               ; X offset (Bytes) = Xpos/4
+    ADD     BX, AX              ; Offset = Offset + Xpos/4
+
+    MOV     AL, MAP_MASK        ; Select Map Mask Register
+    MOV     AH, 0001b           ; Start w/ Plane #0 (Bit 0)
+    AND     CL, PLANE_BITS      ; Get Plane Bits
+    SHL     AH, CL              ; Get Plane Select Value
+    OUT_16  SC_Index, AX        ; Select Plane
+ 
+    MOV     AL,[BP].SETP_Color  ; Get Pixel Color
+    MOV     ES:[DI+BX], AL      ; Draw Pixel
+ 
+    POPx    DI, BP              ; Restore Saved Registers
+    RET     6                   ; Exit and Clean up Stack
+ 
+SET_POINT        ENDP
+ 
+;==========================================================
+; int READ_POINT (int X_pos, int Y_pos)
+;
+; Gets the color of a pixel at (X_Pos, Y_Pos)
+;
+; ENTRY: X_pos = X position of pixel to read
+;        Y_pos = Y position of pixel to read
+;
+; EXIT:  AX   = Color of Pixel at (X_pos, Y_pos)
+ 
+RP_STACK    STRUC
+            DD  ?,? ; BP, DI, Caller
+    RP_Ypos DW  ?   ; Y pos of Point to Read
+    RP_Xpos DW  ?   ; X pos of Point to Read
+RP_STACK    ENDS
+ 
+READ_POINT      PROC    FAR
+ 
+    PUSHx   BP, DI              ; Preserve Registers
+    MOV     BP, SP              ; Set up Stack Frame
+ 
+    LES     DI, dptr CURRENT_PAGE  ; ES:DI -> A000:0
+    MOV     AX, [BP].RP_Ypos    ; Get Line # of Pixel
+    MUL     SCREEN_WIDTH        ; Get Offset to Line Start
+ 
+    MOV     BX, [BP].RP_Xpos    ; Get Xpos
+    MOV     CX, BX              ; Save to get shift count
+    SHR     BX, 2               ; X offset (Bytes) = Xpos/4
+    ADD     BX, AX              ; Offset = Offset + Xpos/4
+ 
+    MOV     AL, READ_MAP        ; GC Read Mask Register
+    MOV     AH, CL              ; Get Saved Xpos
+    AND     AH, PLANE_BITS      ; mask out Plane #
+    OUT_16  GC_INDEX, AX        ; Select Plane to read in
+ 
+    XOR     AX, AX              ; Clear Return Value
+    MOV     AL, ES:[DI+BX]      ; Get Color of Pixel
+ 
+    POPx    DI, BP              ; Restore Saved Registers
+    RET     4                   ; Exit and Clean up Stack
+ 
+READ_POINT        ENDP
+
+;==========================================================
+; void SET_WINDOW (int X_pos, int Y_pos)
+;
+; Since a Logical Screen can be larger than the Physical
+; Screen, Scrolling is possible.  This routine sets the
+; Upper Left Corner of the Screen to the specified Pixel.
+; When called, this routine syncronizes the display to 
+; the vertical blank.
+;
+; ENTRY: X_pos        = # of pixels to shift screen right
+;        Y_pos        = # of lines to shift screen down
+;
+; EXIT:  No meaningful values returned
+ 
+SW_STACK    STRUC
+                DW  ?   ; BP
+                DD  ?   ; Caller
+    SW_Ypos     DW  ?   ; Y pos of UL Screen Corner
+    SW_Xpos     DW  ?   ; X pos of UL Screen Corner
+SW_STACK    ENDS
+ 
+        PUBLIC SET_WINDOW
+ 
+SET_WINDOW  PROC    FAR
+ 
+    PUSH    BP                  ; Preserve Registers
+    MOV     BP, SP              ; Set up Stack Frame
+ 
+    ; Check if our Scroll Offsets are Valid
+ 
+    MOV     AX, [BP].SW_Ypos    ; Get Desired Y Offset
+    CMP     AX, MAX_YOFFSET     ; Is it Within Limits?
+    JA      @SW_Exit            ; if not, exit
+ 
+    MOV     CX, [BP].SW_Xpos    ; Get Desired X Offset
+    CMP     CX, MAX_XOFFSET     ; Is it Within Limits?
+    JA      @SW_Exit            ; if not, exit
+ 
+    ; Compute proper Display start address to use
+ 
+    MUL     SCREEN_WIDTH        ; AX=YOffset * Line Width
+    SHR     CX, 2               ; CX / 4 = Bytes into Line
+    ADD     AX, CX              ; AX=Offset of UL Pixel
+    MOV     BX, AX              ; BX=Desired Display Start
+    MOV     DX, INPUT_1         ; Input Status #1 Register
+ 
+    ; Wait if we are currently in a Vertical Retrace
+ 
+@SW_WAIT0:
+    IN      AL, DX              ; Get VGA status
+    AND     AL, VERT_RETRACE    ; In Display mode yet?
+    JNZ     @SW_WAIT0           ; If Not, wait for it
+ 
+    ; Set the Start Display Address to the new window
+ 
+    MOV     DX, CRTC_Index      ; We Change the Sequencer
+    MOV     AL, START_DISP_LO   ; Display Start Low Reg
+    MOV     AH, BL              ; Low 8 Bits of Start Addr
+    OUT     DX, AX              ; Set Display Addr Low
+ 
+    MOV     AL, START_DISP_HI   ; Display Start High Reg
+    MOV     AH, BH              ; High 8 Bits of Start Addr
+    OUT     DX, AX              ; Set Display Addr High
+ 
+    ; Wait for a Vertical Retrace to smooth out things
+ 
+    MOV     DX, INPUT_1         ; Input Status #1 Register
+ 
+@SW_WAIT1:
+    IN      AL, DX              ; Get VGA status
+    AND     AL, VERT_RETRACE    ; Vertical Retrace Start?
+    JZ      @SW_WAIT1           ; If Not, wait for it
+ 
+    ; Now Set the Horizontal Pixel Pan values
+ 
+    OUT_8   ATTRIB_Ctrl, PIXEL_PAN_REG  ; Select HPP Reg
+ 
+    MOV     AX, [BP].SW_Xpos    ; Get Desired X Offset
+    AND     AL, 03              ; Get # of Pixels to Pan
+    SHL     AL, 1               ; Shift for 256 Color Mode
+    OUT     DX, AL              ; Fine tune the display!
+ 
+@SW_Exit:
+    POP     BP                  ; Restore Saved Registers
+    RET     4                   ; Exit and Clean up Stack
+ 
+SET_WINDOW        ENDP
+
+;==========================================================
+; void SET_TEXT_MODE (void)
+; int  SCAN_KEYBOARD (void)
+;
+; Routines for the Demo program, MODEX.X
+; SET_TEXT_MODE - Sets the VGA to MODE 3 (80 col text)
+; SCAN_KEYBOARD - Gets a Key from BIOS
+
+        PUBLIC  SET_TEXT_MODE, SCAN_KEYBOARD
+
+SET_TEXT_MODE   PROC    FAR
+    MOV     AH, 0               ; 0 = Set Mode Function
+    MOV     AL, 3               ; Mode to Set = 3
+    INT     10h                 ; Call the VGA BIOS
+    RET                         ; That's it!
+SET_TEXT_MODE   ENDP
+
+SCAN_KEYBOARD   PROC    FAR
+    MOV     AH, 00H             ; Function #0= Read key
+    INT     16H                 ; Call Keyboard BIOS
+    RET                         ; That's it!
+SCAN_KEYBOARD   ENDP
+
+    END                         ; End of Code Segment
+============== snip here ====================================================
+
+
+
+_______________________________________________________________________________
+Matt Pritchard                                              matthewp@netcom.com
+NETCOM, the West Coast's Leading Internet Service Provider.      (408) 554-8649
+
+

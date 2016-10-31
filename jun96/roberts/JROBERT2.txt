@@ -1,0 +1,26 @@
+Listing 2. The Locking Process
+HRESULT LoadSoundData(LPDIRECTSOUNDBUFFER lpDSB, char* SoundDataPtr, DWORD TotalBytes) 
+{
+LPVOID ptr1,ptr2;
+DWORD len1,len2;
+HRESULT result;
+  TryLockAgainLabel:
+In C++: result = lpDSB->Lock( 0, TotalBytes, &ptr1, &len1, &ptr2, &len2, 0 );
+In C:  result = IDirectSoundBuffer_Lock( lpDSB, 0, TotalBytes, &ptr1, &len1, &ptr2, &len2, 0 );
+  switch (result) {
+   case DS_OK:                	     // The DirectSound buffer was locked successfully 
+  memcpy( ptr1, SoundDataPtr,len1);
+  if (ptr2) 
+    memcpy( ptr2, SoundDataPtr + len1, len2);
+In C++:	  lpDSB->UnLock( ptr1, len1, ptr2, len2 );
+In C:	  IDirectSoundBuffer_Unlock( lpDSB, ptr1, len1, ptr2, len2 );
+  break;
+  case DSERR_BUFFERLOST:           // The DirectSound buffer was lost - try to restore
+In C++:	  result=lpDSB->Restore();
+In C:	  result=IDirectSoundBuffer_Restore( lpDSB );
+     if (result == DS_OK )         // If the restore worked, go do the lock again
+      goto TryLockAgainLabel;
+     break;
+  }
+  return( result );
+}

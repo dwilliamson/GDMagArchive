@@ -1,0 +1,17 @@
+Listing  5. Returned data for joyGetPosEx
+
+typedef struct joyinfoex_tag {
+    DWORD dwSize;       	 	\\ size, in bytes, of this structure
+    DWORD dwFlags;   		\\ flags for return data
+    DWORD dwXpos;      		\\ current x-coordinate
+    DWORD dwYpos;      		\\ current y-coordinate
+    DWORD dwZpos;      		\\ current z-coordinate
+    DWORD dwRpos;      		\\ Rudder information
+    DWORD dwUpos;      		\\ current 5th axis position
+    DWORD dwVpos;      		\\ current 6th axis position
+    DWORD dwButtons;  		\\ mask of the button state
+    DWORD dwButtonNumber; 	\\ lowest button number pressed
+    DWORD dwPOV;            \\ Point of View position 0 to 35,900  divide number by 100 for angle measurements
+    DWORD dwReserved1;    	\\ reserved; do not use
+    DWORD dwReserved2;    	\\ reserved; do not use
+} JOYINFOEX;

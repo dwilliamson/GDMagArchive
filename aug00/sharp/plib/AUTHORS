@@ -1,0 +1,28 @@
+PLIB was written by Steve Baker, with help from
+numerous others.  Special mention must go to:
+
+  Daryll Strauss (GLIDE port to Linux)
+  David Bucciarelli (Mesa -> GLIDE interface)
+  Brian Paul (Mesa)
+  Curtis Olson  (FlightGear guru and all-round "Mr Nice Guy")
+  Vasily Lewis (Tireless maintainer and sysadmin at Woodsoup)
+  Everyone at OPENGL-GAMEDEV-L and 3Dfx.glide.linux
+
+Specific contributions came from:
+
+  Ton Knienieder
+    -- Ported SL to a bunch of non-Linux OS's
+
+  Simon Britnell <ughbash@yahoo.com>
+    -- Added SSG methods for searching for
+       objects by name, etc.
+    -- Added an SSG loader for the Me3D file format.
+
+  Toru Egashira <toru@jms.jeton.or.jp>
+    -- Who wrote a program called 'NSPmod' which was
+       the original basis of the SL 'MOD' player -
+       although the original code has been almost
+       entirely rewritten in the process of merging
+       it with SL.
+
+

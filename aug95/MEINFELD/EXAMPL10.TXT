@@ -1,0 +1,33 @@
+Example 10: The TinyMUSH switch function.
+
+Syntax:
+switch(<target>,<case1>,<val1>[,...,<caseN>,<valN>][,<default-val>])
+
+Switch, like all functions, takes text strings for arguments and returns a text
+string as a result. The result returned is the value following the first case that
+matches the target value, or the default, in the case of no matches.It can be used 
+with commands like say:
+
+> say switch(Ice,Ice,It’s cold.,Lava,It’s Hot.,Ice,Ice is still cold.)
+You say “It’s cold.”
+
+Evaluation of other function, %-substitutions does occur inside the switch() 
+function. 
+When a character named Tangent executes the following example, he sees:
+
+> say switch(Tangent,%n,name(me),You are not Tangent. You are: %n.)
+You say “Tangent”
+
+However, when Alaric attempts the same thing:
+
+> say switch(Tangent,%n,name(me),You are not Tangent. You are: %n.)
+You say “You are not Tangent. You are: Alaric.”
+
+Above, %n evaluates to the enactor’s name. The enactor is the player who 
+triggered
+the command, causing the function to evaluate. Also, name(me) is a way, via
+a function, of the name of the of the object executing the command (not 
+neccessarily
+always the same thing).
+
+

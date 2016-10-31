@@ -1,0 +1,18 @@
+Listing 1.   Creating the DirectDraw Object
+LPDIRECTDRAW	pDirectDraw;
+HRESULT 	hResult;
+hResult = DirectDrawCreate( NULL, &pDirectDraw, NULL );
+if ( FAILED( hResult ) )
+	return FALSE;
+DWORD dwFlags = DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWMODEX;
+if ( bWindowed )
+    	dwFlags = DDSCL_NORMAL;
+hResult = pDirectDraw->SetCooperativeLevel( hWndMain, dwFlags );
+if ( FAILED( hResult ) )
+	return FALSE;
+if ( !bWindowed )
+{
+	hResult = pDirectDraw->SetDisplayMode( nWidth, nHeight, 8 );
+	if ( FAILED( hResult ) )
+	return FALSE;
+}

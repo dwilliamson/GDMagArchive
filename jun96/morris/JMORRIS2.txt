@@ -1,0 +1,32 @@
+Listing 2. The CGame::DPCreateSession Member Function for TicTacToeBOOL
+CGame::DPCreateSession()
+{
+  if (m_pDirectPlay)
+  {
+    // Get session information
+    CSessionInfoDlg dlgSessionInfo;
+    if (dlgSessionInfo.DoModal() == IDOK)
+    {
+      // Create a new DP session
+      DPSESSIONDESC dpsdDesc;
+      ::ZeroMemory(&dpsdDesc, sizeof(DPSESSIONDESC));
+      dpsdDesc.dwSize = sizeof(DPSESSIONDESC);
+      dpsdDesc.dwMaxPlayers = 2;
+      dpsdDesc.dwFlags = DPOPEN_CREATESESSION;
+      dpsdDesc.guidSession = TICTACTOE_10;
+      ::strcpy(dpsdDesc.szSessionName, dlgSessionInfo.GetName());
+      if (m_pDirectPlay->Open(&dpsdDesc) == DP_OK)
+      {
+        // Create local player and set game info
+        m_pDirectPlay->EnableNewPlayers(TRUE);
+        if (DPCreateLocalPlayer())
+        {
+          DPCreateEventThread();
+          m_bMyTurn = TRUE;
+          return TRUE;
+        }
+      }
+    }
+  }
+  return FALSE;
+}

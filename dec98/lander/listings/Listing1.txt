@@ -1,0 +1,36 @@
+Listing 1: The Morph Code
+
+
+#define LERP(a,b,c)  (a + ((b - a) * c))
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Procedure:	morphModel
+// Purpose:	Does the Morph for the Model
+// Arguments:	Pointer to main bone
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
+GLvoid COGLView::morphModel(t_Bone *curBone)
+{
+/// Local Variables //////////////////////////////////////////////////////////////////////////////////
+    int loop,pointloop;
+    float *dest,*src1,*src2,ratio;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if (curBone->visualCnt > m_curVisual)
+     {
+	src1 = curBone->visuals[0].vertexData;    // FRAME 1
+	src2 = curBone->visuals[1].vertexData;    // FRAME 2
+	dest = curBone->visuals[2].vertexData;    // DESTINATION FOR MORPHED FRAME
+	ratio = m_Slider->GetSetting();	    // GET MORPH VALUE (0 - 1)
+	// LOOP THROUGH THE VERTICES
+	for (loop = 0; loop < curBone->visuals[0].triCnt * 3; loop++)	
+	{
+		 // GO THROUGH EACH ELEMENT IN THE VERTEX STRUCTURE
+		for (pointloop = 0; pointloop < curBone->visuals[0].vSize; pointloop++)
+		{
+			// THE NEW POSITION IS A LERP BETWEEN THE TWO POINTS
+			dest[(loop * curBone->visuals[0].vSize) + pointloop] = 
+				LERP(src1[(loop * curBone->visuals[0].vSize) + pointloop],
+			 	src2[(loop * curBone->visuals[0].vSize) + pointloop],ratio);
+			}
+		}
+	}
+}
+// morphModel

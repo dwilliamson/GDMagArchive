@@ -1,0 +1,754 @@
+#module "gl_and_windows_0";
+
+#import GL_and_Windows.Keyboard;
+#import GL_and_Windows.Mouse_Pointer;
+#import GL_and_Windows.Window;
+#import GL_and_Windows.Font;
+#import GL_and_Windows.Font_Character_Info;
+#import GL_and_Windows.GL;
+
+
+struct Database {
+    [(1..)  |  ?Float];  // @Incomplete... this is totally fake
+}
+
+struct Entity {
+    Vector3 position;
+    Vector3 extents;
+    Float theta;
+    Integer texture_handle;
+}
+
+proc main {
+    init();
+
+    while (1) {
+        // @Refactor we want GL:(...expression...);
+
+        GL.clear(GL.COLOR_BUFFER_BIT + GL.DEPTH_BUFFER_BIT);
+
+        Float time = seconds_since_startup();
+        Float dt = time - last_frame_time;
+        last_frame_time = time;
+        if (dt == 0.0) dt = 0.05;
+    
+        Windows.do_window_events();
+        handle_mouse(dt);
+        had_focus_last_frame = has_focus_this_frame;
+
+        if Keyboard.['key_pressed " "] then {
+            if alpha == alpha_high then alpha = alpha_low;
+            else alpha = alpha_high;
+        };
+
+
+        draw_entities(alpha);
+
+        Profiler.update();
+
+        Float fps = update_fps_measurements();
+        Float fps = 0.0;
+        String string = concat("fps: ", fps);
+
+        text_mode_begin(big_font);
+        draw_text_line(big_font, string, 0, 0);
+
+        GL.swapBuffers();
+
+        gc();
+    };
+}
+
+proc update_fps_measurements() {
+    Float time = seconds_since_startup();
+    
+    if !profiler_last_frame_time {
+        profiler_last_frame_time = time;
+        return 0.0;
+    }
+
+    Float dt = time - profiler_last_frame_time;
+    profiler_last_frame_time = time;
+    if !dt return 0.0;
+
+    return 1.0 / dt;
+}
+
+proc draw_ground 
+GL:{
+    bindTexture(TEXTURE_2D, ground_texture);
+    color4f(1, 1, 1, 1);
+
+    Float s = GROUND_SIZE;
+    Float u = 12.0;
+
+    Float z = -0.2;
+
+    begin(TRIANGLES);
+    texCoord2f(0, 0);
+    vertex3f(-s, -s, z);
+    texCoord2f(u, 0);
+    vertex3f(+s, -s, z);
+    texCoord2f(u, u);
+    vertex3f(+s, +s, z);
+
+    texCoord2f(0, 0);
+    vertex3f(-s, -s, z);
+    texCoord2f(u, u);
+    vertex3f(+s, +s, z);
+    texCoord2f(0, u);
+    vertex3f(-s, +s, z);
+    end();
+}
+
+proc draw_entities(Float alpha) {
+    Vector3 up = make_vector3(0, 0, 1);
+
+    if (view_phi > 90) view_phi = 90;
+    if (view_phi < -90) view_phi = -90;
+
+    Float radians = PI / 180.0;
+    Float ct = cos(-view_theta * radians);
+    Float st = sin(-view_theta * radians);
+    Float cp = cos(view_phi * radians);
+    Float sp = sin(view_phi * radians);
+
+    Vector3 e1 = make_vector3(ct, st, 0);
+    Vector3 e2 = make_vector3(0, 0, 1);
+
+    Vector3 forward = e1 * cp + e2 * sp;
+    Vector3 upward = e2 * cp + e1 * -sp;
+
+    view_direction = forward;
+
+    GL: {
+        color4f(1, 1, 1, alpha);
+        matrixMode(MODELVIEW);
+        loadIdentity();
+
+        lookAt(0, 0, 0, forward[1], forward[2], forward[3], upward[1], upward[2], upward[3]);
+        translatef(-view_pos[1], -view_pos[2], -view_pos[3]);
+    }
+
+    Float view_angle = 75; // degrees
+//    Float w = app_shell->screen_width;
+//    Float h = app_shell->screen_height;
+    Float w = 640.0;  // @Incomplete: Read these out of device thingy
+    Float h = 480.0;
+    Float viewport_ratio = w / h;
+
+    GL: {
+        matrixMode(PROJECTION);
+        loadIdentity();
+
+        perspective(view_angle, viewport_ratio, 0.1, 1000.0);
+    }
+
+    GL: {
+        if (alpha == 1.0) {
+            disable(BLEND);
+            enable(DEPTH_TEST);
+        } else {    
+            enable(BLEND);
+            blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+            disable(DEPTH_TEST);
+        }
+
+        disable(CULL_FACE);
+        depthFunc(LESS);
+        shadeModel(SMOOTH);
+        disable(LIGHTING);
+        enable(COLOR_MATERIAL);
+        colorMaterial(FRONT_AND_BACK, AMBIENT_AND_DIFFUSE);
+
+        enable(TEXTURE_2D);
+        texEnvi(TEXTURE_ENV, TEXTURE_ENV_MODE, MODULATE);
+
+        texParameteri(TEXTURE_2D,TEXTURE_MIN_FILTER, LINEAR);
+        texParameteri(TEXTURE_2D,TEXTURE_MAG_FILTER, LINEAR);
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, REPEAT);
+        texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, REPEAT);
+    }
+
+//
+// @Incomplete: We would like to say:
+
+//    draw_entity(each world_db.['Entity ?x] x, alpha);
+// or..  draw_entity(world_db.['Entity ??], alpha);
+
+    draw_ground();
+
+    each world.['Entity ?x] draw_entity(x, alpha);
+
+//    app_shell->triangle_mode_end();
+}
+
+
+proc vertex3fv(Vector3 v) {
+    GL.vertex3f(v[1], v[2], v[3]);
+}
+
+proc draw_entity_face(Point_Set points, int n0, int n1, int n2, int n3, Float alpha)  
+
+GL:{
+    Vector3 normal_a = get_face_normal(points, n0, n1, n2);
+
+    // Dot with light source to get intensity
+    Float n = -dot_product(light_direction, normal_a);
+    if (n < 0) n = 0;
+    n = n * LIGHT_STRENGTH + AMBIENT_STRENGTH;
+
+    color4f(n, n, n, alpha);
+
+    texCoord2f(0, 0);
+    vertex3fv(points[n0]);
+    texCoord2f(1, 0);
+    vertex3fv(points[n1]);
+    texCoord2f(1, 1);
+    vertex3fv(points[n2]);
+
+    texCoord2f(0, 0);
+    vertex3fv(points[n0]);
+    texCoord2f(1, 1);
+    vertex3fv(points[n2]);
+    texCoord2f(0, 1);
+    vertex3fv(points[n3]);
+}
+
+struct Point_Set {
+    [(0..)  |  ?Vector3];   // Float ?Float ?Float];
+} 
+
+proc cross_product(Vector3 a, Vector3 b) {
+// @Parse: we would like:    Float x, y, z;
+
+    Float x = 0.0;
+    Float y = 0.0;
+    Float z = 0.0;
+
+    x = a[2] * b[3] - a[3] * b[2];
+    y = a[3] * b[1] - a[1] * b[3];
+    z = a[1] * b[2] - a[2] * b[1];
+
+    return make_vector3(x, y, z);
+}
+
+proc dot_product(Vector a, Vector b) {
+//    return + each a.[?i ?f]  f * b[i];
+//    print("a is ", a, "\n");
+//    print("b is ", b, "\n");
+    return + each a[?i]  a[i] * b[i];
+};
+
+proc rotate(Vector3 v, Float theta) {
+    Float ct = cos(theta);
+    Float st = sin(theta);
+
+    Float xprime = v[1] * ct + v[2] * st;
+    Float yprime = v[2] * ct + -(v[1] * st);
+
+    return make_vector3(xprime, yprime, v[3]);
+}
+
+proc get_face_normal(Vector3 points, Integer n0, Integer n1, Integer n2) {
+    Vector3 diff_a = points[n1] - points[n0];
+    Vector3 diff_b = points[n2] - points[n0];
+
+    Vector3 result = cross_product(diff_a, diff_b);
+    normalize(result);
+    
+    return result;
+}
+
+// Cube faces:
+
+proc get_box_coordinates(Entity entity, Point_Set results) {
+    Vector3 p = entity.position;
+    Float x = (entity.extents)[1];
+    Float y = (entity.extents)[2];
+    Float z = (entity.extents)[3];
+
+    Vector3 s0 = make_vector3(x, 0, 0);
+    Vector3 s1 = make_vector3(0, y, 0);
+
+    s0 = rotate(s0, entity.theta);
+    s1 = rotate(s1, entity.theta);
+
+    Vector3 m0 = (p - s0) - s1;  // @Parse fix this to be left-associative!
+    Vector3 m1 = p + s0 - s1;
+    Vector3 m2 = p + s0 + s1;
+    Vector3 m3 = (p - s0) + s1;  // @Parse fix this to be left-associative!
+
+    results[0] = m0 + make_vector3(0, 0, -z);
+    results[1] = m1 + make_vector3(0, 0, -z);
+    results[2] = m2 + make_vector3(0, 0, -z);
+    results[3] = m3 + make_vector3(0, 0, -z);
+    results[4] = m0 + make_vector3(0, 0, +z);
+    results[5] = m1 + make_vector3(0, 0, +z);
+    results[6] = m2 + make_vector3(0, 0, +z);
+    results[7] = m3 + make_vector3(0, 0, +z);
+}
+
+
+proc draw_entity(Entity e, Float alpha) 
+GL:{
+    bindTexture(TEXTURE_2D, e.texture_handle);
+
+    Point_Set points;
+    get_box_coordinates(e, points);
+
+    begin(TRIANGLES);
+    draw_entity_face(points, 3, 2, 1, 0, alpha);  // bottom
+    draw_entity_face(points, 4, 5, 6, 7, alpha);  // top
+    draw_entity_face(points, 0, 1, 5, 4, alpha);
+    draw_entity_face(points, 1, 2, 6, 5, alpha);
+    draw_entity_face(points, 2, 3, 7, 6, alpha);
+    draw_entity_face(points, 3, 0, 4, 7, alpha);
+
+    end();
+}
+
+proc handle_mouse(Float dt) {
+    // @Features: Think of the best way to simplify this kind of gate-detection behavior.
+
+    has_focus_this_frame = (Windows.focus_window == gl_window);
+    if !has_focus_this_frame {
+        if had_focus_last_frame {
+            Mouse_Pointer.visible = 1;
+            Mouse_Pointer.update();
+        }
+
+        return;
+    }
+
+    Integer x = Mouse_Pointer.x;
+    Integer y = Mouse_Pointer.y;
+    if !had_focus_last_frame {
+        last_cursor_x = x;
+        last_cursor_y = y;
+        return;
+    }   
+ 
+    Float dx = x - last_cursor_x;
+    Float dy = y - last_cursor_y;
+
+    view_theta += dx * DEGREES_PER_MICKEY_X;
+    view_phi -= dy * DEGREES_PER_MICKEY_Y;
+
+    //
+    // Set the mouse pointer back to the middle of the screen
+    //
+
+    Mouse_Pointer.x = gl_window.width / 2;
+    Mouse_Pointer.y = gl_window.height / 2;
+    Mouse_Pointer.visible = 0;
+    Mouse_Pointer.update();
+
+    last_cursor_x = Mouse_Pointer.x;
+    last_cursor_y = Mouse_Pointer.y;
+
+
+
+    // Handle motion
+
+    dx = 0.0;
+    dy = 0.0;
+
+
+/*
+    // Un-comment this to get keyboard debugging info at runtime.
+    print("---- Keyboard for next frame: \n");
+    each Keyboard.[?a ?b] {
+        print("Keyboard: ", a, "  ", b, "\n");
+    }
+*/
+
+    each Keyboard.['key_held_down ?key] {
+        if key == "W" then dy += 1.0;
+        if key == "S" then dy -= 1.0;
+        if key == "A" then dx += 1.0;
+        if key == "D" then dx -= 1.0;
+    }
+
+    Vector3 e1 = make_vector3(-view_direction[2], view_direction[1], 0);
+    Vector3 e2 = make_vector3(view_direction[1], view_direction[2], 0);
+
+    if length(e1) == 0 then return;  // if e1 is nonzero, e2 is nonzero
+
+    normalize(e1);
+    normalize(e2);
+
+    e1 *= dx;
+    e2 *= dy;
+
+    Vector3 delta = e1 + e2;
+    normalize(delta);
+    delta = delta * (MOVEMENT_SPEED * dt);
+
+
+    view_pos += delta;  // This works because it's internally expanded into view_pos = view_pos + delta, and uses operator '+' defined elsewhere in this file.
+
+    Float s = GROUND_SIZE;
+
+    if (view_pos[1] < -s) view_pos[1] = -s;
+    if (view_pos[1] > +s) view_pos[1] = +s;
+    if (view_pos[2] < -s) view_pos[2] = -s;
+    if (view_pos[2] > +s) view_pos[2] = +s;
+}
+
+
+
+proc make_vector3(Float x, Float y, Float z) {
+    Vector3 result;
+    result[1] = x;
+    result[2] = y;
+    result[3] = z;
+    return result;
+}
+
+proc get_crate_texture() {
+    // @Elegance: a better way to get a random item from a database?
+    Integer r = random();
+    Integer m = remainder(r, num_crate_textures);
+
+    return crate_textures.[? m ??];
+}
+
+
+proc remainder(Integer val, Integer divided_by) {
+    Integer divided = val / divided_by;
+    Integer multiplied = divided * divided_by;
+
+    return val - multiplied;
+}
+
+// @Robustness: NO STATIC SEED!!!
+proc random() {
+    Integer x = g_random_seed;
+    Integer base = 127773;
+    Integer hi = x / base;
+    Integer low = x - (base * hi);
+    Integer t = 16807 * low - 2836 * hi;
+    if t <= 0 then t += 132429381;
+    g_random_seed = t;
+
+    return t;
+}
+
+proc random_positive_scalar(Float maximum) {
+    Integer r = random();
+    Integer QUANTA = 100000;
+    Float FQUANTA = QUANTA * 1.0;   // @Robustness: Better way to do this??
+
+    Integer m = remainder(r, QUANTA);
+    return (m / FQUANTA) * maximum;
+}
+
+proc random_symmetric_scalar(Float maximum) {
+    Float result = random_positive_scalar(maximum);
+    Integer r = random();
+    if ((r / 2) * 2) == r then result = -result;
+    return result;
+}
+
+// @Refactor: we would like to make 'make_crate' a local function to init()
+proc make_crate(Float r) {
+    Entity e;
+    e.texture_handle = get_crate_texture();    
+    e.extents = make_vector3(r, r, r);
+    e.theta = random_positive_scalar(2*PI);
+
+    return e;
+}
+
+proc my_load_texture(String name) {
+    String full_name = concat("data/", name, ".jpg");
+    print("Loading texture '", full_name, "'.\n");
+    Integer handle = Windows.load_texture(full_name);
+    return handle;
+}
+
+proc init {
+    // @Incomplete: Need way to declare constant in global scope.
+
+    DEGREES_PER_MICKEY_X = 0.2;
+    DEGREES_PER_MICKEY_Y = 0.2;
+    PI = 3.141592653589;
+    MOVEMENT_SPEED = 20.0;
+    GROUND_SIZE = 50.0;
+
+    alpha_high = 1.0;
+    alpha_low = 0.5;
+    alpha = alpha_high;
+
+    last_cursor_x = Mouse_Pointer.x;
+    last_cursor_y = Mouse_Pointer.y;
+
+    last_frame_time = seconds_since_startup();
+    profiler_last_frame_time = seconds_since_startup();
+
+    mouselook = 1;
+
+    has_focus_this_frame = 0;
+    had_focus_last_frame = 0;
+
+    view_direction = make_vector3(1, 0, 0);
+    g_random_seed = 13489851;
+
+    view_theta = 0.0;
+    view_phi = 0;
+
+    AMBIENT_STRENGTH = 0.38;
+    LIGHT_STRENGTH = 1.0 - AMBIENT_STRENGTH;
+
+
+    Database db1;  // @Elegance
+    crate_texture_names = db1;
+    crate_texture_names .+ ["Gdt001"];
+    crate_texture_names .+ ["darkrock001"];
+    crate_texture_names .+ ["target"];
+    crate_texture_names .+ ["rockwall001"];
+    crate_texture_names .+ ["5graniteBrown001"];
+
+    Database db2;  // @Elegance
+    crate_textures = db2;
+
+    screen_width = 800;
+    screen_height = 600;
+    gl_window = add_window(100, 100, screen_width, screen_height,
+                           "This is the window.");
+
+    GL.makeCurrent(gl_window);
+    GL.clearColor(0.5, 0.5, 0.8, 1.0);
+
+
+    // @Robustness: We can't load a texture before creating a window?!?
+    ground_texture = my_load_texture("ground");
+
+
+
+    view_pos = make_vector3(-5, 0, 5);
+    light_direction = make_vector3(-0.7, -0.3, 0.4);
+    normalize(light_direction);
+
+    int index = 0;
+    each crate_texture_names.[?name] {
+        tuple = [name index my_load_texture(name)];
+        crate_textures .+ tuple;
+        index += 1;
+    }
+
+    num_crate_textures = index;
+
+    big_font = Windows.load_font("data/Century Big");
+
+    Database world_db;
+    world = world_db;   // XXX Need a way to declare globals
+
+    // Stack O' Crates
+    Integer CRATES_IN_STACK = 7;
+    Float CRATE_STACK_RADIUS = 0.6;
+    each (1..CRATES_IN_STACK) {
+        Entity e = make_crate(CRATE_STACK_RADIUS);
+
+        Integer k = 100;
+        Float z = (2*$0 - 1) * CRATE_STACK_RADIUS;  // A candidate for $_ maybe (z is a temporary...)?
+        e.position = make_vector3(7, 2, z);
+        e.theta = random_symmetric_scalar(0.44);  // Small angular variation
+
+        world .+ ["Entity" e];
+    }
+
+
+    Integer NUM_MISC_CRATES = 30;
+
+    // Random crates on the ground at random orientations
+    each (1..NUM_MISC_CRATES) {
+        Float r = random_positive_scalar(3.5);
+        Entity e = make_crate(r);
+
+        Vector3 crate_pos;
+        while 1 {  // Don't make any crates too close to the starting point!
+            Float s = GROUND_SIZE;
+            Float x = random_symmetric_scalar(s);
+            Float y = random_symmetric_scalar(s);
+            crate_pos = make_vector3(x, y, r);
+            Vector3 delta = crate_pos - view_pos;
+            if length(delta) > 5 then break;
+        }
+
+        e.position = crate_pos;
+
+        world .+ ["Entity" e];
+    }
+
+    // Random crates on the ground tucked in one corner
+    each (1..43) {
+        Float r = random_positive_scalar(1.5);
+        Entity e = make_crate(r);
+
+        Float s = GROUND_SIZE * 0.1;
+        Float x = random_symmetric_scalar(s) - GROUND_SIZE * 0.85;
+        Float y = random_symmetric_scalar(s) - GROUND_SIZE * 0.85;
+
+        e.position = make_vector3(x, y, r);
+
+        world .+ ["Entity" e];
+    }
+}
+
+struct Vector3 {
+    [(1..3)  |  ?Float];
+} 
+
+proc +(Vector3 a, Vector3 b) {
+    Vector3 c;
+    each a[?i] c[i] = a[i] + b[i];
+    return c;
+}
+
+proc -(Vector3 a, Vector3 b) {
+    Vector3 c;
+    each a[?i] c[i] = a[i] - b[i];
+    return c;
+}
+
+proc -(Vector3 a) {
+    Vector3 c;
+    each a[?i] c[i] = -a[i];
+    return c;
+}
+
+proc *(Vector3 v, Float factor) {
+    Vector3 c;
+    each v[?i] c[i] = v[i] * factor;
+    return c;
+}
+
+proc *(Float factor, Vector3 v) {
+    Vector3 c;
+    each v[?i] c[i] = v[i] * factor;
+    return c;
+}
+
+proc length(Vector3 v) {
+    return sqrt(+ each v.[? ?x] x*x);
+}
+
+
+// v[?i] /,= length(v);
+// v[?i] /!= length(v);
+
+proc normalize(Vector v) {
+    Float len = length(v);
+
+    if len then {
+        each v[?i] v[i] /= len;
+    }
+
+    return v;
+}
+
+proc add_window(x, y, width, height, title) {
+    Integer win = Windows.create_window();  // @Refactor
+    win.x = x;
+    win.y = y;
+    win.width = width;
+    win.height = height;
+    win.title = title;
+    win.update();
+    win.show(1);
+
+    return win;
+}
+
+
+proc draw_text_character(Font font, Font_Character_Info info, Float xs, Float ys, Float iw) 
+GL:{
+    Float u0 = info.u0;
+    Float u1 = info.u1;
+
+    Float npix = (u1 - u0) * iw;
+    Float w = npix;
+
+    Float h = font.character_height;
+
+    texCoord2f(u0, info.v0);
+    vertex2f(xs, ys);
+
+    texCoord2f(u1, info.v0);
+    vertex2f(xs+w, ys);
+
+    texCoord2f(u1, info.v1);
+    vertex2f(xs+w, ys+h);
+
+    texCoord2f(u0, info.v1);
+    vertex2f(xs, ys+h);
+
+
+    // print("Quad x ", xs, " to ", xs + w, "  y ", ys, " to ", ys + w, "\n");
+}
+
+// @Refactor: 'Font' is fake, see @Parse notice below.
+proc draw_text_line(Font font, String name, Float x, Float y) {
+    // Windows.Font font = big_font;  @Parse: Parser will not do 'Windows.Font' at present.
+
+    Integer len = string_length(name);
+
+    Float iw = font.width;
+
+    GL.color4f(1, 1, 1, 1);
+    GL.begin(GL.QUADS);
+
+    each (1..len) {
+        Integer index = string_nth_as_character(name, $0);
+        Info char_info = font.['char index ??];
+        if (char_info) {
+            // @Refactor: Do we not need character_range_low, etc?
+
+            // print("Output ", index, " at (", x, ", ", y, ")\n");
+            // @Refactor: print("Output $index at ($x, $y)\n");
+
+            draw_text_character(font, char_info, x, y, iw);
+            x += char_info.advance;
+        }
+    }
+
+    GL.end();
+}
+
+
+proc text_mode_begin(Font font)
+GL:{
+    matrixMode(TEXTURE);
+    loadIdentity();
+
+    matrixMode(PROJECTION);
+    loadIdentity();
+    ortho(0, screen_width, 0, screen_height, 0, -100);
+
+    matrixMode(MODELVIEW);
+    loadIdentity();
+
+    depthFunc(ALWAYS);
+    disable(LIGHTING);
+    disable(CULL_FACE);
+    disable(COLOR_MATERIAL);
+
+    enable(BLEND);
+    enable(TEXTURE_2D);
+
+    blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+
+    bindTexture(TEXTURE_2D, font.texture_handle);
+
+    texParameteri(TEXTURE_2D,TEXTURE_MIN_FILTER, LINEAR);
+    texParameteri(TEXTURE_2D,TEXTURE_MAG_FILTER, LINEAR);
+/*
+    texParameteri(TEXTURE_2D,TEXTURE_MIN_FILTER, NEAREST);
+    texParameteri(TEXTURE_2D,TEXTURE_MAG_FILTER, NEAREST);
+*/
+
+    texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, CLAMP);
+    texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, CLAMP);
+}

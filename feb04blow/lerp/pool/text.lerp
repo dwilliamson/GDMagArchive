@@ -1,0 +1,90 @@
+proc text_mode_begin(Font font)
+GL:{
+    matrixMode(TEXTURE);
+    loadIdentity();
+
+    matrixMode(PROJECTION);
+    loadIdentity();
+    ortho(0, screen_width, 0, screen_height, 0, -100);
+
+    matrixMode(MODELVIEW);
+    loadIdentity();
+
+    depthFunc(ALWAYS);
+    disable(LIGHTING);
+    disable(CULL_FACE);
+    disable(COLOR_MATERIAL);
+
+    enable(BLEND);
+    enable(TEXTURE_2D);
+
+    blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+
+    bindTexture(TEXTURE_2D, font.texture_handle);
+
+    texParameteri(TEXTURE_2D,TEXTURE_MIN_FILTER, LINEAR);
+    texParameteri(TEXTURE_2D,TEXTURE_MAG_FILTER, LINEAR);
+/*
+    texParameteri(TEXTURE_2D,TEXTURE_MIN_FILTER, NEAREST);
+    texParameteri(TEXTURE_2D,TEXTURE_MAG_FILTER, NEAREST);
+*/
+
+    texParameteri(TEXTURE_2D, TEXTURE_WRAP_S, CLAMP);
+    texParameteri(TEXTURE_2D, TEXTURE_WRAP_T, CLAMP);
+}
+
+
+proc draw_text_character(Font font, Font_Character_Info info, Float xs, Float ys, Float iw) 
+GL:{
+    Float u0 = info.u0;
+    Float u1 = info.u1;
+
+    Float npix = (u1 - u0) * iw;
+    Float w = npix;
+
+    Float h = font.character_height;
+
+    texCoord2f(u0, info.v0);
+    vertex2f(xs, ys);
+
+    texCoord2f(u1, info.v0);
+    vertex2f(xs+w, ys);
+
+    texCoord2f(u1, info.v1);
+    vertex2f(xs+w, ys+h);
+
+    texCoord2f(u0, info.v1);
+    vertex2f(xs, ys+h);
+
+
+    // print("Quad x ", xs, " to ", xs + w, "  y ", ys, " to ", ys + w, "\n");
+}
+
+// @Refactor: 'Font' is fake, see @Parse notice below.
+proc draw_text_line(Font font, String name, Float x, Float y) {
+    // Windows.Font font = big_font;  @Parse: Parser will not do 'Windows.Font' at present.
+
+    Integer len = string_length(name);
+
+    Float iw = font.width;
+
+    GL.color4f(1, 1, 1, 1);
+    GL.begin(GL.QUADS);
+
+    each (1..len) {
+        Integer index = string_nth_as_character(name, $0);
+        Info char_info = font.['char index ??];
+        if (char_info) {
+            // @Refactor: Do we not need character_range_low, etc?
+
+            // print("Output ", index, " at (", x, ", ", y, ")\n");
+            // @Refactor: print("Output $index at ($x, $y)\n");
+
+            draw_text_character(font, char_info, x, y, iw);
+            x += char_info.advance;
+        }
+    }
+
+    GL.end();
+}
+

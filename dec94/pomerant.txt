@@ -1,0 +1,106 @@
+1	Pomerantz Listing 1	April 7, 1995  11:12 AM
+
+1	Pomerantz Listing 1	April 7, 1995  11:12 AM
+
+1	Pomerantz Listing 1	April 7, 1995  11:12 AM
+
+1	Pomerantz Listing 1	April 7, 1995  11:12 AM
+
+1	Pomerantz Listing 1	April 7, 1995  11:12 AM
+
+
+Listing 1. The colorRect Data Structure
+
+typedef unsigned char byte;
+tyedef struct {
+	long	first, last;				/*	Indexes into colorList			*/
+	long	histSum;					/*	Total color count for region	*/
+
+	byte	redMin, redMax;			/*	mins and maxs					*/
+	byte	greenMin, greenMax;	/*	for the color components		*/
+	byte	blueMin, blueMax;		/*	Define the region				*/
+
+	byte	widestColor;				/*	Color with the widest range	*/
+	byte	red, green, blue;		/*	Our eventual palette color	*/
+	} colorRect
+Listing 2. colorRect Using Recursion
+
+splitColorRect(colorRect *region)
+	{
+		if  256 regions exist
+			return;
+		scan the colorList
+		sort by widestColor
+		find the median
+		split into two regions
+		call splitColorRect(lesser region)
+		call splitColorRect(greater region)
+Listing 3. colorRect without Recursion
+
+initialize first colorRect;
+	colorRect.first = 0
+	colorRect.last = last index in colorList;
+	scan colorList from first to last, to calculate widestColor and histSum
+	insert first colorRect into indexed list
+
+while (number of colorRects < 256)
+	{
+	get colorRect from top of list
+	sort from colorRect.first to colorRect.last by colorRect.widestColor
+	find the median point
+	remove current colorRect from list
+	split the colorRect at the median into two colorRects
+
+	scan the colorList to define the mins, maxs,
+		and histSum of the first colorRect
+	insert first colorRect in order of its histSum
+
+	scan the colorList to define the mins, maxs,
+		and histSum of the second colorRect
+	insert second ColorRect in order of its histSum
+	}
+
+Listing 4. Assigning Color Values
+
+/*	These macros split a 15-bit color into its three five-bit color components */
+#define RED(x)		(((x) & 0x7C00) >> 10)
+#define GREEN(x)	(((x) & 0x03E0) >> 5)
+#define BLUE(x)		((x) & 0x001F)
+
+CalcColor(colorRect *cr)
+{
+	short	15bitColor;
+	byte		red, green, blue;
+
+	red = green = blue = 0
+	for (i = cr->first; i < cr->last; ++1)
+		{
+		15bitColor = colorList[i];
+		red	+= RED(15bitColor) * histogram[15bitColor];
+		green	+=GREEN(15bitColor) * histogram[15bitColor];
+		blue	+ = BLUE(15bitColor) * Histogram[15bitColor};
+		}
+	red /= cr->histSum
+	green /= cr->histSum;
+	blue / = cr->histSum
+}
+
+Listing 5. Initializing the Palette Look-up Table
+
+bldLookup(colorRect *cr, byte paletteIndex)
+{
+	byte 	red, green, blue;
+	short	15bitColor;
+
+	for (red = cr->redMin; red <= cr->redMax; ++ red)
+		{
+		for (green = cr->greenMin; green <= cr->greenMax; ++green)
+			{
+			for (blue = cr->blueMin; blue <= cr->blueMax; ++blue)
+				{
+				15bitColor = red << 10 | green << 5 | blue;
+				lookup[15bitColor] = paletteIndex;
+				}
+			}
+		}
+}

@@ -1,0 +1,28 @@
+Listing 1. The enhanced data structure.
+
+class Triangle {
+	public:
+		Vertex *	vertex[3];	// the 3 points that make this tri
+		Vector	normal;	// orthogonal unit vector
+			Triangle(Vertex *v0,Vertex *v1,Vertex *v2);
+			~Triangle();
+		void	ComputeNormal();
+		void	ReplaceVertex(Vertex *vold,Vertex *vnew);
+		int	HasVertex(Vertex *v);
+};
+class Vertex {
+	public:
+		Vector	position;	// location of this point
+		int	id;	// place of vertex in original list
+		List<Vertex *>	neighbor;	// adjacent vertices
+		List<Triangle *>	face;	// adjacent triangles
+		float	cost;	// cached cost of collapsing edge
+		Vertex *	collapse;	// candidate vertex for collapse
+			Vertex(Vector v,int _id);
+			~Vertex();
+		void 	RemoveIfNonNeighbor(Vertex *n);
+};
+List<Vertex *>	vertices;
+List<Triangle *>	triangles;
+
+

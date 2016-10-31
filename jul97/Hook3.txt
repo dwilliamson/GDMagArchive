@@ -1,0 +1,9 @@
+LISTING 3. Triangle rendering with OpenGL.
+glBegin( GL_TRIANGLES );
+	glColor3fv( vertex[0].color );
+	glVertex3fv( vertex[0].position );
+	glColor3fv( vertex[1].color );
+	glVertex3fv( vertex[1].position );
+	glColor3fv( vertex[2].color );
+	glVertex3fv( vertex[2].position );
+glEnd();

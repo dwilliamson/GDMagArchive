@@ -1,0 +1,23 @@
+Listing 2. Process of generating and rendering a cubic environment map in pseudocode.
+
+1. Prior to rendering the scene, render the cube map.
+2. If the cube map dimensions are small, enable antialiasing for the cube rendering.
+3. Set the viewport to the cube dimensions.
+4. Set the perspective matrix to a 90-degree field of view for both the X and Y axes. 
+5. For all six faces of the cube map:
+	a. Set the render target to the current face.
+	b. Optionally swap the Z-buffer to this map.
+	c. Set the viewpoint LOOK and UP vectors as follows for the particular pass: 
+		Cube face	LOOK Direction	UP Direction
+		0	positive X		positive Y 
+		1	negative X		positive Y 
+		2	positive Y		negative Z 
+		3	negative Y		positive Z 
+		4	positive Z		positive Y 
+		5	negative Z		positive Y 
+	e. Set the modelview matrix according to LOOK and UP vectors centered at 	cube center.
+	f. Begin scene.
+	g. Render everything in the scene but this object.
+	h. End scene.
+6. Restore render target.
+7. Reset viewport and all matrices.

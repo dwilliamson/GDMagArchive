@@ -1,0 +1,153 @@
+#
+# This is the script for the mortar-fire RTS example.
+#
+
+# XXX at init time, set mortar position and target position
+
+:real time
+:real frame_time
+:vector2 mouse
+
+:vector2 target_position
+:vector2 mortar_position
+
+:vector2 mortar_to_target
+mortar_to_target =  subtract target_position mortar_position
+
+:real distance
+:vector2 direction
+distance =  length mortar_to_target
+direction =  normalize mortar_to_target
+
+
+
+# Move the mortar into firing range of the target if it's
+# too far, or move it out of danger if it's too close.
+
+:real too_close
+:real too_far
+too_close =  is_less_than distance 0.2
+too_far =  is_greater_than distance 0.5
+
+:real mortar_speed
+
+mortar_speed = 0.0
+
+if too_close
+    mortar_speed = -0.12
+endif
+
+if too_far
+    mortar_speed = 0.12
+endif
+
+:vector2 text_position
+text_position =  make_vector 0 0.9
+text_position = print_variable &too_close text_position
+
+text_position = print_variable &too_far text_position
+text_position = print_variable &mortar_speed text_position
+
+
+:real mortar_movement_distance
+:vector2 mortar_movement_vector
+if mortar_speed
+    mortar_movement_distance =  multiply mortar_speed frame_time
+    mortar_movement_vector =  multiply direction mortar_movement_distance
+    mortar_position = add mortar_position mortar_movement_vector
+endif
+
+
+
+
+
+
+# Put the target where the mouse ponier is.
+target_position =  multiply 1 mouse
+
+
+# Measure the amount the target has been moving lately,
+# and draw it.
+:vector2 target_position_mean
+:vector2 target_variance_axis1
+:vector2 target_variance_axis2
+target_position_mean = sample_tendency target_position 0.9 &target_variance_axis1 &target_variance_axis2
+draw_ellipse target_position_mean target_variance_axis1 target_variance_axis2
+
+
+:real time_for_next_comment
+
+:real too_early_for_comment
+too_early_for_comment =  is_greater_than time_for_next_comment time 
+
+if too_early_for_comment
+    end
+endif
+
+if too_far
+    end
+endif
+
+
+:real len1
+:real len2
+len1 = length target_variance_axis1
+len2 = length target_variance_axis2
+:real sum
+sum = add len1 len2
+
+:real too_sparse
+too_sparse = is_greater_than sum 0.15
+
+if too_sparse
+    end
+endif
+
+time_for_next_comment =  add time 1.1
+
+
+:vector2 target_pos_t0
+:vector2 target_pos_t1
+:vector2 target_pos_t2
+target_pos_t0 = sample_tendency target_position 0.1
+target_pos_t1 = sample_tendency target_position 0.5
+target_pos_t2 = sample_tendency target_position 0.9
+
+:vector2 dir0
+:vector2 dir1
+
+dir0 = subtract target_pos_t0 target_pos_t2
+dir1 = subtract target_pos_t1 target_pos_t2
+
+:real speed
+speed = length dir0
+speed = multiply speed 4
+
+dir0 = normalize dir0
+dir1 = normalize dir1
+
+:vector2 diff
+diff = subtract dir0 dir1
+:real diff_length
+diff_length = length diff
+
+:vector2 reticule_pos
+reticule_pos = multiply 1 target_position_mean
+
+:real mortar_red
+:real mortar_green
+:real mortar_blue
+mortar_red = 1.0
+mortar_green = 0.5
+mortar_blue = 0.5
+
+:real moving
+moving = is_less_than diff_length 0.4
+if moving
+    dir1 = multiply dir1 speed
+    reticule_pos = add target_position dir1
+    mortar_green = 1.0
+    mortar_blue = 1.0
+endif
+
+fire_mortar reticule_pos mortar_red mortar_green mortar_blue

@@ -1,0 +1,11 @@
+Listing 3. Overriding the exception handler
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  Application.OnException := ExceptionHandler;
+end;
+
+procedure TForm1.ExceptionHandler(Sender: TObject; E: Exception);
+begin
+  SpeedDraw1.ErrorEvent(E.Message);
+end;

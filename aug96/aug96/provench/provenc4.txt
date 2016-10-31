@@ -1,0 +1,12 @@
+Listing 4.  Creating a Complex Flipping Structure
+
+ddFlipSurfDesc.dwSize			= sizeof( DDSURFACEDESC );
+ddFlipSurfDesc.dwFlags		  	= DDSD_CAPS |  DDSD_BACKBUFFERCOUNT;
+ddFlipSurfDesc.ddsCaps.dwCaps 		= DDSCAPS_COMPLEX | DDSCAPS_FLIP | DDSCAPS_PRIMARYSURFACE;
+ddFlipSurfDesc.dwBackBufferCount 		= 2;
+hResult = pDirectDraw->CreateSurface( &ddFlipSurfDesc, &pFlipSurface, NULL );
+if ( FAILED( hResult ) )
+	return FALSE;
+hResult = pFlipSurface->EnumAttachedSurfaces( NULL, EnumAttachedSurfacesCallback );
+if ( FAILED( hResult ) )
+	return FALSE;

@@ -1,0 +1,69 @@
+Listing 8: do_command(), the function that executes in-game commands 
+
+static int 
+do_command(d, command)
+    DESC *d;
+    char *command;
+{
+    char *arg, *cmdsave;
+    NAMETAB *cp;
+
+    [...]
+    /* Split off the command from the arguments */
+
+    arg = command;
+    while (*arg && !isspace(*arg))
+        arg++;
+    if (*arg)
+        *arg++ = Ô\0Õ;
+
+    /* Look up the command.  If we donÕt find it, turn it over to the
+     * normal logged-in command processor or to create/connect
+     */
+
+    cp = (NAMETAB *) hashfind(command, &mudstate.logout_cmd_htab);
+
+    if (cp == NULL) {
+            [...]
+            mudstate.curr_player = d->player;
+            mudstate.curr_enactor = d->player;
+            process_command(d->player, d->player, 1,
+                            command, (char **) NULL, 0);
+            mudstate.curr_cmd = (char *) ÒÒ;
+            [...]
+        }
+    }
+    /* The command was in the logged-out command table.  Perform prefix
+     * and suffix processing, and invoke the command handler.
+     */
+
+    d->command_count++;
+    [...]
+    if ((!check_access(d->player, cp->perm)) ||
+        ((cp->perm & CA_PLAYER) && !(d->flags & DS_CONNECTED))) {
+        queue_string(d, ÒPermission denied.\r\nÓ);
+    } else {
+        mudstate.debug_cmd = cp->name;
+        switch (cp->flag & CMD_MASK) {
+        case CMD_QUIT:
+            shutdownsock(d, R_QUIT);
+            mudstate.debug_cmd = cmdsave;
+            return 0;
+        case CMD_LOGOUT:
+            shutdownsock(d, R_LOGOUT);
+            break;
+        case CMD_WHO:
+            dump_users(d, arg, CMD_WHO);
+            break;
+        case CMD_DOING:
+            dump_users(d, arg, CMD_DOING);
+            break;
+        case CMD_SESSION:
+            dump_users(d, arg, CMD_SESSION);
+            break;
+        [...]
+        }
+    }
+    return 1;
+}
+

@@ -1,0 +1,78 @@
+#
+# This is the script for the Thief example.
+#
+
+:vector2 mouse
+:vector2 messenger_position
+
+#
+# The thief is controlled by the mouse.  I use
+# "multiply 1 mouse" here because you can't just say
+# "thief_position = mouse" due to the cheesy parser.
+#
+:vector2 thief_position
+thief_position = multiply 1 mouse
+
+#
+# Find the vector from the thief to the messenger.
+#
+:vector2 difference
+history_subtract messenger_position thief_position &difference
+
+
+#
+# Get the ellipse representing the typical values of that 
+# difference vector.
+#
+:vector2 mean
+:vector2 axis1
+:vector2 axis2
+
+mean = sample_tendency difference 10.0 &axis1 &axis2
+
+#
+# Find the average distance.
+#
+:real mean_length
+mean_length = length mean
+
+
+#
+# Make a circle witih radius "mean_length", and draw it
+# at the messenger position.
+#
+axis1 = make_vector mean_length 0
+axis2 = make_vector 0 mean_length
+draw_ellipse messenger_position axis1 axis2
+
+
+#
+# Compute the victory string, which will either be
+# nothing or "You win!"
+#
+:string victory_string
+
+:real tight
+tight = is_less_than mean_length 0.14
+victory_string = ""
+if tight
+    victory_string = "You win!"
+endif    
+
+
+#
+# Draw various status information
+#
+:vector2 text_position
+text_position =  make_vector 0 0.9
+
+text_position =  print_variable &mouse text_position
+text_position =  print_variable &difference text_position
+text_position =  print_variable &mean text_position
+
+#
+# Draw the victory string so that the player knows whether
+# he's won our stunning game.
+#
+text_position = make_vector 0.45 0.57
+print_string victory_string text_position

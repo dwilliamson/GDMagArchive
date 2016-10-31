@@ -1,0 +1,39 @@
+Listing 4. Windows Declaration
+#include <wing.h>  // For WinG stuff
+
+// Note that this is supposed to be for Win32, so there are no FAR types.
+// However, it could be adapted easily for 16-bit Windows.
+
+class COffscreenBuffer
+{
+public:
+	// Basic information access
+	char unsigned *GetBits(void) { return pBits; };
+	long GetStride(void) const { return Stride; };
+	int GetWidth(void) const { return Width; };
+	int GetHeight(void) const { return Height; };
+
+	// Displaying the buffer
+	void SwapBuffer(void) const;
+
+	// Pixel access control - these are no-ops in Windows
+	void Lock(void) const {};
+	void Unlock(void) const {};
+
+	// Constructor and Destructor
+	COffscreenBuffer(void);
+	~COffscreenBuffer(void);
+
+private:
+	// Common implementation data
+	char unsigned *pBits;
+	long Stride;
+	int Height;
+	int Width;
+
+	// Windows implementation data
+	HDC OffscreenDC;
+	HBITMAP OffscreenBitmap;
+	HBITMAP OriginalMonoBitmap;
+};
+

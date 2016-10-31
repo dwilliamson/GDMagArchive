@@ -1,0 +1,60 @@
+Int Get_Input_Local(void)
+{
+// query the input device and return status to caller
+
+switch(input_device)
+	{
+
+	case MOUSE:
+		{
+		// get mouse direction and status of buttons
+		if (mouse has changed)
+		{
+		return packed information;
+		} //end if mouse moved
+		else
+		return NO_MOTION;
+		} break;
+
+	case JOYSTICK:
+		{
+		// get joystick direction and status of buttons
+		if (joystick has changed)
+		{
+		returned packed information
+		} // end if joystick moved
+		else
+		return NO_MOTION;
+		} break;
+
+	case KEYBOARD:
+		{
+		// get keyboard state
+		if (a key is down)
+		{
+		return packed information;
+		} // end if a key idd pressed
+		else
+		return NO_MOTION;
+		} break;
+
+	default:break;
+
+	} // end switch
+	} // end Get_Input_Local
+
+
+int Get_Input_Remote(void)
+{
+// look at the data port and see if there is a packet there
+
+if (data ready at COMM port)
+{
+// grab data from queue and pack it
+
+return packed information
+
+} // end if data ready
+
+} // end Get_Input_Remote
+

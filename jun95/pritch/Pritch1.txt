@@ -1,0 +1,109 @@
+Listing 1.  VESACHK.C (Continued on p. 45)
+/* ============================================================= */
+/* VESACHK.C - Check for VBE Extension and report mode available */
+/* ============================================================= */
+
+#include <stdio.h>
+#include <dos.h>
+#include <string.h>
+
+#define uchar unsigned char
+#define uint  unsigned int
+
+typedef struct {
+
+	/* These items defined in the VESA VBE 1.2 Spec */
+
+	char			Vbe_Signature[4];		/* OVESAO */
+	int				Vbe_Version;			/* Vesa version *
+	char far *		Oem_String_Ptr	;		/* Name of Video Card */
+	uchar			Capabilites[4];			/* Bitmapped features */
+	uint far *		Video_Mode_Ptr; 		/* >List of Video Modes */
+	int	Total_Memory;						/* Video Mem / 64K */
+
+	/* These items added in the VESA VBE 2.0 Spec */
+
+	int				Oem_Software_Rev;
+	char far *		Oem_Vendor_Name_Ptr;
+	char far *		Oem_Product_Name_Ptr;
+	char far *		Oem_Product_Rev_Ptr;
+
+	uchar			reserved[222];			/* From the 1.2 spec */
+	uchar			Oem_Data[256];			/* VBE 2.0 OEM strings */
+
+} VbeInfoBlock;
+
+int get_VESA_version(VbeInfoBlock far* , int*, int*);
+
+void main ( void )
+{
+
+	VbeInfoBlock	VESA_Info;
+	int				VESA_Version, MajorVer, MinorVer, Mode;
+	uint far *		Mptr;
+
+	VESA_Version = get_VESA_version(&VESA_Info, &MajorVer, &MinorVer);
+
+	if (VESA_Version) {
+		printf (OThis video card has VBE version %d.%d extensions.\nO, MajorVer,MinorVer);
+		printf (OThe Card Name is O%FsO\nO,VESA_Info.Oem_String_Ptr);
+
+		/* Display List of Available Modes */
+
+		printf (O\nThe Following Modes are supported:\nO);
+		Mptr = VESA_Info.Video_Mode_Ptr;
+		while ( (Mode = *Mptr++) != 0xFFFF) {
+			printf (Omode %4.4xh      O,Mode);
+		}
+		printf(O\n\nO);
+
+	} else {
+		printf (OThis video card does not have VESA BIOS support\nO);
+	}
+
+
+}
+
+int get_VESA_version( VbeInfoBlock far* VESA_Info,int * MajorVer, int * MinorVer )
+{
+
+	union REGS in_regs, out_regs;
+	struct SREGS seg_regs;
+	int   ver, m;
+
+	/* Prepare VESA info Buffer */
+
+	memset( VESA_Info, 0, 512);
+	memcpy( VESA_Info->Vbe_Signature, OVBE2O, 4);
+
+	/* Call Int 10, VBE Function (4F)00h */
+
+	in_regs.x.ax = 0x4F00;
+	seg_regs.es  = FP_SEG(VESA_Info);
+	in_regs.x.di = FP_OFF(VESA_Info);
+
+	int86x(0x10, &in_regs, &out_regs, &seg_regs);
+
+	/* Check if VBE Extions present & Get Revision Level */
+
+	if ( (out_regs.x.ax != 0x004F) ||
+	(memcmp(VESA_Info->Vbe_Signature, OVESAO, 4) != 0) )
+	{
+		return 0;
+	} else {
+		ver = VESA_Info->Vbe_Version;
+		*MajorVer = (ver >> 8);
+
+		/* bug check - Some BIOSes return 0x0102 instead of 0x0120 */
+		/* Check for Minor version in wrong nibble and correct */
+
+		m = (ver & 0xFF);
+		if ((m != 0 ) && ((m & 0x0F) != 0)) {
+			*MinorVer = m * 10;
+		} else {
+			*MinorVer = (m >> 4) * 10;
+	}
+	return ver;
+	}
+}
+

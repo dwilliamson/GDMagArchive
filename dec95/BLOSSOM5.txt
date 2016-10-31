@@ -1,0 +1,239 @@
+Listing 5. Paddle Game Implementation (Continued on p. 33)
+void CPaddleGameWindow::KeyDown(char unsigned Key)
+{
+	if (!IsDemoMode)
+	{
+		// Get the paddle moving
+		switch (Key)
+		{
+			case ',':
+			case '<':
+				PaddleXSpeed -= 2;
+				break;
+
+			case '.':
+			case '>':
+				PaddleXSpeed += 2;
+				break;
+
+			case 'd':
+			case 'D':
+				// Switch to demo mode
+				IsDemoMode = 1;
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (Key == 'P' || Key == 'p')
+	{
+		// Switch to player control
+		IsDemoMode = 0;
+	}
+}
+
+void CPaddleGameWindow::KeyUp(char unsigned Key)
+{
+	if (!IsDemoMode)
+	{
+		// Reverse the motion of the paddle
+		switch (Key)
+		{
+			case ',':
+			case '<':
+				PaddleXSpeed += 2;
+				break;
+
+			case '.':
+			case '>':
+				PaddleXSpeed -= 2;
+				break;
+
+			default:
+				break;
+		}
+	}
+}
+
+
+//---------------
+// Game logic is processed while the game is idle
+
+void CPaddleGameWindow::Idle(void)
+{
+	// Don't do anything while backgrounded
+	if (!IsActiveFlag)
+		return;
+
+	//---------------
+	// Move the ball and calculate a bounce off any walls
+
+	int BounceX = 0;
+	int BounceY = 0;
+
+	BallX += BallXSpeed;
+	BallY += BallYSpeed;
+
+	if (BallX < kPlayAreaLeft)
+	{
+		BallX = kPlayAreaLeft + (kPlayAreaLeft - BallX);
+		BounceX = 1;
+	}
+	else if (BallX >= kPlayAreaRight - kBallSize)
+	{
+		BallX = 2*kPlayAreaRight - 2*kBallSize - BallX;
+		BounceX = 1;
+	}
+
+	if (BallY < kPlayAreaTop)
+	{
+		BallY = kPlayAreaTop + (kPlayAreaTop - BallY);
+		BounceY = 1;
+	}
+
+	//---------------
+	// Follow the ball with the paddle center when in demo mode,
+	// allow the user to control the paddle in play mode
+
+	if (IsDemoMode)
+	{
+		if (PaddleX < BallX + kBallSize/2) ++PaddleX;
+		else if (PaddleX > BallX + kBallSize/2) -PaddleX;
+	}
+	else
+	{
+		PaddleX += PaddleXSpeed;
+	}
+
+	// Make sure the paddle doesn't move out of the play area!
+	if (PaddleX < kPlayAreaLeft + kPaddleWidth/2)
+		PaddleX = kPlayAreaLeft + kPaddleWidth/2;
+	else if (PaddleX > kPlayAreaRight - kPaddleWidth/2)
+		PaddleX = kPlayAreaRight - kPaddleWidth/2;
+
+	//---------------
+	// Bounce the ball
+
+	if (BallY + kBallSize >= kWallTop && BallY < kWallBottom)
+	{
+		// Ball is within the block field.
+		// Calculate ball bounces off blocks
+		int BlockLeft = (BallX -  kWallLeft) / kBlockWidth;
+		int BlockTop = (BallY - kWallTop) / kBlockHeight;
+		int BlockRight = (BallX + kBallSize -  kWallLeft) / kBlockWidth;
+		int BlockBottom = (BallY + kBallSize - kWallTop) / kBlockHeight;
+
+		// Look to the sides of the ball
+		if (BallXSpeed > 0 &&
+			((BallX + kBallSize - kWallLeft) % kBlockWidth) == 0)
+		{
+			if (HitBlock(BlokRight, BlockTop))
+				BounceX = 1;
+
+			if (BlockTop != BlockBottom &&
+				 HitBlock(BlockRight, BlockBottom))
+				BounceX = 1;
+		}
+		else if (BallXSpeed < 0 &&
+			((BallX - kWallLeft) % kBlockWidth) == kBlockWidth-1)
+		{
+			if (HitBlock(BlockLeft, BlockTop))
+				BounceX = 1;
+
+			if (BlockTop != BlockBottom &&
+				 HitBlock(BlockLeft, BlockBottom))
+				BounceX = 1;
+		}
+
+		// Look to the top and bottom of the ball
+		if (BallYSpeed > 0 &&
+			((BallY + kBallSize - kWallTop) % kBlokHeight) == 0)
+		{
+			if (HitBlock(BlockLeft, BlockBottom))
+				BounceY = 1;
+
+			if (BlockLeft != BlockRight &&
+				 HitBlock(BlockRight, BlockBottom))
+				BounceY = 1;
+		}
+		else if (BallYSpeed < 0 &&
+			((BallY - kWallTop) % kBlockHeight) == kBlockHeight-1)
+		{
+			if (HitBlock(BlockLeft, BlockTop))
+				BounceY = 1;
+
+			if (BlockLeft != BlockRight &&
+				 HitBlock(BlockRight, BlockTop))
+				BounceY = 1;
+		}
+	}
+	else if (BallY == kPlayAreaBottom - kPaddleHeight - kBallSize)
+	{
+		// The ball is at the correct height to bounce off the paddle
+		if (BallX + kBallSize > PaddleX - kPaddleWidth/2 &&
+			BallX <= PaddleX + kPaddleWidth/2)
+		{
+			// The ball hit the paddle, so it's going to bounce back up
+			BounceY = 1;
+
+			// Divide the paddle into five sections and determine which
+			// contains the ball
+			int BallXCenter = BallX + kBallSize/2;
+			int PaddleLeft = PaddleX - kPaddleWidth/2;
+			int PaddleSection = (BallXCenter - PaddleLeft)
+				/ (kPaddleWidth / 5);
+			
+			if (BallXSpeed == 0 && PaddleSection != 2)
+			{
+				// If the ball isn't moving in X and it hits outside of
+				// the paddle center, it should bounce to the side
+				if (PaddleSection < 2)
+					BallXSpeed = -1;
+				else
+					BallXSpeed = 1;
+			}
+			else if (PaddleSection == 0 && BallXSpeed > 0)
+			{
+				// The ball is striking the leftmost section of the paddle
+				// from the left. Bounce it back.
+				BounceX = 1;
+			}
+			else if (PaddleSection == 4 && BallXSpeed < 0)
+			{
+				// The ball is striking the rightmost section of the paddle
+				// from the right. Bounce it back.
+				BounceX = 1;
+			}
+			else if (PaddleSection == 2)
+			{
+				// When it hits in the very center section, the ball
+				// bounces straight up.
+				BallXSpeed = 0;
+			}
+		}
+	}
+	else if (BallY == kPlayAreaBottom - kBallSize)
+	{
+		// TODO: Lose ball!
+		BounceY = 1;
+	}
+
+	//---------------
+	// Perform any velocity changes due to bounces
+
+	if (BounceX) BallXSpeed = -BallXSpeed;
+	if (BounceY) BallYSpeed = -BallYSpeed;
+
+	//---------------
+	// Display the new frame and return
+
+	COffscreenBuffer* pBuffer = GetOffscreenBuffer();
+	if (pBuffer)
+	{
+		pBuffer->Lock();
+		DrawCompleteGameState();
+		pBuffer->SwapBuffer();
+		pBuffer->Unlock();
+	}
+}

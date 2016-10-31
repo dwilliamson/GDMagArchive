@@ -1,0 +1,68 @@
+Listing 7. The CGame::SetTileState Member Function for TicTacToe
+BOOL
+CGame::SetTileState(UINT uiX, UINT uiY)
+{
+  ASSERT((uiX < 3) && (uiY < 3));
+  CWave wavTile;
+  if (m_tsGrid[uiX][uiY] == tsEMPTY)
+  {
+    // Send tile info to remote player via a turn message
+    if (m_bMyTurn)
+      if (!DPSendTurnMsg(CPoint(uiX, uiY)))
+      {
+        AfxGetMainWnd()->MessageBox("Error sending turn message.",
+          AfxGetAppName());
+        return FALSE;
+      }
+    // Change turns and set the tile state
+    m_bMyTurn = !m_bMyTurn;
+    m_tsGrid[uiX][uiY] = (m_uiTurns % 2) ? tsO : tsX;
+    // Update grid
+    AfxGetMainWnd()->Invalidate(FALSE);
+    // Play the tile wave
+    wavTile.Create((m_uiTurns % 2) ? IDW_O : IDW_X);
+    wavTile.Play();
+  }
+  else
+  {
+    // Play the tile error wave
+    wavTile.Create(IDW_ERROR);
+    wavTile.Play();
+    return FALSE;
+  }
+  // Check for winner/draw
+  if (IsWinner())
+  {
+    // Determine winner and notify
+    if (m_bMyTurn)
+    {
+      CWave wavLose(IDW_LOSE);
+      wavLose.Play();
+      AfxGetMainWnd()->MessageBox("Bummer, you lost!",
+        AfxGetAppName());
+    }
+    else
+    {
+      CWave wavWin(IDW_WIN);
+      wavWin.Play();
+      AfxGetMainWnd()->MessageBox("Congratulations, you won!",
+        AfxGetAppName());
+    }
+    // Start new game
+    return NewGame();
+  }
+  else
+  {
+    if (IsDraw())
+    {
+      // Play draw wave
+      CWave wavDraw(IDW_DRAW);
+      wavDraw.Play();
+      // Notify of a draw
+      AfxGetMainWnd()->MessageBox("It's a draw!", AfxGetAppName());
+      // Start new game
+      return NewGame();
+    }
+  }
+  return TRUE;
+}

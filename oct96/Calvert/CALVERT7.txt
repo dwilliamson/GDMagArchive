@@ -1,0 +1,26 @@
+Listing 7. The ISpeedDraw Object
+
+class ISpeedDraw: public IUnknown
+{
+public:
+   STDMETHOD(QueryInterface) (THIS_ REFIID, LPVOID*) PURE;
+   STDMETHOD_(ULONG,AddRef)  (THIS) PURE;
+   STDMETHOD_(ULONG,Release) (THIS) PURE;
+   STDMETHOD_(BOOL, BackgroundBlits) (THIS) PURE;
+   STDMETHOD_(BOOL, Pause) (THIS) PURE;
+   STDMETHOD_(VOID, Restore) (THIS) PURE;
+   STDMETHOD_(VOID, Create) (THIS) PURE;
+   STDMETHOD_(VOID, InitParams)(THIS_ HWND AHandle,
+                               LPSTR BackGroundMapStr,
+                               int TransColor,
+                               LPSTR DllName) PURE;
+   STDMETHOD_(VOID, Run) (THIS) PURE;
+   STDMETHOD_(VOID, DestroyObjects) (THIS) PURE;
+   STDMETHOD_(VOID, DoFlip)(THIS) PURE;
+   STDMETHOD_(VOID, InitObjects) (THIS) PURE;
+   STDMETHOD_(VOID, Move) (THIS_ int Value) PURE;
+   STDMETHOD_(VOID, MakeActive) (THIS_ BOOL Value) PURE;
+   STDMETHOD_(VOID, SetTimerOdd) (THIS_ BOOL Value) PURE;
+   STDMETHOD_(VOID, SetBackOrigin) (THIS_ POINT Value) PURE;
+};
+typedef ISpeedDraw *PISpeedDraw;

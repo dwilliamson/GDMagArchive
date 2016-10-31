@@ -1,0 +1,1 @@
+These 3 listings are referenced in Jeff Landers' March '98 "Graphic Content" column on quaternions, plus the source files (source.zip) and executable (executabl.zip) for the quaternion demonstration application.

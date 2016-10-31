@@ -1,0 +1,184 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "E&xit",                       IDM_FILE_EXIT
+    END
+    POPUP "&Adapter"
+    BEGIN
+        MENUITEM "Adapter0",                    IDM_ADAPTER_ADAPTER0
+    END
+    POPUP "Device"
+    BEGIN
+        MENUITEM "Null",                        IDM_DEVICE_NULL
+        MENUITEM "SW Rasterizer",               IDM_DEVICE_SWRASTERIZER
+        MENUITEM "HAL - SW Vertex Processing",  IDM_DEVICE_HALSW
+        MENUITEM "HAL - Mixed Vertex Processing", IDM_DEVICE_HALMIXED
+        MENUITEM "HAL - HW Vertex Processing",  IDM_DEVICE_HALHW
+        MENUITEM "HAL - Pure",                  IDM_DEVICE_HALPURE
+        MENUITEM "Reference Rasterizer",        IDM_DEVICE_REFRAST
+    END
+    POPUP "&Mode"
+    BEGIN
+        MENUITEM "&Windowed",                   IDM_MODE_WINDOWED
+        MENUITEM SEPARATOR
+        MENUITEM "640x480",                     IDM_MODE_FULL0
+    END
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "&Wireframe",                  IDM_OPTIONS_WIREFRAME
+        MENUITEM SEPARATOR
+        MENUITEM "Don't touch any vertex components (0 bytes)\t0", 
+                                                ID_OPTIONS_0
+        MENUITEM "Touch the X component of the vertices (4 bytes)\t1", 
+                                                ID_OPTIONS_1
+        MENUITEM "Touch the X, Y components of the vertices (8 bytes)\t2", 
+                                                ID_OPTIONS_2
+        MENUITEM "Touch the X, Y, Z components of the vertices (12 bytes)\t3", 
+                                                ID_OPTIONS_3
+        MENUITEM "Touch Position and Normal X components (16 bytes)\t4", 
+                                                ID_OPTIONS_4
+        MENUITEM "Touch Position and Normal X,Y components (20 bytes)\t5", 
+                                                ID_OPTIONS_5
+        MENUITEM "Touch Position and Normal components (24 bytes)\t6", 
+                                                ID_OPTIONS_6
+        MENUITEM "Touch Position, Normal, and Texture U components (28 bytes)\t7", 
+                                                ID_OPTIONS_7
+        MENUITEM "Touch Position, Normal, and Texture components (32 Bytes)\t8", 
+                                                ID_OPTIONS_8
+        MENUITEM "Touch 36 Bytes\tShift + 1 ",  ID_OPTIONS_9
+        MENUITEM "Touch 40 Bytes\tShift + 2",   ID_OPTIONS_10
+        MENUITEM "Touch 44 Bytes\tShift + 3",   ID_OPTIONS_11
+        MENUITEM "Touch 48 Bytes\tShift + 4",   ID_OPTIONS_12
+        MENUITEM "Touch 52 Bytes\tShift + 5",   ID_OPTIONS_13
+        MENUITEM "Touch 56 Bytes\tShift + 6",   ID_OPTIONS_14
+        MENUITEM "Touch 60 Bytes\tShift + 7",   ID_OPTIONS_15
+        MENUITEM "Touch 64 Bytes\tShift + 8",   ID_OPTIONS_16
+        MENUITEM SEPARATOR
+        MENUITEM "Toggle which vertices to touch\tV", 
+                                                ID_OPTIONS_TOGGLE_VERTICES
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About...",                   ID_HELP_ABOUT
+    END
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON    DISCARDABLE     "..\\resources\\icon1.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUT DIALOG DISCARDABLE  0, 0, 220, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About AGP Performance Tester"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,84,74,50,14
+    ICON            IDI_ICON1,IDC_STATIC,13,13,21,20
+    LTEXT           "AGP Write Combining Performance Test Application",
+                    IDC_STATIC,38,15,164,8
+    LTEXT           "By Dean P. Macri",IDC_STATIC,81,27,56,8
+    LTEXT           "Copyright (c) 2001, Intel Corporation",IDC_STATIC,52,42,
+                    114,8
+    LTEXT           "All Rights Reserved",IDC_STATIC,77,52,63,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 213
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

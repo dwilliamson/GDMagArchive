@@ -1,0 +1,11 @@
+This program is Copyright (c) 2003 Jonathan Blow.  All rights reserved.  
+Permission to use, modify, and distribute a modified version of this 
+software for any purpose and without fee is hereby granted.
+
+THE MATERIAL EMBODIED ON THIS SOFTWARE IS PROVIDED TO YOU "AS-IS"
+AND WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED OR OTHERWISE,
+INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY OR
+FITNESS FOR A PARTICULAR PURPOSE.
+
+Portions of the files unicode.cpp and unicode.h are Copyright 2001 Unicode, Inc.
+They carry their own copyright notices; see those respective files for details.

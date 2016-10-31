@@ -1,0 +1,44 @@
+Listing 1.  The Graphics Module GMOD>H
+// GMOD.H graphics module for demos
+
+unsigned char far *video_buffer = (unsigned char far *)0xA0000000L;
+
+void Plot_Pixel(int x,int y,int color)
+{
+// plots the pixel in the desired color a little quicker using binary shifting
+// to accomplish the multiplications
+
+video_buffer[((y<<8) + (y<<6)) + x] = (unsigned char )color;
+
+} // end Plot_Pixel
+
+void Set_Graphics_Mode(int mode)
+{
+// use the video interrupt 10h and the C interrupt function to set
+// the video mode
+
+union REGS inregs,outregs;
+
+inregs.h.ah = 0;					// set video mode sub-function
+inregs.h.al = (unsigned char)mode;	// video mode to change to
+int86(0x10, &inregs, &outregs);
+
+} // end Set_Graphics_Mode
+
+void Time_Delay(int clicks)
+{
+// this function uses the internal timer to wait a specified number of "clicks"
+// the actual amount of real time is the number of clicks * (time per click)
+// usually the time per click is set to 1/18th of a second or 55ms
+
+long far *clock = (long far *)0x0000046CL, // address of timer
+	start_time; // starting time
+
+// get current time
+start_time = *clock;
+
+// when the current time minus the starting time >= the requested delay then
+// the function can exit
+while(labs(*clock - start_time) < (long)clicks){}
+
+} // end Time_Delay

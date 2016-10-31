@@ -1,0 +1,254 @@
+Listing 1.0 - Using Microsoft's Graphics Library to get into mode 13h.
+
+#include <stdio.h>
+#include <graph.h>
+#include <conio.h>
+
+int main(void)
+{
+_setvideomode(_MRES256COLOR);
+
+printf("\nHello world from mode 13h.");
+
+getch();
+
+_setvideomode(_DEFAULTMODE);
+
+} // end main
+
+
+Listing 2. Setting the video mode to mode 13h.
+
+// I N C L U D E S ////////////////////////////////////////////////////////////
+
+#include <stdio.h>
+#include <dos.h>
+#include <conio.h>
+
+// D E F I N E S //////////////////////////////////////////////////////////////
+
+#define VGA256    0x13       // 320x200x256
+#define TEXT_MODE 0x03       // the default text mode
+
+// F U N C T I O N S //////////////////////////////////////////////////////////
+
+void Set_Video_Mode(int mode)
+{
+
+// use the video interrupt 10h to set the video mode to the sent value
+
+union REGS inregs,outregs;
+
+inregs.h.ah = 0;                    // set video mode sub-function
+inregs.h.al = (unsigned char)mode;  // video mode to change to
+
+_int86(0x10, &inregs, &outregs);
+
+} // end Set_Video_Mode
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Set_Video_Mode_I(int mode)
+{
+
+// use the video interrupt 10h to set the video mode to the sent value
+
+// use the inline assembler
+
+_asm
+   {
+
+   mov ah, 0             ; sub - function 0 - set video mode
+   mov al, BYTE PTR mode ; move the video mode into al
+   int 10h               ; do the interrupt
+
+   } // end asm
+
+} // end Set_Video_Mode_I
+
+/////////////////////////////////////////////////////////////////////////////////
+
+int main(void)
+{
+
+// set video mode to 320x200 256 color mode
+
+Set_Video_Mode(VGA256);
+
+printf("\nHello again!!!");
+
+// wait for keyboard to be hit
+
+while(!kbhit()){}
+
+// go back to text mode
+
+Set_Video_Mode(TEXT_MODE);
+
+} // end main
+ 
+
+Listing 3.0 - A demo program that takes advantage of mode 13h.
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <dos.h>
+#include <math.h>
+
+#define VGA256              0x13  // 320x200x256
+#define TEXT_MODE           0x03  // 80x25 text mode
+#define PALETTE_MASK        0x3C6 // the bit mask register
+#define PALETTE_REGISTER_RD 0x3C7 // set read index at this I/O
+#define PALETTE_REGISTER_WR 0x3C8 // set write index at this I/O
+#define PALETTE_DATA        0x3C9 // the R/W data is here
+// demo dependent defines
+#define BLOCK_SIZE          6     // size of blocks
+#define COLOR_BASE          16    // color base of rotation banks
+#define GAME_ROWS           11    // number rows in game developer title
+#define GAME_COLUMNS        45    // number of columns
+#define GAME_XO             20    // origin of where to draw title
+#define GAME_YO             50
+
+// this structure holds a RGB triple in three bytes
+typedef struct RGB_color_typ
+        {
+        unsigned char red;    // red   component of color 0-63
+        unsigned char green;  // green component of color 0-63
+        unsigned char blue;   // blue  component of color 0-63
+        } RGB_color, *RGB_color_ptr;
+
+void Set_Video_Mode(int mode);
+void Set_Palette_Register(int index, RGB_color_ptr color);
+void Get_Palette_Register(int index, RGB_color_ptr color);
+void Plot_Pixel_Fast(int x,int y,unsigned char color);
+
+unsigned char far *video_buffer = (char far *)0xA0000000L; // vram byte ptr
+
+// this is the image that will be displayed, put in anything you want
+// the "."'s are for blanks and the "0"'s are for solid
+char *game[GAME_ROWS]={
+
+                     "0000.0000.00.00.0000.........................",
+                     "0....0..0.0.0.0.0............................",
+                     "0.00.0000.0...0.000..........................",
+                     "0..0.0..0.0...0.0............................",
+                     "0000.0..0.0...0.0000.........................",
+                     ".............................................",
+                     "00...0000.0...0.0000.0....0000.0000.0000.000.",
+                     "0.0..0....0...0.0....0....0..0.0..0.0....0..0",
+                     "0..0.000...0.0..000..0....0..0.0000.000..000.",
+                     "0.0..0.....0.0..0....0....0..0.0....0....0.0.",
+                     "00...0000...0...0000.0000.0000.0....0000.0..0",};
+
+void Set_Video_Mode(int mode)
+{
+// use the video interrupt 10h to set the video mode to the sent value
+union REGS inregs,outregs;
+inregs.h.ah = 0;                    // set video mode sub-function
+inregs.h.al = (unsigned char)mode;  // video mode to change to
+_int86(0x10, &inregs, &outregs);
+} // end Set_Video_Mode
+/void Set_Palette_Register(int index, RGB_color_ptr color)
+{
+// this function sets a single color look up table value indexed by index
+// with the value in the color structure
+// tell VGA card we are going to update a pallete register
+
+_outp(PALETTE_MASK,0xff);
+// tell vga card which register we will be updating
+_outp(PALETTE_REGISTER_WR, index);
+
+// now update the RGB triple, note the same port is used each time
+_outp(PALETTE_DATA,color->red);
+_outp(PALETTE_DATA,color->green);
+_outp(PALETTE_DATA,color->blue);
+} // end Set_Palette_Register
+void Get_Palette_Register(int index, RGB_color_ptr color)
+{
+
+// this function gets the data out of a color lookup regsiter and places it
+// into color
+// set the palette mask register
+_outp(PALETTE_MASK,0xff);
+// tell vga card which register we will be reading
+_outp(PALETTE_REGISTER_RD, index);
+
+// now extract the data
+color->red   = _inp(PALETTE_DATA);
+color->green = _inp(PALETTE_DATA);
+color->blue  = _inp(PALETTE_DATA);
+} // end Get_Palette_Register
+void Plot_Pixel_Fast(int x,int y,unsigned char color)
+{
+// plots the pixel in the desired color a little quicker using binary shifting
+// to accomplish the multiplications
+// use the fact that 320*y = 256*y + 64*y = y<<8 + y<<6
+video_buffer[((y<<8) + (y<<6)) + x] = color;
+} // end Plot_Pixel_Fast
+
+void Draw_Game(void)
+{
+// this function randomly fills up the game developer title with 11
+// diferent shades of blue that are then color rotated by means using
+// the color look up table
+int x,y,index,clock=0;
+RGB_color color,save_color;
+// create blue color palette
+
+for (index=COLOR_BASE; index<COLOR_BASE+GAME_ROWS; index++)
+    {
+
+    color.red   = 0;
+    color.green = 0;
+    color.blue  = (index - COLOR_BASE + 1)*5;
+    Set_Palette_Register(index,(RGB_color_ptr)&color);
+    } // end for color
+
+// do this until user hits a key
+
+while(!kbhit())
+     {
+     // plot a pixel somewhere in the game developer title
+     x = rand()%GAME_COLUMNS;
+     y = rand()%GAME_ROWS;
+     // test if there is a block there
+     if (game[y][x] == '0')
+        {
+        Plot_Pixel_Fast(x*BLOCK_SIZE+GAME_XO+rand()%BLOCK_SIZE,
+                        y*BLOCK_SIZE+GAME_YO+rand()%BLOCK_SIZE,
+                        y+COLOR_BASE);
+        } // end if
+
+     // rotate the colors
+     // this is an effect where by we shift the values of one color
+     // register into another, this results in a "bucket brigade"
+     // effect that makes the colors look like they are moving
+     if (++clock==200) // wait 200 cycles before each rotation
+        {
+        // save the first register in sequence
+        Get_Palette_Register(COLOR_BASE,(RGB_color_ptr)&save_color);
+        // rotate the colors
+        for (index=COLOR_BASE+1; index<COLOR_BASE+GAME_ROWS; index++)
+            {
+            // place the nth color register in the (n-1)th
+            Get_Palette_Register(index,(RGB_color_ptr)&color);
+            Set_Palette_Register(index-1,(RGB_color_ptr)&color);
+            } // end for index
+       // complete the circle
+       Set_Palette_Register(index-1,(RGB_color_ptr)&save_color);
+       // reset counter clock
+       clock=0;
+       } // end if clock
+     } // end while
+} // end Draw_Game
+
+int main(void)
+{// set video mode to 320x200x256
+ Set_Video_Mode(VGA256);
+Draw_Game();
+// reset video to text mode
+Set_Video_Mode(TEXT_MODE);
+return(1);
+} // end main
+
+

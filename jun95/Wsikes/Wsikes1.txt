@@ -1,0 +1,30 @@
+Listing 1.  General TRE File Format
+FILE			DATA
+OFFSET			SIZE			DESCRIPTION
+
+0-3				char			OXTREO char string.
+4-7 			char			Blanks. 4 bytes of 00.
+8-11			long			Starting Offset of the Indirect Record Pointer Table. 
+12-15			long			Starting Offset of the Path Name Table. 
+16-19			long			Starting Offset of the Record Pointer Table.  
+20-23			long			Offset of the first Data Record in this TRE file.
+24-(xx-1)		var				Indirect Record Pointer Table.  This table contains indirect 
+								pointers, or Opointers to pointersO.  The values in this table 
+								point into the Path Name Table or into the Record Pointer
+								Table.
+xx-(yy-1)		var 			Path Name Table.  Table of variable-length records containing 
+								system path names and other path-related data.
+
+yy-(zz-1)		var 			Record Pointer Table. This table consists of structures 
+								containing the file offsets and sizes of the Data Records 
+								in this TRE file.
+
+zz-EOF	 		var				Individual Data Records.
+
+NOTES:
+1.  var refers to data having variable sizes.
+2.  xx is the Starting Offset of the Path Name Table.
+3.  yy is the Starting Offset of the Record Pointer Table.
+4.  zz is the Offset of the First Data Record.
+5.  EOF refers to the end of the file.
+

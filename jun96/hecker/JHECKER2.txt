@@ -1,0 +1,22 @@
+Listing 2: The non-aliasing test function.
+void TransformVectors2( float *pDestVectors,
+float const (*pMatrix)[3], float const *pSourceVectors,
+int NumberOfVectors )
+{
+	int Counter, i, j;
+	for(Counter = 0;Counter < NumberOfVectors;Counter++) {
+		float aTemp[3];
+		for(i = 0;i < 3;i++) {
+			float Value = 0;
+			for(j = 0;j < 3;j++) {
+				Value += pMatrix[i][j] * pSourceVectors[j];
+			}
+			aTemp[i] = Value;
+		}
+		pSourceVectors += 3;
+		for(i = 0;i < 3;i++) {
+			*pDestVectors++ = aTemp[i];
+		}
+	}
+}
+

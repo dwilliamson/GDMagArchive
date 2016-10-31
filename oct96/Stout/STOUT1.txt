@@ -1,0 +1,20 @@
+Listing 1. Breadth-first search
+
+queue			Open
+
+BreadthFirstSearch
+  node   n, n', s
+	s.parent = null
+	// s is a node for the start
+	push s on Open
+	while Open is not empty
+		pop node n from Open	
+		if n is a goal node 
+			construct path 
+			return success
+		for each successor n' of n
+			if n' has been visited 				already,
+				continue
+			n'.parent = n
+			push n' on Open
+	return failure  // if no path found

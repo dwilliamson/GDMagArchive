@@ -1,0 +1,53 @@
+Installation Directions
+
+Installation Under Windows 95. 
+
+Once you have the required .SYS or .VXD files it is simple to install the performance device driver. On Windows 95 simply copy the .VXD file into the Windows\System directory. The driver is not present in memory until the support code opens it with the CreateFile API. The driver is removed from memory when the CloseHandle API is called, with the handle obtained from CreateFile. 
+
+Note that a header file -- VTOOLSC.H -- is part of the Vtools VxD building kit, it cannot be distributed. The text in the original article said that you require Vtools to build the Windows 95 version.
+
+Installation Under Windows NT. 
+
+Unfortunately, installation under Windows NT is not so simple. First, drivers first need to be registered with the system by adding some entries to the registry. These entries control how and when to start the driver, and it is through this mechanism that boot and system drivers are started with the system.  The new registry key that needs to be added for the GDPerf driver is shown below.
+
+KEY:	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\GDPerf
+
+To this key add the following data fields (note these are not sub keys):
+
+DWORD: Type			0x00000001
+DWORD: Start			0x00000002
+DWORD: ErrorControl	0x00000000
+STRING: Group		Extended Base
+
+Note that usually you have to be the administrator to add system registry entries.
+
+This registry information tells the system that the new service is a device driver that is part of the base system, that the driver it is not dependent on any other driver, that the driver is started after the operating system, and to ignore any errors. 
+
+Second, copy the GDPERF.SYS file to the WindowsNT/System32/Drivers directory and reboot the machine. The driver will be started with the system, and you can verify this by opening the Windows NT control panel and clicking on "Devices". GDPerf should be indicated in the device list, and its status should say "Started". The driver can be stopped, started and disabled from within this control panel area. Device drivers must be running before Windows NT can open them. 
+
+Listing 7 on the website is a test application that opens the driver and closes it again. This code detects the operating system and opens the correct driver. It will work on Windows 95 or Windows NT. 
+
+Listing 10 uses the RDPMC instruction, so it requires an MMX processor. If you're profiling on a non-MMX processor, replace the RDMPC macros with bPSReadMSR calls. This method isn't as accurate however, as driver calls are involved. 
+
+Performance Monitoring Under Windows 98 
+
+Windows 98 uses the new Windows Driver Model (WDM). Drivers that adhere to this new standard will be compatible with Windows 98 and the upcoming Windows NT 5.0. The WDM is based on the existing Windows NT driver model and the NT version of the performance driver can be classified as a WDM driver. Therefore, Windows 98 will run either version of the performance driver or both. 
+
+The version of the driver that is used depends on how you open the driver. If you choose to use the NT driver as a Windows 98 WDM driver, you don't have to detect the operating system version, as the driver is opened in an identical way to Windows NT. You will, however, need to modify the code in listings 7 and 8 so that they do not detect the operating system and look for the Windows 95 VxD.
+
+Windows 98. Installing GDPERF.SYS on Windows 98 is similar to installing it on Windows NT. First copy the file to the Windows\System32\Drivers directory. Then modify the registry (again, this is very similar to the setup under Windows NT). 
+
+First create the key listed below:
+
+KEY: HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\GDPerf
+
+Then add the following data fields to the key (note these are not sub keys):
+
+DWORD: Type			0x00000001
+DWORD: Start			0x00000002
+DWORD: ErrorControl	0x00000000
+STRING: ImagePath		"SystemRoot\System32\Drivers\GDperf.sys"
+STRING: DisplayName	"Game Developer Performance Driver"
+
+Then reboot the machine and use the performance driver as you would for Windows NT. 
+

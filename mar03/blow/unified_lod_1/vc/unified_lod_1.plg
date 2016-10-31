@@ -1,0 +1,53 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: unified_lod_1 - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP347.tmp" with contents
+[
+/nologo /MDd /Gm /GX /ZI /Od /I "..\app_shell" /I "..\app_shell\include" /I "..\mesh" /I "..\framework" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fp"Debug/unified_lod_1.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\code\unified_lod_1\main.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP347.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP348.tmp" with contents
+[
+uuid.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib jpg.lib opengl32.lib glu32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/unified_lod_1.pdb" /debug /machine:I386 /out:"Debug/unified_lod_1.exe" /pdbtype:sept /libpath:"..\app_shell\lib" 
+.\Debug\app_shell.obj
+.\Debug\auto_array.obj
+.\Debug\bt_loader.obj
+.\Debug\data_structures.obj
+.\Debug\error_quadric.obj
+.\Debug\geometry.obj
+.\Debug\jpeg_load.obj
+.\Debug\lightweight_proximity_grid.obj
+.\Debug\main.obj
+.\Debug\make_terrain.obj
+.\Debug\mesh.obj
+.\Debug\mesh_builder.obj
+.\Debug\mesh_reducer.obj
+.\Debug\mesh_topology_handler.obj
+.\Debug\priority_queue.obj
+.\Debug\projector.obj
+.\Debug\rendering.obj
+.\Debug\seam_demo.obj
+.\Debug\tangent_frames.obj
+.\Debug\visibility.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP348.tmp"
+<h3>Output Window</h3>
+Compiling...
+main.cpp
+Linking...
+LINK : LNK6004: Debug/unified_lod_1.exe not found or not built by the last incremental link; performing full link
+LINK : warning LNK4098: defaultlib "MSVCRT" conflicts with use of other libs; use /NODEFAULTLIB:library
+
+
+
+<h3>Results</h3>
+unified_lod_1.exe - 0 error(s), 1 warning(s)
+</pre>
+</body>
+</html>

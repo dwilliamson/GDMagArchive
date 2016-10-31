@@ -1,0 +1,329 @@
+1	Listing 1	April 7, 1995  11:36 AM
+
+1	Listing 1	April 7, 1995  11:36 AM
+
+1	Listing 1	April 7, 1995  11:36 AM
+
+
+Listing 1.  MAIN.C
+
+#include <stdio.h>
+
+#include Ofm.hO
+
+PatchData sample_patch = {
+	(1<<5)|(15),	// sustaining and pitch multiplication of 2 (op1)
+	(1<<5)|(7),	// sustaining and pitch multiplication of 3 (op2)
+	0,	 			// no attenuation or scaling for higher pitches (op1)
+	0,				// no attenuation or scaling for higher pitches (op2)
+	0xf0,			// fast attack, slow decay (op1)
+	0xff,			// fast attack, fast decay (op2)
+	0xf8,			// loud sustain, medium release (op1)
+	0xf8,			// loud sustain, medium release (op2)
+	0,				// sine wave (op1)
+	3,				// pulse sine (op2)
+	(3<<1)|(1)	// PI/4 feedback, FM syntehsis mode
+};
+
+void main(void)
+{
+	char key;
+	int block,note;
+
+	printf(O\nCheesynth by Jamie Fristrom.O);
+	printf(O\nHit letters to play notes.O);
+	printf(O\nHit numbers to play drums:O);
+	printf(O\n 1) High hat.O);
+	printf(O\n 2) Cymbal.O);
+	printf(O\n 3) Tom.O);
+	printf(O\n 4) Snare.O);
+	printf(O\n 5) Kick.O);
+	printf(O\n\nPress enter to quit.\nO);
+
+	fm_reset();							// Reset the chip.
+	init_drums();						// Set up drums.
+	write_patch(&sample_patch,0);	// set channel 0 to play our cheezy sample
+	for(;;)
+	{
+		key = getch();
+		if(key==13) break;
+		if((key>=O1O)&&(key<=O5O))
+		{
+			key-=O1O;
+			stop_drum(key);				// easy way to make sure a drum is stopped cutting into its decay time
+			play_drum(key);
+		}
+		else
+		{
+			key-=OaO;
+
+											// split octave off of note
+			block	= 2+key/12;
+			note	= key%12;
+			play_voice(0,block,note);
+			stop_voice(0);				// since we canOt detect when user lifts his or her finger from keyboard, stop voice right away.
+			}
+		}
+}
+
+Listing 2.  FM.C
+
+// Code for programming AdLib
+// Jamie Fristrom
+// November 1993
+#include <dos.h>
+#include <conio.h>
+
+#define ADLIB_ADDR_PORT 0x388
+#define ADLIB_DATA_PORT 0x389
+
+#include Ofm.hO
+
+// The op_offsets are the offset to a given address to find the parameter
+// for the first operatof for a given voice.  The second operator is
+// always three after the first one.
+static int op_offset[] = {
+	0,	// voice 0
+	1,	// voice 1
+	2,	// voice 2
+	8,	// voice 3
+	9,	// voice 4
+	10,	// voice 5
+	16,	// voice 6
+	17,	// voice 7
+	18,	// voice 8
+};
+
+
+static int fnumber[] = {
+	0x158,	// C
+	0x16b,	// C#
+	0x181,	// D
+	0x198,	// D#
+	0x1b0,	// E
+	0x1ca,	// F
+	0x1e5,	// F#
+	0x202,	// G
+	0x220,	// G#
+	0x241,	// A
+	0x263,	// A#
+	0x287,	// B
+};
+
+static char reg_shadow[9];
+
+void write_to_reg(char reg,char value)
+{
+	int i;
+	// Data delay:  putting it here protects us from nested interrupts,
+	// not that we need to worry about that in this program.
+	for(i=0;i<35;i++)
+		inp(ADLIB_ADDR_PORT);		// wait until weOve done 35 ins
+	// Select what address on the card we want to write to.
+	outp(ADLIB_ADDR_PORT,reg);
+	for(i=0;i<7;i++)				// I read literature that said 6.  It was wrong.
+		inp(ADLIB_ADDR_PORT);		// Wait for 7 instances.
+	outp(ADLIB_DATA_PORT,value);
+}
+
+void write_patch(PatchData *pd,int voice_no)
+// Writes a patch to the sound chip.
+{
+	int addr;	// Address offset for operator1.
+	int volume;
+
+	addr=op_offset[voice_no];
+
+	write_to_reg(0x20+addr,pd->flags1);			// am/vib/eg/ksr/multi
+	write_to_reg(0x20+3+addr,pd->flags2);
+
+	// ItOs often useful to reset the attenuation of the two
+	// two operators for every not you play, so you can have
+	// accents.  WeOre not doing that here.
+	write_to_reg(0x40+addr,pd->ksl_attn1);		// ksl/attenuation
+	write_to_reg(0x40+3+addr,pd->ksl_attn2);
+
+	write_to_reg(0x60+addr,pd->att_dec1);		// attack/decay
+	write_to_reg(0x60+3+addr,pd->att_dec2);
+
+	write_to_reg(0x80+addr,pd->sus_rel1);		// sustain/release
+	write_to_reg(0x80+3+addr,pd->sus_rel2);
+
+	write_to_reg(0xe0+addr,pd->wave_sel1);		// wave select
+	write_to_reg(0xe0+3+addr,pd->wave_sel2);
+
+	write_to_reg(0xc0+voice_no,pd->fdbk_alg);	// feedback/algorithm
+}
+
+void fm_reset(void)
+{
+	// This will silence the fm chip and make it ready for programming.
+	int i;
+
+	write_to_reg(0x01,0x20);	// Initialize test register to zero and indicate that value in WS should be used to select waves.
+	write_to_reg(0x08,0x20);	// Standard music mode. (Rather than speech synthesis)
+									// Keyboard split is second bit from MSb of F-number.
+	write_to_reg(0xBD,0xC0);	// Turn on am and vib.  All drums off.
+									// am and vib help make music a little OnoisierO.
+
+	// Turn off all voices
+	for(i=0;i<9;i++) {
+		write_to_reg(0xA0+i,0x00);
+		write_to_reg(0xB0+i,0x00);
+	}
+}
+
+void set_frequency(int voice_no,int octave,int note)
+// Same as play_voice, but doesnOt set Key_on:  used for initializing
+// drum frequencies.
+{
+	unsigned char key_oct_fn;						// key on/off, octave, and hi bits of frequency get all rolled into one here
+	int fnum = fnumber[note];						// get the frequency specifier
+	write_to_reg(0xA0+voice_no,fnum&0xff);		// write low bits of frequency
+	key_oct_fn = ((octave&0x03)<<2)|((fnum>>8)&0x03);
+	reg_shadow[voice_no] = key_oct_fn;
+	write_to_reg(0xB0+voice_no,key_oct_fn);	// write hi bits of freq, block # and turn the note on.
+
+}
+
+void play_voice(int voice_no,int octave,int note)
+{
+	unsigned char key_oct_fn;						// key on/off, octave, and hi bits of frequencyget all rolled into one here
+	int fnum = fnumber[note];						// get the frequency specifier
+	write_to_reg(0xA0+voice_no,fnum&0xff);		// write low bits of frequency
+	key_oct_fn = 0x20|((octave&0x03)<<2)|((fnum>>8)&0x03);
+	reg_shadow[voice_no] = key_oct_fn;
+	write_to_reg(0xB0+voice_no,key_oct_fn);	// write hi bits of freq, block # and turn the note on.
+
+}
+
+void stop_voice(int voice_no)
+{
+	write_to_reg(0xB0+voice_no,reg_shadow[voice_no]&0x1f);
+}
+static char shadow_0xBD;
+
+// Patch for bass drum
+PatchData drum_patch_6 = {	// this, and voice_6 frequency, determinem sound of bass drum.
+	00,							// not sustaining and pitch multiplication of 1/2 (op1)
+	00,							// not sustaining and pitch multiplication of 1/2 (op2)
+	0xB,							// attenuate modulator a little
+	0,								// no attenuation on carrier
+	0xa8,							// medium attack on modulation, medium decay (op1)
+	0xd6,							// fast attack, slow decay on carrier (op2)
+	0x4c,							// little sustain, quick release (op1)
+	0x4f,							// little sustain, quick release (op2)
+	0,								// sine wave (op1)
+	0,								// sine wave (op2)
+	0								// no feedback, FM syntehsis mode
+};
+
+// drum patches 7 and 8 do not determine the sounds of individual
+// drums, rather each register has an effect on some of the drums,
+// but not others.  IOve used trial and error to come up with drums
+// that sound okay.  Same goes for frequencies 7 and 8.
+PatchData drum_patch_7 = {
+	0x01,0x0c,0x06,0x00,0xF9,0xF8,0x68,0xB5,0x00,0x00,0x01
+};
+
+PatchData drum_patch_8 = {
+	0x02,0x03,0x00,0x05,0xF7,0xF5,0xb5,0xa5,0x00,0x00,0x01
+};
+
+void init_drums(void) {
+	int i;
+
+	// Turn KEY-ON registers for fmchannels 6,7,8 off.
+	for(i=6;i<9;i++)
+		stop_voice(i);
+
+	// Okay, go drums.
+	write_to_reg(0xBD,0xE0);		// leave am and vib on
+	shadow_0xBD = 0xE0;			// save information about how we set register
+
+	// Set up drum patches
+	write_patch(&drum_patch_6,6);
+	write_patch(&drum_patch_7,7);
+	write_patch(&drum_patch_8,8);
+
+	// Set up drum frequencies : I hit upon these by trial and error.
+	set_frequency(6,2,1);		// bass drum
+	set_frequency(7,2,2);		// all other drums
+	set_frequency(8,2,3);		// all other drums
+}
+
+void play_drum(int drumno)
+{
+	char outbyte;
+	if(drumno<5)						// bounds checking for safety
+	{
+		outbyte = 1<<drumno;		// move bit into proper position
+		outbyte|=shadow_0xBD;		// or with shadow so we leave other bits intact
+		write_to_reg(0xBD,outbyte);
+	}
+}
+
+void stop_drum(int drumno)
+{
+	char outbyte;
+	if(drumno<5) 					// bounds check
+	{
+		outbyte = 1<<drumno;		// move bit into proper place
+		outbyte ^= 0xff;			// turn into a mask
+		outbyte &= shadow_0xBD;	// leave all bits on in drum_shadow except one we want to turn off
+		write_to_reg(0xBD,outbyte);
+	}
+}
+
+Listing 3.  FM.H
+
+// Prototypes and structures for frequency modulation code.
+// Jamie Fristrom
+#ifndef FM_H
+#define FM_H
+
+typedef struct {
+// parameter 1 is the modulator, parameter 2 is the carrier
+	unsigned char flags1;		// registers 0x20 to 0x35
+	unsigned char flags2;
+	unsigned char ksl_attn1;	// registers 0x40 to 0x55
+	unsigned char ksl_attn2;
+	unsigned char att_dec1;	// registers 0x60 to 0x75
+	unsigned char att_dec2;
+	unsigned char sus_rel1;	// registers 0x80 to 0x95
+	unsigned char sus_rel2;
+	unsigned char wave_sel1;	// registers 0xe0 to 0xf5
+	unsigned char wave_sel2;
+	unsigned char fdbk_alg;	// registers 0xc0 to 0xc8
+} PatchData;
+
+void write_to_reg(char reg,char value);
+// Write to an OPL2 register
+
+void write_patch(PatchData *pd,int voice_no);
+// Set a patch on the OPL2
+
+void fm_reset(void);
+// Reset the OPL2
+
+void set_frequency(int voice_no,int octave,int note);
+// Set a given voice frequency.  Used primarily for drums.
+
+void play_voice(int voice_no,int octave,int note);
+// Play a given note on a given channel.
+
+void stop_voice(int voice_no);
+// Stop a channel from making noise.  (Note goes into release mode.)
+
+void init_drums(void);
+// Initialize drum mode, and set up drums to sound tolerable.
+
+void play_drum(int drumno);
+// Play a drum:
+//  0 = hat, 1 = cymbal, 2 = tom, 3 = snare, 4 = bass
+
+void stop_drum(int drumno);
+// Stop a drum
+
+#endif
+

@@ -1,0 +1,94 @@
+Microsoft Developer Studio Workspace File, Format Version 5.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "consoletest"=.\consoletest\consoletest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Source/exceptionhandler/consoletest", HPAAAAAA
+    .\consoletest
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name exceptionhandler
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "exceptionhandler"=.\exceptionhandler\exceptionhandler.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Source/exceptionhandler/exceptionhandler", KPAAAAAA
+    .\exceptionhandler
+    end source code control
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "mfctest"=.\mfctest\mfctest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Source/exceptionhandler/mfctest", IPAAAAAA
+    .\mfctest
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name exceptionhandler
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "winmaintest"=.\winmaintest\winmaintest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Source/exceptionhandler/winmaintest", JPAAAAAA
+    .\winmaintest
+    end source code control
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name exceptionhandler
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+    begin source code control
+    "$/Source/exceptionhandler", APAAAAAA
+    .
+    end source code control
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

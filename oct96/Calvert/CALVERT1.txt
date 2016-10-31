@@ -1,0 +1,15 @@
+Listing 1. The InitObjectsProc event triggers the sprite
+
+procedure TForm1.SpeedDraw1InitObjectsProc(Sender: TObject);
+var
+  SurfaceDesc: TDDSurfaceDesc;
+  hr: HResult;
+begin
+  if not SpeedDraw1.CreateDDSurface(FNewSurface, 'dino.bmp', True) then
+    raise EDDError.Create('TSpeedDraw.SetupWorkSurface: No WorkSurface');
+  SurfaceDesc.dwSize := SizeOf(TDDSurfaceDesc);
+  hr := FNewSurface.GetSurfaceDesc(SurfaceDesc);
+  if hr <> DD_OK then
+    raise EDDError.CreateFmt('No Surface Desc $%x %s', [hr, GetOleError(hr)]);
+  FDinoRect := Rect(0, 0, SurfaceDesc.dwWidth, SurfaceDesc.dwHeight);
+end;

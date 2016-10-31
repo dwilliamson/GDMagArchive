@@ -1,0 +1,30 @@
+Listing 2: new_connection(), the function that handles new player’s
+connection.
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
+DESC *new_connection(sock) 
+        int sock;
+{
+        int newsock;
+        struct sockaddr_in addr;
+
+        /*
+         * This code accepts form a socket the first connection 
+         * which is queued and returns in its place a file
+         * file descriptor.  If the file descriptor value is -1,
+         * then we have encountered an error.
+         */
+        addr_len = sizeof(struct sockaddr);
+        newsock = accept(sock, (struct sockaddr *)&addr, &addr_len);
+        if (newsock < 0)
+                return NULL;
+        
+        [...]
+        /*
+         * Allocate TinyMUSH’s internal descriptor and return it.
+         */     
+}
+
+

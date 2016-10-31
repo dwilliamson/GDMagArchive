@@ -1,0 +1,21 @@
+struct Database {
+    [(1..)  |  ?Float];    
+}
+
+proc main {
+    Database db;
+    db .+ ["female" "jane"];
+    db .+ ["female" "ann"];
+    db .+ ["male" "mark"];
+    db .+ ["male" "don"];
+    db .+ ["parent" "mark" "don"];
+    db .+ ["parent" "jane" "don"];
+    db .+ ["parent" "ann" "don"];
+    db .+ ["sister" ?x ?y] <- ["parent" ?x ?p] & ["parent" ?y ?p] & ["female" ?y];
+
+
+    answer = db.["sister" ?x ?y];
+    each answer {
+        print("Answer: ", $_, "\n");
+    }
+}

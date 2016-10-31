@@ -1,0 +1,61 @@
+object Form1: TForm1
+  Left = 200
+  Top = 106
+  Width = 435
+  Height = 300
+  Caption = 'Form1'
+  Color = clBlack
+  Font.Color = clWindowText
+  Font.Height = -14
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  Menu = MainMenu1
+  OnClick = FormClick
+  OnCreate = FormCreate
+  OnKeyDown = FormKeyDown
+  PixelsPerInch = 120
+  TextHeight = 16
+  object Label1: TLabel
+    Left = 0
+    Top = 0
+    Width = 427
+    Height = 16
+    Align = alTop
+    Alignment = taCenter
+    Caption = 'Double Click Form to Close when in Exclusive Mode'
+    Color = clWhite
+    ParentColor = False
+  end
+  object SpeedDraw1: TSpeedDraw
+    Exclusive = False
+    BlankBackGround = False
+    BackColor = clBlack
+    ShowBackBmp = True
+    UseTimer = False
+    TimerInterval = 250
+    BackgroundFile = 'E:\GameMag\Backgrd1.bmp'
+    TransparentColor = 0
+    BackOrigX = 0
+    BackOrigY = 0
+    Left = 16
+    Top = 8
+  end
+  object MainMenu1: TMainMenu
+    Left = 56
+    Top = 8
+    object Options1: TMenuItem
+      Caption = 'Options'
+      ShortCut = 0
+      object StartWindowed1: TMenuItem
+        Caption = 'Start Windowed'
+        ShortCut = 0
+        OnClick = StartWindowed1Click
+      end
+      object StartExclusiveDoubleClickFormtoClose1: TMenuItem
+        Caption = 'Start Exclusive '
+        ShortCut = 0
+        OnClick = StartExclusiveDoubleClickFormtoClose1Click
+      end
+    end
+  end
+end

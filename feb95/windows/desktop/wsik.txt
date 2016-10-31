@@ -1,0 +1,139 @@
+1	Sikes Listing 5	April 7, 1995  10:25 AM
+
+
+Listing 1.  Data Storage Files.
+
+
+FILE NAME		 sDATA TYPE
+SUFFIX
+
+TIE				All Historical and Battle mission files.
+
+LFD				The most common data storage format for various types of data.
+
+PNL				Appears to contain raw graphics data.
+
+INT				Contains data for vehicles that the player can fly.  Primarily tabular in format.
+
+TFR				Pilot data file.
+
+Listing 2.  LFD Storage File Structures.
+
+
+struct  LFDRECORDHEADER
+	{
+	char	RecordName[12];		// Record name string
+	long	RecordSize;			// Size of Record data
+	};
+
+struct	LFDRESOURCETAG
+	{
+	char	ResourceTag[12];	// ORMAPresourceO string
+	long	FirstRecordOffset;	// Offset of the first Record
+	};
+
+Listing 3.  Spacecraft Name References.
+
+
+SHIP						LETTER			NUMERICAL
+NAME						REFERENCE		REFERENCE
+
+TIE Fighter (T/F)		F					1
+TIE Interceptor (T/I)	I					2
+TIE Bomber (T/B)		B					3
+TIE Advanced (T/A)		A					4
+Assault Gunboat (GUN)	G					5
+TIE Defender (T/D)		D					6
+	(also known as the
+	TIE Deluxe)
+
+Listing 4.  Mission Files.
+
+BATTLE MISSIONS
+
+BATTLE		FILE NAME (*.TIE)
+
+Battle 1		B1M1FM	B1M2FM	B1M3BM	B1M4IM	B1M5GM	B1M6GM
+Battle 2		B2M1FW	B2M2BW	B2M3IW	B2M4GW	B2M5FW
+Battle 3		B3M1BM	B3M2BM	B3M3FM	B3M4GM	B3M5BM	B3M6GM
+Battle 4		B4M1FM	B4M2BM	B4M3BM	B4M4IM	B4M5GM
+Battle 5		B5M1IW	B5M2GW	B5M3GW	B5M4AW	B5M5GW
+Battle 6		B6M1AW	B6M2AW	B6M3GW	B6M4GW
+Battle 7		B7M1AM	B7M2AM	B7M3AW	B7M4DW	B7M5DM 
+
+
+HISTORICAL MISSIONS
+
+VEHICLE				FILE NAME (*.TIE)
+
+TIE Advanced			HA1W	HA2W	HA3M	HA4M
+TIE Bomber			HB1W	HB2W	HB3M	HB4M
+TIE Defender			HD1W	HD2W	HD3M	HD4M
+TIE Fighter			HF1W	HF2W	HF3M	HF4M
+Assault Gunboat		HG1W	HG2W	HG3M	HG4M
+TIE Interceptor		HI1W	HI2W	HI3M	HI4M
+
+Listing 5.  Pilot File Data.
+
+
+FILE OFFSET	DATA		DESCRIPTION
+(DECIMAL)	TYPE*
+
+1				byte		Duty Status.  0=Alive, 1=Captured, 2=Killed
+2				byte		Rank.  0=Cadet -> 5=General
+3				byte		Difficulty Level.  0=easy -> 2=hard
+4				long		Score.
+8				word		Skill Level.  0=Novice -> 65535=Super Ace
+10				byte		Secret Order Ranking.  0=None -> 6=EmporerOs Hand
+29-34			byte		Next Training Level.  off 29=T/F -> off 34=T/D **
+42-62			long		Training Scores.  off 42=T/F -> 62=T/D **
+90-95			byte		Total Training Levels Completed. off 90=T/F -> 95=T/D **
+136-164		long		T/F Historical Scores. 136=Mission1 -> 164=Mission8 ***
+168-196		long		T/I Historical Scores. 168=Mission1 -> 196=Mission8 ***
+200-228		long		T/B Historical Scores. 200=Mission1 -> 228=Mission8 ***
+232-260		long		T/A Historical Scores. 232=Mission1 -> 260=Mission8 ***
+264-292		long		GUN Historical Scores. 264=Mission1 -> 292=Mission8 ***
+296-324		long		T/D Historical Scores. 296=Mission1 -> 324=Mission8 ***
+520-527		byte		T/F Historical Completion Flags. 0=Not Done, 1=Done ***
+528-535		byte		T/I Historical Completion Flags. 0=Not Done, 1=Done ***
+536-543		byte		T/B Historical Completion Flags. 0=Not Done, 1=Done ***
+544-551		byte		T/A Historical Completion Flags. 0=Not Done, 1=Done ***
+552-559		byte		GUN Historical Completion Flags. 0=Not Done, 1=Done ***
+560-567		byte		T/D Historical Completion Flags. 0=Not Done, 1=Done ***
+617			byte		Battle 1 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+618			byte		Battle 2 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+619			byte		Battle 3 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+620			byte		Battle 4 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+621			byte		Battle 5 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+622			byte		Battle 6 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+623			byte		Battle 7 Status. 0=Inactive, 1=Active, 2=Pending, 3=Done
+637			byte		Battle 1 Last Mission Completed. 0=None, 1=Mission1...
+638			byte		Battle 2 Last Mission Completed. 0=None, 1=Mission1...
+639			byte		Battle 3 Last Mission Completed. 0=None, 1=Mission1...
+640			byte		Battle 4 Last Mission Completed. 0=None, 1=Mission1...
+641			byte		Battle 5 Last Mission Completed. 0=None, 1=Mission1...
+642			byte		Battle 6 Last Mission Completed. 0=None, 1=Mission1...
+643			byte		Battle 7 Last Mission Completed. 0=None, 1=Mission1...
+986-1014		long		Battle 1 Scores. off 986=Mission1 => 1014=Mission8 ****
+1018-1046	long		Battle 2 Scores. off 1018=Mission1 => 1046=Mission8 ****
+1050-1078	long		Battle 3 Scores. off 1050=Mission1 => 1078=Mission8 ****
+1082-1110	long		Battle 4 Scores. off 1082=Mission1 => 1110=Mission8 ****
+1114-1142	long		Battle 5 Scores. off 1114=Mission1 => 1142=Mission8 ****
+1146-1174	long		Battle 6 Scores. off 1146=Mission1 => 1174=Mission8 ****
+1178-1206	long		Battle 7 Scores. off 1178=Mission1 => 1206=Mission8 ****
+1626			word		Total Kills.
+1628			word		Total Captures.
+1926			word		Number of Craft Lost.
+
+
+*		ObyteO references an unsigned character.
+		OwordO is a 16-bit unsigned value.
+		OlongO is a 32-bit signed value.
+
+**		Vehicles are ordered as in Listing 3.
+
+***	There are currently four historical missions for each flyable craft.
+		The pilot file has storage slots for eight historical missions per craft.
+
+****	The pilot file has provisions for eight missions per Battle.
+

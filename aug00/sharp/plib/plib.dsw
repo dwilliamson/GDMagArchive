@@ -1,0 +1,122 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "fnt"=.\src\fnt\fnt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "js"=.\src\js\js.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "plib"=.\plib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fnt
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name js
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sg
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name sl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ssg
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pui
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "pui"=.\src\pui\pui.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name sg
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "sg"=.\src\sg\sg.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "sl"=.\src\sl\sl.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "ssg"=.\src\ssg\ssg.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

@@ -1,0 +1,48 @@
+//*****************************************************************************
+// BUnitGroup
+//*****************************************************************************
+class BUnitGroup
+{
+   public:
+      BUnitGroup( void );
+      ~BUnitGroup( void );
+
+      //Returns the ID for this group instance.
+      int              getID( void ) const { return(mID); }
+
+      //Various get and set functions.  Type designates the type of the group
+      //(and is thus game specific).  Centroid, maxSpeed, and commander are
+      //obvious.  FormationID is the id lookup for any formation attached to
+      //the group (will be some sentinel value if not set).
+      int              getType( void ) const { return(mType); }
+      void             setType( int v ) { mType=v; }
+      BVector&         getCentroid( void ) const { return(mCentroid); }
+      float            getMaxSpeed( void ) const { return(mMaxSpeed); }
+      int              getCommanderID( void ) const { return(mCommanderID); }
+      BOOL             getFormationID( void ) const { return(mFormationID); }
+      BOOL             setFormationID( int fID );
+
+      //Standard update and render functions.  Update generates all of the
+      //decision making within the group.  Render is here for graphical
+      //debugging.
+      BOOL             update( void );
+      BOOL             render( BMatrix& viewMatrix );
+
+      //Basic unit addition and removal functions.
+      BOOL             addUnit( int unitID );
+      BOOL             removeUnit( int unitID );
+      int              getNumberUnits( void ) const { return(mNumberUnits); }
+      int              getUnit( int index );
+
+protected:
+      int              mID;
+      int              mType;
+      BVector          mCentroid;
+      float            mMaxSpeed;
+      int              mCommanderID;
+      int              mFormationID;
+      int              mNumberUnits;
+      BVector*         mUnitPositions;
+      BVector*         mDesiredPositions;
+};
+

@@ -1,0 +1,72 @@
+1	Listing 1	April 7, 1995  11:38 AM
+
+1	Listing 1	April 7, 1995  11:38 AM
+
+1	Listing 1	April 7, 1995  11:38 AM
+
+
+Listing 1. C++ Member Function MakeGenes()
+
+void
+TShipIndividual::MakeGenes( void )
+{
+	TGene* gene;
+	TGAList& geneList    = GetGeneList();
+	for( short geneIndex = 0; geneIndex < kNumberGenes / 3; ++geneIndex )
+	{
+		gene = new TGene( 1, 100 );
+		geneList.AdoptItem(gene);
+
+		gene = new TGene( -50, 50 );
+		geneList.AdoptItem(gene);
+
+		gene = new TGene( -50, 50 );
+		geneList.AdoptItem(gene);
+	}
+}
+Listing 2. The CalcObjective() Function
+
+void
+TShipIndividual::CalcObjective( void )
+{
+	short* var = new short[kNumberGenes];
+	FailNIL(var);
+	for( short geneIndex = 0; geneIndex < kNumberGenes; ++geneIndex )
+		var[geneIndex] = GetGene(geneIndex).GetValue();
+	float objective = DoSimulation ( var );
+	SetObjective( objective );
+
+	delete var;
+}
+
+Listing 3.  The DoSimulation() Function
+
+float
+TShipIndividual::DoSimulation( short* shipInstructions )
+{
+	TSystem* theSystem = (TSystem*) (fSystem->Clone());
+	short instructionCounter = 0;
+	short timeToNextThrust = shipInstructions[ 0 ];
+	short counter = 0;
+ 
+	while ( theSystem->GetSpaceShip().DoesExist()  &&  counter < 500 )
+	{
+		theSystem->DoNextTimeStep();
+		if ( timeToNextThrust <= 0 )
+		{
+			theSystem->GetSpaceShip().Thrust( TVector( 
+				shipInstructions[instructionCounter+1],
+				shipInstructions[instructionCounter +2]));
+			instructionCounter += 3;
+			timeToNextThrust = shipInstructions[ instructionCounter ];
+		}
+		++counter;
+		--timeToNextThrust;
+	}
+	float distance 	= theSystem->GetSpaceShip().GetClosestPass();
+	float fuel		= theSystem->GetSpaceShip().GetFuel();
+	float objective	= ( -(distance * distance) ) + fuel - counter;
+	delete theSystem;
+	return objective;
+}
+

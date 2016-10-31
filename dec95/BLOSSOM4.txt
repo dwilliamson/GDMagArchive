@@ -1,0 +1,66 @@
+Listing 4. Breakout Declarations
+// Breakout Game Window
+// The Breakout window is a regular XSplat window with
+// most functions overridden. The game is played entirely
+// within this window, so the paddle game window includes
+// all state information necessary for the game.
+
+class CPaddleGameWindow : public CXSplatWindow
+{
+public:
+	// Game setup occurs during construction and on
+	// InitGame calls
+	CPaddleGameWindow(unsigned char const *Colors=0);
+	void InitGame(void);
+
+	// The destructor will clean up the game
+	virtual ~CPaddleGameWindow(void);
+
+	// All of the game logic takes place on Idle
+	virtual void Idle(void);
+
+	// This game cares about key states
+	virtual void KeyDown(char unsigned Key);
+	virtual void KeyUp(char unsigned Key);
+
+protected:
+	// This function will completely redraw the game state
+	void DrawCompleteGameState(void);
+
+	// We'll provide a 'demo mode' for the game to play itself
+	int IsDemoMode;
+
+	// Game Data
+	// Game element position and speed
+	int BallX, BallY;
+	int BallXSpeed, BallYSpeed;
+	int PaddleX;
+	int PaddleXSpeed;
+
+	// Game field
+	char unsigned GameField[kWallWidthBricks * kWallHeightBricks];
+
+	inline char unsigned GetBlockState(int X, int Y)
+		{ return GameField[Y * kWallWidthBricks + X]; };
+
+	inline void SetBlockState(int X, int Y, char unsigned State)
+		{ GameField[Y * kWallWidthBricks + X] = State; };
+
+	inline char unsigned HitBlock(int X, int Y);
+};
+
+inline char unsigned CPaddleGameWindow::HitBlock(int X, int Y)
+{
+	char unsigned ReturnState = 0;
+
+	if (X >= 0 && Y >= 0 &&
+		 X < kWallWidthBlocks &&
+		 Y < kWallHeightBlocks)
+	{
+		int Index = Y * kWallWidthBlocks + X;
+		ReturnState = GameField[Index];
+		if (ReturnState)
+			GameField[Index]-;
+	}
+	return ReturnState;
+}

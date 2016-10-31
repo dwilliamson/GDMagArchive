@@ -1,0 +1,33 @@
+
+;
+; This is the source and Win32 executable for my texture mapping series
+; in Game Developer Magazine, published by Miller Freeman.  The issues
+; describing the various mappers are mentioned below.  You can order
+; the back-issues by calling (800) 444-4881 or (913) 841-1631.
+;
+; This material is Copyright 1995, 1996 Chris Hecker, All Rights Reserved.
+; It's for you to read and learn from, not to put in your own articles
+; or books or on your website, etc.  Thank you.
+;
+; Chris Hecker
+; checker@netcom.com
+;
+
+texture.h           ; Win32 app header file
+texture.cpp         ; Win32 app source
+texture.rc          ; Win32 resource script
+texture.ico         ; Win32 application icon
+texture.exe         ; Win32 executable
+makefile            ; Win32 VC++ nmake makefile
+files.txt           ; this file
+
+mappers.h           ; common texture mapping declarations
+divflfl.cpp         ; Apr/May '95 -- floating point edges and mapping, div/pix
+divifl.cpp          ; Jun/Jul '95 -- integer edge DDA, float mapping, div/pix
+divfxfl.cpp         ; Aug/Sep '95 -- fixedpoint edge, float mapping, div/pix
+subafxfl.cpp        ; Dec/Jan '95 -- fixedpt edge, float mapper, subdiv affine
+gradient.txt        ; comment for subafxfl.cpp rounding setup
+
+dumb3d.hpp          ; cheesy vector library header
+dumb3d.cpp          ; cheesy vector library source
+

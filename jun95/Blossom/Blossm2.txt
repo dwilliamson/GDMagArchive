@@ -1,0 +1,35 @@
+Listing 2. Macintosh Declaration
+#include <QDOffscreen.h>  // For GWorld stuff
+
+class COffscreenBuffer
+{
+public:
+	// Basic information access
+	char unsigned *GetBits(void) { return pBits; };
+	long GetStride(void) const { return Stride; };
+	int GetWidth(void) const { return Width; };
+	int GetHeight(void) const { return Height; };
+
+	// Displaying the buffer
+	void SwapBuffer(void) const;
+
+	// Pixel access control
+	void Lock(void) const;
+	void Unlock(void) const;
+
+	// Constructor and Destructor
+	COffscreenBuffer(void);
+	~COffscreenBuffer(void);
+
+private:
+	// Common implementation data
+	char unsigned *pBits;
+	long Stride;
+	int Height;
+	int Width;
+
+	// Macintosh implementation data
+	GWorldPtr OffscreenGWorld;
+	char StoredMMUMode;
+};
+

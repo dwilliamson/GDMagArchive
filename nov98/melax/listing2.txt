@@ -1,0 +1,78 @@
+Listing 2. Determining the edge costs and performing the edge collapse operation.
+
+float ComputeEdgeCollapseCost(Vertex *u,Vertex *v) {
+	// if we collapse edge uv by moving u to v then how 
+	// much different will the model change, i.e. the "error".
+	float edgelength = magnitude(v->position - u->position);
+	float curvature=0;
+
+	// find the "sides" triangles that are on the edge uv
+	List<Triangle *> sides;
+	for(i=0;i<u->face.num;i++) {
+		if(u->face[i]->HasVertex(v)){
+			sides.Add(u->face[i]);
+		}
+	}
+	// use the triangle facing most away from the sides 
+	// to determine our curvature term
+	for(i=0;i<u->face.num;i++) {
+		float mincurv=1; 
+		for(int j=0;j < sides.num;j++) {
+			// use dot product of face normals.
+			float dotprod = 
+				u->face[i]->normal ^ sides[j]->normal;
+			mincurv = min(mincurv,(1-dotprod)/2.0f);
+		}
+		curvature = max(curvature,mincurv);
+	}
+	return edgelength * curvature;
+}
+
+void ComputeEdgeCostAtVertex(Vertex *v) {
+	if(v->neighbor.num==0) {
+		v->collapse=NULL;
+		v->cost=-0.01f;
+		return;
+	}
+	v->cost = 1000000;
+	v->collapse=NULL;
+	// search all neighboring edges for "least cost" edge
+	for(int i=0;i < v->neighbor.num;i++) {
+		float c;
+		c = ComputeEdgeCollapseCost(v,v->neighbor[i]);
+		if(c < v->cost) {
+			v->collapse=v-neighbor[i];  
+			v->cost=c;
+		}
+	}
+}
+
+void Collapse(Vertex *u,Vertex *v){
+	// Collapse the edge uv by moving vertex u onto v
+	if(!v) {
+		// u is a vertex all by itself so just delete it
+		delete u;
+		return;
+	}
+	int i;
+	List<Vertex *>tmp;
+	// make tmp a list of all the neighbors of u
+	for(i=0;i<u->neighbor.num;i++) {
+		tmp.Add(u->neighbor[i]);
+	}
+	// delete triangles on edge uv:
+	for(i=u->face.num-1;i>=0;i-) {
+		if(u->face[i]->HasVertex(v)) {
+			delete(u->face[i]);
+		}
+	}
+	// update remaining triangles to have v instead of u
+	for(i=u->face.num-1;i>=0;i-) {
+		u->face[i]->ReplaceVertex(u,v);
+	}
+	delete u;
+	// recompute the edge collapse costs in neighborhood
+	for(i=0;i<tmp.num;i++) {
+		ComputeEdgeCostAtVertex(tmp[i]);
+	}
+}

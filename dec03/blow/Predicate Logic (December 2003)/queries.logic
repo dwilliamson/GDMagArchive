@@ -1,0 +1,12 @@
+(female ?x);               // "Who is female?"
+(sister mark ?x);          // "Who is mark's sister?"
+(sister ?x ann);           // "Who is ann the sister of?"
+(sister don ann);          // "Is ann don's sister?"
+(sister ?x ?y);            // "Who are all the sisters we know about, and who are they sister of?"
+(sister ? ?y);             // "Who are all the sisters we know about?" (not caring who they are sister of)
+
+(?relation mark ?x);       // "What kinds of relationships do we know about involving mark in the second slot?"
+
+(grandparent ?child ?g);       // "Who are all the grandparents?"
+
+(grandparent ?child ?g), (parent ?g ?great);  // "Who are all the great-grandparents?"

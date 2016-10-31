@@ -1,0 +1,44 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: figure1 - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP1F2.tmp" with contents
+[
+/nologo /MD /GX /Zi /O2 /I "..\app_shell" /I "..\app_shell\include" /I "..\mesh" /I "..\framework" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /Fp"Release/figure1.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\code\unified_lod_5\app_shell\app_shell.cpp"
+"C:\code\unified_lod_5\covariance.cpp"
+"C:\code\unified_lod_5\figure1.cpp"
+"C:\code\unified_lod_5\robust_math.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP1F2.tmp" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP1F3.tmp" with contents
+[
+winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib jpg.lib opengl32.lib glu32.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/figure1.pdb" /debug /machine:I386 /out:"Release/figure1.exe" /libpath:"..\app_shell\lib" 
+.\Release\app_shell.obj
+.\Release\covariance.obj
+.\Release\data_structures.obj
+.\Release\figure1.obj
+.\Release\geometry.obj
+.\Release\jpeg_load.obj
+.\Release\robust_math.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP1F3.tmp"
+<h3>Output Window</h3>
+Compiling...
+app_shell.cpp
+covariance.cpp
+figure1.cpp
+robust_math.cpp
+Linking...
+
+
+
+<h3>Results</h3>
+figure1.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

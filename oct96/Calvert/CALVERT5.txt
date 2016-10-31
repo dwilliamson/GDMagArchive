@@ -1,0 +1,27 @@
+Listing 5. The CreatePrimary method
+
+function TSpeedDraw.CreatePrimary: Boolean;
+var
+  SurfaceDesc: TDDSurfaceDesc;
+  hr: HResult;
+begin
+  FillChar(SurfaceDesc, sizeOf(TDDSurfaceDesc), 0);
+  SurfaceDesc.dwSize := sizeof(TDDSurfaceDesc);
+
+  if not FUseExclusive then begin
+    SurfaceDesc.dwFlags := DDSD_CAPS;
+    SurfaceDesc.ddsCaps.dwCaps := DDSCAPS_PRIMARYSURFACE;
+  end else begin
+    SurfaceDesc.dwFlags := DDSD_CAPS or DDSD_BACKBUFFERCOUNT;
+    SurfaceDesc.ddsCaps.dwCaps := DDSCAPS_PRIMARYSURFACE or
+                                  DDSCAPS_FLIP or
+                                  DDSCAPS_COMPLEX;
+    SurfaceDesc.dwBackBufferCount := 1;
+  end;
+
+  hr := FDirectDraw.CreateSurface(SurfaceDesc, FPrimarySurface, nil);
+  if hr <> DD_OK then
+    raise EDDError.CreateFmt('TSpeedDraw.CreatePrimary: %d %s', [hr, GetOleError(hr)])
+  else
+    Result := True;
+end;

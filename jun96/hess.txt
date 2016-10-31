@@ -1,0 +1,921 @@
+Generic DirectDraw Application Source Code
+The bulk of this code comes from the "Generic" sample sources which I wrote for the Win32 SDK. Minor additions and modifications were made to enable this application to utilize the DirectDraw features of the new DirectX APIs for Windows. The intent of this code is not to be an illustration of a great DirectDraw application, but simply to show you how relatively easy DirectDraw can be added to a Windows application model. There are several sample applications that come with the Games SDK that better illustrate some of the more advanced features and capabilites of DirectX.
+
+Some specific code has been highlighted with a double border on the left edge to indicate that it is something of interest to the reader who is wanting to enable their application for DirectDraw.
+
+The reader may also want to refer to the "SpinCube" sample application that ships with the Games SDK (available on MSDN Level II), from which some of the DirectDraw specific code for this sample was obtained.
+
+
+
+DDGeneric.C
+
+#define APPNAME "DDGeneric"
+
+/******************************************************************************\
+    PROGRAM:    DDGeneric.C
+    Author:     Robert B. Hess
+    Date:       1-Feb-96
+\******************************************************************************/
+/*
+ *    (C) Copyright Microsoft Corp. 1993.  All rights reserved.
+ *
+ *    You have a royalty-free right to use, modify, reproduce and 
+ *    distribute the Sample Files (and/or any modified version) in 
+ *    any way you find useful, provided that you agree that 
+ *    Microsoft has no warranty obligations or liability for any 
+ *    Sample Application Files which are modified. 
+ */
+
+// Windows Header Files:
+#include <windows.h>
+#include <windowsx.h>
+
+// Direct Draw Header Files:
+#include <ddraw.h>
+
+// C RunTime Header Files
+#include <stdlib.h>
+#include <malloc.h>
+#include <memory.h>
+
+// Local Header Files
+#include "resource.h"
+#include "ddsupport.h"
+
+/////////////////////////////////////////////////////////////////////////
+// Global Variables:
+
+HINSTANCE hInst = NULL; // current instance
+HWND hwndApp = NULL; // main application window
+char szAppName[] = APPNAME; // The name of this application
+char szTitle[]   = APPNAME": Sample Application"; // The title bar text
+
+BOOL fAppPaused, fAppActive;
+
+/////////////////////////////////////////////////////////////////////////
+// Foward declarations of functions included in this code module:
+
+BOOL InitApplication(HINSTANCE);
+BOOL InitInstance(HINSTANCE, int);
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL CenterWindow (HWND, HWND);
+LRESULT CALLBACK About(HWND, UINT, WPARAM, LPARAM);
+
+void AppPause(BOOL fPause);
+BOOL AppIdle();
+
+/************************************************************************\
+ *    FUNCTION: WinMain
+\************************************************************************/
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+	MSG msg;
+	HANDLE hAccelTable;
+
+	if (!hPrevInstance) {
+		// Perform instance initialization:
+		if (!InitApplication(hInstance)) {
+			return (FALSE);
+		}
+	}
+
+	// Perform application initialization:
+	if (!InitInstance(hInstance, nCmdShow)) {
+		return (FALSE);
+	}
+
+	hAccelTable = LoadAccelerators (hInstance, szAppName);
+
+	// 
+	// This is a 'normal' message loop. For good game control
+	// we won't be using this...
+	/*
+	while (GetMessage(&msg, NULL, 0, 0)) {
+		if (!TranslateAccelerator (msg.hwnd, hAccelTable, &msg)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+	*/
+
+	// This is a tight polling message loop that works well
+	// for games, and other appliations that want to maintain
+	// a highly dynamic nature while they are the foreground
+	// application.
+	for(;;) {
+		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) {
+				break;
+			}
+			if (!hwndApp || !TranslateAccelerator(hwndApp, hAccelTable, &msg)) {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		} else {
+			if (AppIdle()) {
+				WaitMessage();
+			}
+		}
+	}
+
+	DDTerm(); // Cleanup any DirectDraw stuff we started up...
+
+	return (msg.wParam);
+
+	lpCmdLine; // This will prevent 'unused formal parameter' warnings
+}
+
+
+/************************************************************************\
+ *    FUNCTION: InitApplication
+\************************************************************************/
+
+BOOL InitApplication(HINSTANCE hInstance)
+{
+	WNDCLASS  wc;
+    HWND      hwnd;
+
+    // Win32 will always set hPrevInstance to NULL, so lets check
+    // things a little closer. This is because we only want a single
+	// version of this app to run at a time
+    hwnd = FindWindow (szAppName, NULL);
+    if (hwnd) {
+		// We found another version of ourself. Lets defer to it:
+        if (IsIconic(hwnd)) {
+            ShowWindow(hwnd, SW_RESTORE);
+        }
+        SetForegroundWindow (hwnd);
+		// If this app actually had any functionality, we would
+		// also want to communicate any action that our 'twin'
+		// should now perform based on how the user tried to
+		// execute us.
+        return FALSE;
+    }
+
+	// Fill in window class structure with parameters that describe
+	// the main window.
+	wc.style         = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc   = (WNDPROC)WndProc;
+	wc.cbClsExtra    = 0;
+	wc.cbWndExtra    = 0;
+	wc.hInstance     = hInstance;
+	wc.hIcon         = LoadIcon (hInstance, szAppName);
+	wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+	wc.lpszMenuName  = szAppName;
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+
+	wc.lpszMenuName  = szAppName;
+	wc.lpszClassName = szAppName;
+
+	// Register the window class and return success/failure code.
+	return RegisterClass(&wc);
+}
+
+
+/************************************************************************\
+ *    FUNCTION: InitInstance
+\************************************************************************/
+
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+{
+	hInst = hInstance; // Store instance handle in our global variable
+
+	hwndApp = CreateWindow(szAppName, szTitle,
+		WS_POPUP | WS_CAPTION | WS_SYSMENU,
+		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0,
+		NULL, NULL, hInstance, NULL);
+
+	if (!hwndApp) {
+		return (FALSE);
+	}
+
+	ShowWindow(hwndApp, nCmdShow);
+	UpdateWindow(hwndApp);
+
+	// That was all 'normal' stuff. Now lets do some DirectDraw stuff:
+
+	if (!DDInit()) { // Initialize DirectDraw
+		return FALSE;
+	}
+
+	if (!DDSetMode (640,480,8) && !DDSetMode (640,480,16)) {
+		return FALSE;
+	}
+
+	return (TRUE);
+}
+
+
+
+/************************************************************************\
+ *    FUNCTION: WndProc
+\************************************************************************/
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	int wmId, wmEvent;
+    POINT pnt;
+    HMENU hMenu;
+    BOOL bGotHelp;
+
+	switch (message) { 
+
+		// These first few entries were added for better 'games' handling:
+		case WM_ENTERMENULOOP:
+			AppPause(TRUE);
+			break;
+		case WM_EXITMENULOOP:
+			AppPause(FALSE);
+			break;
+		case WM_ACTIVATEAPP:
+			fAppActive = (BOOL)wParam;
+			break;
+		case WM_SETCURSOR:
+			if (fAppActive && !fAppPaused) {
+				SetCursor(NULL);
+				return 1;
+			}
+			break;
+		case WM_KEYDOWN:
+			if (wParam == VK_UP) {
+				DDSetMode (0, 0, -1); // "Zoom In"
+			} else if (wParam == VK_DOWN) {
+				DDSetMode (0, 0, 1);  // "Zoom Out"
+			} else if (wParam == VK_ESCAPE) {
+				PostMessage (hWnd, WM_CLOSE, 0, 0L); // Exit
+			}
+			break;
+		case WM_LBUTTONDOWN:
+			DDSetMode (0,0,-1); // "Zoom In"
+			break;
+		case WM_RBUTTONDOWN:
+			DDSetMode (0,0,+1); // "Zoom Out"
+			break;
+
+		case WM_COMMAND:
+			wmId    = LOWORD(wParam);
+			wmEvent = HIWORD(wParam);
+
+			// Deal with the menu selections:
+			switch (wmId) {
+
+				case IDM_ABOUT:
+					AppPause(TRUE);
+					DialogBox(hInst, "About", hWnd, (DLGPROC)About);
+					AppPause(FALSE);
+					break;
+
+				case IDM_EXIT:
+					PostMessage (hWnd, WM_CLOSE, 0, 0L);
+					// The DefWindowProc function will then call DestroyWindow...
+					break;
+
+				case IDM_HELPTOPICS:
+					bGotHelp = WinHelp (hWnd, APPNAME".HLP",
+						HELP_FINDER,(DWORD)0);
+					if (!bGotHelp) {
+						MessageBox (GetFocus(),"Unable to activate help",
+							szAppName, MB_OK|MB_ICONHAND);
+					}
+					break;
+
+				default:
+					return (DefWindowProc(hWnd, message, wParam, lParam));
+			}
+			break;
+
+        case WM_NCRBUTTONUP: // RightClick on windows non-client area...
+			if (SendMessage(hWnd, WM_NCHITTEST, 0, lParam) == HTSYSMENU) {
+				// The user has clicked the right button on the applications
+				// 'System Menu'. Here is where you would alter the default
+				// system menu to reflect your application. Notice how the
+				// explorer deals with this. For this app, we aren't doing
+				// anything
+				return (DefWindowProc(hWnd, message, wParam, lParam));
+			} else {
+				// Nothing we are interested in, allow default handling...
+				return (DefWindowProc(hWnd, message, wParam, lParam));
+			}
+            break;
+
+
+		case WM_DISPLAYCHANGE:
+		{
+			// The user has caused a change in the system display
+			// resolution, you'll need to decide what you want
+			// to do in this case...
+			SIZE szScreen;
+			BOOL fChanged = (BOOL)wParam;
+
+			szScreen.cx = LOWORD(lParam);
+			szScreen.cy = HIWORD(lParam);
+			
+			if (fChanged) {
+				// The display 'has' changed. szScreen reflects the
+				// new size.
+			} else {
+				// The display 'is' changing. szScreen reflects the
+				// original size.
+			}
+		}
+		break;
+
+		case WM_PAINT:
+			// We don't use this... but also notice that we -must-
+			// call the default window procedure so the WM_PAINT
+			// message is properly removed from our queue. Otherwise,
+			// our PeekMessage call will always find a WM_PAINT
+			// message on our queue...
+			break;        
+
+		case WM_DESTROY:
+			// Tell WinHelp we don't need it any more...
+			WinHelp (hWnd, APPNAME".HLP", HELP_QUIT,(DWORD)0);
+			hwndApp = NULL;
+			PostQuitMessage(0);
+			break;
+
+		default:
+			return (DefWindowProc(hWnd, message, wParam, lParam));
+	}
+	return (DefWindowProc(hWnd, message, wParam, lParam));
+}
+
+
+/************************************************************************\
+ *    FUNCTION: About
+\************************************************************************/
+LRESULT CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message) {
+        case WM_INITDIALOG:
+			// Reposition the dialog:
+			SetWindowText (hDlg, "About "APPNAME);
+			return (TRUE);
+
+		case WM_COMMAND:
+			// Only possible option is to close down. Make sure we
+			// clean things up on our way out...
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+				EndDialog(hDlg, TRUE);
+				return (TRUE);
+			}
+			break;
+	}
+    return FALSE;
+}
+
+
+
+// The following two procedures were added for this DD demo:
+
+/**************************************************************************
+  AppPause
+ **************************************************************************/
+void AppPause(BOOL fPause)
+{
+	if (fPause) {
+		DDSCAPS caps;
+		IDirectDraw_GetCaps(FrontBuffer, NULL, &caps);
+			// ...or FrontBuffer->GetCaps(&caps)
+		// if we are in ModeX go back to a windows mode
+		// so we can see the menu or dialog box.
+		if (caps.dwCaps & DDSCAPS_MODEX) {
+			DDSetMode(640,480,8);
+		}
+
+		fAppPaused = TRUE;
+		IDirectDraw_FlipToGDISurface(dd); // or dd->FlipToGDISurface();
+		DrawMenuBar(hwndApp);
+		RedrawWindow(hwndApp, NULL, NULL, RDW_FRAME);
+	} else {
+		fAppPaused = FALSE;
+	}
+}
+
+
+
+/**************************************************************************
+  AppIdle
+
+  return TRUE if the app is idle
+  return FALSE if the app is not idle.
+
+  Description:
+
+	Currently this does nothing. Look at the "SPINCUBE' demo app from the
+	Games SDK if you want to see this function actually doing something.
+ **************************************************************************/
+
+BOOL AppIdle()
+{
+  if (fAppActive && !fAppPaused) {
+    if (GetAsyncKeyState(VK_LBUTTON) < 0) {
+    } else {
+    }
+    RenderFrame();
+    return FALSE;
+  } else {
+    //*** Don't do anything when not the active app
+    return TRUE;
+  }
+}
+
+DDSupport.CPP
+
+#include <windows.h>
+#include <windowsx.h>
+#include <ddraw.h>
+
+extern "C" {
+	#include "ddgeneric.h"
+	#include "ddsupport.h"
+}
+
+// Global Varibles for DirectDraw usage:
+
+IDirectDraw *dd;
+IDirectDrawSurface *FrontBuffer, *BackBuffer;
+IDirectDrawPalette *Palette;
+
+/**************************************************************************
+  ModeCallback
+ **************************************************************************/
+#define MODES 25
+DWORD dwModes[MODES];
+int iModes=0;
+int iModeCurrent=-1;
+
+HRESULT CALLBACK ModeCallback(LPDDSURFACEDESC pdds, LPVOID lParam)
+{
+    dwModes[iModes++] = pdds->dwWidth 
+		| (pdds->dwHeight << 12) 
+		| (pdds->ddpfPixelFormat.dwRGBBitCount << 24);
+	dwModes[iModes]=0;
+
+    //return S_OK to stop enuming modes, S_FALSE to continue
+	return (BOOL)(iModes>=MODES) ? S_OK : S_FALSE;
+}
+
+
+/************************************************************************\
+ *    FUNCTION: DDInit - Initialize DirectDraw
+\************************************************************************/
+
+extern "C" BOOL DDInit()
+{
+    HRESULT err;
+
+    err = DirectDrawCreate(NULL, &dd, NULL);
+
+    if (err != DD_OK)
+        return FALSE;
+
+    err = dd->SetCooperativeLevel(hwndApp, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWMODEX);
+
+    if (err != DD_OK)
+        return FALSE;
+
+	dwModes[0]=0;
+	dd->EnumDisplayModes(0,NULL,(LPVOID)NULL,ModeCallback);
+
+    return TRUE;
+}
+
+/**************************************************************************
+  DDSetMode
+ **************************************************************************/
+
+BOOL DDSetMode(int width, int height, int bpp)
+{
+    HRESULT err;
+
+	DWORD dw;
+	int i;
+
+	// Note: I added a special hack to this that
+	// allows you to provide '0' for the width
+	// and height, and it will then use 'bpp'
+	// to indicate if you are wanting to 'increase'
+	// or 'decrease' the resolution.
+	if (width==0 && height==0) {
+		if (bpp>0) {
+			iModeCurrent++;
+			if (iModeCurrent>=iModes) iModeCurrent=0;
+		} else if (bpp<0) {
+			iModeCurrent--;
+			if (iModeCurrent<0) iModeCurrent=iModes-1;
+		} else {
+			return FALSE;
+		}
+		width = ((dwModes[iModeCurrent] >> 0)  & 0xFFF);
+		height = ((dwModes[iModeCurrent] >> 12) & 0xFFF);
+		bpp = ((dwModes[iModeCurrent] >> 24) & 0x0FF);
+	}
+
+    err = dd->SetDisplayMode(width, height, bpp);
+
+    if (err != DD_OK)
+        return FALSE;
+
+	// remember the mode...
+	dw = width | (height << 12) | (bpp << 24);
+	for (i=0; i<iModes; i++) {
+		if (dwModes[i] == dw) iModeCurrent = i;
+	}
+
+    // get rid of any previous surfaces.
+    if (BackBuffer)  BackBuffer->Release(),     BackBuffer = NULL;
+    if (FrontBuffer) FrontBuffer->Release(),    FrontBuffer = NULL;
+    if (Palette)     Palette->Release(),        Palette = NULL;
+
+    //
+    // Create surfaces
+    //
+    // what we want is a tripple buffered surface in video memory
+    // so we try to create this first.
+    //
+    // if we cant get a triple buffered surface, we try again
+    // for a double buffered surface (still must be in video memory)
+    //
+    // if we cant get a double buffered surface, we try for a double
+    // buffered surface not being specific about video memory, we will
+    // get back a main-memory surface, that work use HW page flipping
+    // but at least we run.
+    //
+    // NOTE you need to recreate the surfaces for a new display mode
+    // they wont work when/if the mode is changed.
+    //
+    DDSURFACEDESC ddsd;
+
+    ZeroMemory(&ddsd, sizeof(ddsd));
+    ddsd.dwSize = sizeof(ddsd);
+    ddsd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+    ddsd.dwBackBufferCount = 2;
+    ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE |
+                          DDSCAPS_FLIP |
+                          DDSCAPS_COMPLEX |
+                          DDSCAPS_VIDEOMEMORY;
+
+    // try to get a triple buffered video memory surface.
+    err = dd->CreateSurface(&ddsd, &FrontBuffer, NULL);
+
+    if (err != DD_OK)
+    {
+        // try to get a double buffered video memory surface.
+        ddsd.dwBackBufferCount = 1;
+        err = dd->CreateSurface(&ddsd, &FrontBuffer, NULL);
+    }
+
+    if (err != DD_OK)
+    {
+        // settle for a main memory surface.
+        ddsd.ddsCaps.dwCaps &= ~DDSCAPS_VIDEOMEMORY;
+        err = dd->CreateSurface(&ddsd, &FrontBuffer, NULL);
+    }
+
+    if (err != DD_OK)
+        return FALSE;
+
+    // get a pointer to the back buffer
+    DDSCAPS caps;
+    caps.dwCaps = DDSCAPS_BACKBUFFER;
+    err = FrontBuffer->GetAttachedSurface(&caps, &BackBuffer);
+
+    if (err != DD_OK)
+        return FALSE;
+
+    // create a palette if we are in a paletized display mode.
+    //
+    // NOTE because we want to be able to show dialog boxs and
+    // use our menu, we leave the windows reserved colors as is
+    // so things dont look ugly.
+    //
+    // palette is setup like so:
+    //
+    //      10      windows system colors
+    //      64      red wash
+    //      64      grn wash
+    //      64      blu wash
+    //
+    PALETTEENTRY ape[256];
+    HDC hdc = GetDC(NULL);
+    if (GetDeviceCaps(hdc, RASTERCAPS) & RC_PALETTE)
+    {
+        // get the current windows colors.
+        GetSystemPaletteEntries(hdc, 0, 256, ape);
+
+        // make a red, grn, and blu wash for our cube.
+        for (int i=0; i<64; i++)
+        {
+            ape[10+64*0+i].peRed   = i * 255/63;
+            ape[10+64*0+i].peGreen = 0;
+            ape[10+64*0+i].peBlue  = 0;
+
+            ape[10+64*1+i].peRed   = 0;
+            ape[10+64*1+i].peGreen = i * 255/63;
+            ape[10+64*1+i].peBlue  = 0;
+
+            ape[10+64*2+i].peRed   = 0;
+            ape[10+64*2+i].peGreen = 0;
+            ape[10+64*2+i].peBlue  = i * 255/63;
+        }
+
+        // create the palette.
+        err = dd->CreatePalette(DDPCAPS_8BIT, ape, &Palette, NULL);
+
+        if (err == DD_OK)
+        {
+            FrontBuffer->SetPalette(Palette);
+        }
+    }
+    ReleaseDC(NULL, hdc);
+
+    return TRUE;
+}
+
+
+
+/**************************************************************************
+  DDTerm
+ **************************************************************************/
+
+extern "C" void DDTerm()
+{
+    if (BackBuffer)  BackBuffer->Release(),     BackBuffer = NULL;
+    if (FrontBuffer) FrontBuffer->Release(),    FrontBuffer = NULL;
+    if (Palette)     Palette->Release(),        Palette = NULL;
+    if (dd)          dd->Release(),             dd = NULL;
+}
+
+
+/**************************************************************************
+  RenderFrame
+
+  render the frame into the back buffer and do a page flip.
+
+  things to NOTE:
+
+    we use the blter to clear the backbuffer, this usualy is a big
+    win, blters are real fast.
+
+    we use GDI to draw the frame rate, and info text
+
+    we either use GDI to draw the faces of the cube, or our own code
+    based on the fDrawWithGDI global variable.
+
+ **************************************************************************/
+
+int FrameRate;
+int FrameCount;
+int FrameCount0;
+DWORD FrameTime;
+DWORD FrameTime0;
+
+extern "C" void RenderFrame()
+{
+	HDC hdc;
+	//*** always need to handle DDERR_SURFACELOST, this will happen
+	//*** when we get switched away from.
+
+	if (FrontBuffer->IsLost() == DDERR_SURFACELOST) {
+		FrontBuffer->Restore();
+	}
+
+	//*** use the blter to do a color fill to clear the back buffer
+
+	DDBLTFX ddbltfx;
+	ddbltfx.dwSize = sizeof(ddbltfx);
+	ddbltfx.dwFillColor = 0;
+	BackBuffer->Blt(NULL,NULL,NULL,DDBLT_COLORFILL | DDBLT_WAIT,&ddbltfx);
+
+	if (BackBuffer->GetDC(&hdc) == DD_OK) {
+    //*** draw stats, like frame number and frame rate
+
+		char ach[128];
+		int len, i;
+		static char szHelp[] = "Use up/down arrow to set mode. ESC to Exit.";
+
+		SetBkMode(hdc, TRANSPARENT);
+		SetTextColor(hdc, RGB(255, 255, 0));
+
+		len = wsprintf(ach, "FPS %02d Frame %05d", FrameRate, FrameCount);
+		TextOut(hdc, 0, 0, ach, len);
+		TextOut(hdc, 0, 15, szHelp,sizeof(szHelp)-1);
+
+		for (i=0; i<iModes; i++) {
+			len = wsprintf (ach, "W=%04d H=%04d BBP=%05d",
+				(dwModes[i] >> 0)  & 0xFFF,
+				(dwModes[i] >> 12) & 0xFFF,
+				(dwModes[i] >> 24) & 0x0FF);
+			if (i == iModeCurrent) {
+				SetTextColor(hdc, RGB(0, 255, 0));
+			} else {
+				SetTextColor(hdc, RGB(128, 0, 0));
+			}
+			TextOut(hdc, 0, 30+i*15, ach, len);
+		}
+
+
+		BackBuffer->ReleaseDC(hdc);
+	}
+
+	//*** we have rendered the backbuffer, call flip so we can see it
+	FrontBuffer->Flip(NULL, DDFLIP_WAIT);
+
+	FrameCount++;
+	FrameTime = timeGetTime();
+
+	if (FrameTime - FrameTime0 > 1000) {
+		FrameRate = (FrameCount - FrameCount0) * 1000 / (FrameTime - FrameTime0);
+		FrameTime0 = FrameTime;
+		FrameCount0 = FrameCount;
+	}
+}
+
+DDGeneric.RC
+
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+DDGENERIC               ICON    DISCARDABLE     "icon1.ico"
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+ABOUT DIALOG DISCARDABLE  0, 0, 186, 95
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+DDGENERIC MENU DISCARDABLE 
+BEGIN
+    POPUP "&Application"
+    BEGIN
+        MENUITEM "&Exit",                       IDM_EXIT
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Topics",                     IDM_HELPTOPICS
+        MENUITEM SEPARATOR
+        MENUITEM "&About",                      IDM_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    "ABOUT", DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDM_EXIT                "Exit Application"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
+
+
+
+DDGeneric.H
+
+extern HWND hwndApp;
+
+
+DDSupport.H
+
+extern IDirectDraw *dd;
+extern IDirectDrawSurface *FrontBuffer, *BackBuffer;
+extern IDirectDrawPalette *Palette;
+
+extern BOOL DDInit();
+extern void DDTerm();
+extern DDSetMode(int width, int height, int bpp);
+
+extern void RenderFrame();
+
+Resource.H
+
+//{{NO_DEPENDENCIES}}
+// Microsoft Developer Studio generated include file.
+// Used by DDGeneric.rc
+//
+#define IDI_ICON1                       102
+#define IDR_MENU1                       103
+#define IDM_ABOUT                       40001
+#define IDM_HELPTOPICS                  40002
+#define IDM_EXIT                        40003
+
+// Next default values for new objects
+// 
+#ifdef APSTUDIO_INVOKED
+#ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NEXT_RESOURCE_VALUE        105
+#define _APS_NEXT_COMMAND_VALUE         40004
+#define _APS_NEXT_CONTROL_VALUE         1000
+#define _APS_NEXT_SYMED_VALUE           101
+#endif
+#endif
+
+
+
+

@@ -1,0 +1,325 @@
+#include "inpqpriv.h"
+#include "mcitf.h"
+
+/*
+** initialize_mouse
+*/
+
+BOOLEAN initialize_mouse (s16 max_x, s16 max_y, 
+		u16 bytes_per_scanline, 
+		u32 (far *active_page) (void))
+{
+	union REGS	regs;
+	struct SREGS	sregs;
+
+	segread (&sregs);
+	regs.h.ah = GET_INDOS_FLAG;
+	intdosx (&regs, &regs, &sregs);
+
+	InDOS = MK_FP (sregs.es, regs.x.bx);
+
+	// make sure that we are in graphics mode (this handler
+	// is for use with the GFX library and doesn't support
+	// text cursor updates).
+
+	regs.h.ah = GET_VIDEO_MODE;
+	int86 (VIDEO_INT, &regs, &regs);
+
+	if (regs.h.al <= 4 || regs.h.al == 7) // modes 0-4 & 7 are text modes
+		return False;
+
+	if (!int33h_init_mouse ())
+		return False;
+
+	// call mode specific mouse initialization
+	MCITF_init (max_x, max_y, bytes_per_scanline, active_page);
+
+	int33h_set_mouse_limits (max_x, max_y, 8, 8);
+
+	current_x = (max_x + 1) / 2;
+	current_y = (max_y + 1) / 2;
+	int33h_set_mouse_position (current_x, current_y);
+	int33h_set_event_handler (ALL_MOUSE_EVENTS, mouse_events);
+	MCITF_shape (
+		default_cursor, default_width, default_height, 
+		default_hotspot_x, default_hotspot_y, 1, 0);
+
+	mouse_visible = -1;
+	return True;
+}
+
+/*
+** INPQ_show_mouse
+*/
+
+void INPQ_show_mouse (void)
+{
+	// Only show the mouse cursor if the mouse_visible variable
+	// transitions from negative to zero.
+	if (mouse_visible == 0 || ++mouse_visible != 0)
+		return;
+	MCITF_draw (current_x, current_y);
+}
+
+/*
+** INPQ_hide_mouse
+*/
+
+void INPQ_hide_mouse (void)
+{
+	// only hide the mouse cursor if the mouse_visible variable
+	// transitions from 0 to -1.
+	//
+	if (-mouse_visible == -1)
+		MCITF_draw (-1, -1);
+}
+
+/*
+** INPQ_mouse_visible
+*/
+
+BOOLEAN INPQ_mouse_visible (void)
+{
+	return mouse_visible == 0;
+}
+
+/*
+** INPQ_obscure_mouse
+*/
+
+void INPQ_obscure_mouse (void)
+{
+	extern BOOLEAN MCITF_obscure;
+
+	if (!INPQ_mouse_visible ())
+		return;
+
+	if (!MCITF_obscure)
+	{
+		MCITF_draw (-1, -1);
+		MCITF_obscure = True;
+	}
+}
+
+/*
+** INPQ_unobscure_mouse
+*/
+
+void INPQ_unobscure_mouse (void)
+{
+	extern BOOLEAN MCITF_obscure;
+
+	if (!INPQ_mouse_visible ())
+		return;
+
+	if (MCITF_obscure)
+	{
+		MCITF_obscure = False;
+		MCITF_draw (current_x, current_y);
+	}
+}
+
+/*
+** mouse_events
+*/
+
+static void far mouse_events (void)
+{
+	// on entrance, registers are set up as follows:
+	//
+	//	ax = mouse event flags:
+	//	0 = mouse movement
+	//	1 = left button down
+	//	2 = left button up
+	//	3 = right button down
+	//	4 = right button up
+	//	5 = center button down
+	//	6 = center button up
+	//	7-15 reserved (0)
+	//	bx = button state
+	//	0 = left button is down
+	//	1 = right button is down
+	//	2 = center button is down
+	//	3-15 reserved (0)
+	//	cx = horizontal (X) pointer coordinate
+	//	dx = vertical (Y) pointer coordinate
+	//	si = last raw vertical mickey count
+	//	di = last raw horizontal mickey count
+	//	ds = mouse driver data segment
+
+	s16 x, y;
+	s16 region;
+	u16 event_flags, event_mask, button_state;
+
+	asm {
+	push	ax
+	push	bx
+	push	cx
+	push	dx
+	push	si
+	push	di
+			push	ds
+			push	es
+
+			mov	event_flags, ax
+			mov	button_state, bx
+			mov	x, cx
+			mov	y, dx
+
+			mov	ax, DGROUP
+			mov	ds, ax
+	}
+
+	if (InMouseEvent) goto clear_mouse_event;
+	InMouseEvent = True;
+
+	asm {
+			mov	cx, x
+			mov	dx, y
+			mov	current_x, cx
+			mov	current_y, dx
+
+			// see if the cursor is visible to the user (mouse_visible == 0)
+			test	mouse_visible, 0xFFFF
+			jz		draw_cursor
+			jmp	clear_mouse_event
+	}
+
+	draw_cursor:
+	MCITF_draw (x, y);
+
+	if (*InDOS) asm jmp clear_mouse_event
+
+	asm {
+			// register event for this interrupt (if applicable)
+			push		y
+			push		x
+			call		far ptr in_region
+	add		sp, 4
+			cmp		ax, -1
+	jne		check_events
+	jmp		clear_mouse_event
+	}
+
+	check_events:
+	asm {
+			mov	region, ax
+
+			mov	ax, 0
+			mov	dx, event_flags
+			test	dx, EF_MOUSE_MOVEMENT
+			jz		button_down
+			or		ax, mouse_move
+	}
+
+	button_down:
+	asm {
+			test	dx, EF_MOUSE_BUTTON_DOWN
+			jz		button_up
+			or		ax, mouse_down
+	}
+
+	button_up:
+	asm {
+			test	dx, EF_MOUSE_BUTTON_UP
+			jz		verify_event
+			or		ax, mouse_up
+	}
+
+	verify_event:
+	asm {
+			test	ax, events_enabled
+			jnz	queue_event
+			jmp	clear_mouse_event
+	}
+
+	queue_event:
+	asm {
+			mov	event_mask, ax
+
+			call	far ptr allocate_event	// returns far ptr to event in dx:ax
+			cmp		dx, 0					// null pointer returned?
+			je		queue_overflow			// drop event
+
+			mov	bx, ax						// move dx:ax => es:bx
+			mov	es, dx
+
+			mov	ax, event_mask
+			mov	es:[bx].type, ax
+
+			mov	dx, event_flags
+			mov	cx, button_state
+
+			mov	ah, 0
+			test	dx, EF_LEFT_BUTTON
+			jnz	set_left
+			test	cx, BS_LEFT_DOWN
+			jz		right_button
+	}
+
+	set_left:
+	asm {
+			or		ah, LEFT_BUTTON
+	}
+
+	right_button:
+	asm {
+			test	dx, EF_RIGHT_BUTTON
+			jnz	set_right
+			test	cx, BS_RIGHT_DOWN
+			jz		center_button
+	}
+
+	set_right:
+	asm {
+			or		ah, RIGHT_BUTTON
+	}
+
+	center_button:
+	asm {
+			test	dx, EF_CENTER_BUTTON
+			jnz	set_center
+			test	cx, BS_CENTER_DOWN
+			jz		set_attributes
+	}
+
+	set_center:
+	asm {
+			or		ah, CENTER_BUTTON
+	}
+
+	set_attributes:
+	asm {
+			mov	al, byte ptr region
+			mov	es:[bx].attr, ax
+
+			mov	ax, x
+			mov	es:[bx].data, ax
+
+			mov	ax, y
+			mov	es:[bx].data+2, ax
+
+			jmp	clear_mouse_event
+	}
+
+	queue_overflow:
+	asm {
+			inc	lost_input
+	}
+
+	clear_mouse_event:
+	InMouseEvent = False;
+
+	asm {
+			pop	es
+			pop	ds
+			pop	di
+			pop	si
+			pop	dx
+			pop	cx
+			pop	bx
+			pop	ax
+	}
+
+	InMouseEvent = False;
+}

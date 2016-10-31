@@ -1,0 +1,207 @@
+#
+# This is the script for the Dance Dance Revolution-style game.
+#
+
+#
+# Declare the variables we will use; the system is hardcoded to
+# update the values of 'time' and 'player_goodness' every frame, 
+# if they exist.
+#
+
+:real time
+:real player_goodness
+:string u_tappin
+:string comment_string
+
+:real recent_average
+:real older_average
+
+#
+# Get the average of player_goodness over about 30 seconds,
+# and put that in recent_average.
+#
+recent_average = sample_tendency player_goodness 25.0
+older_average = sample_tendency player_goodness 60.0
+
+
+#
+# Compute some status variables.  In a programming language with
+# better syntax this would be much shorter and neater to do,
+# or you might not even have to do it.
+#
+:real was_doing_bad
+:real was_doing_okay
+:real was_doing_good
+:real was_doing_cool
+
+:real is_doing_bad
+:real is_doing_okay
+:real is_doing_good
+:real is_doing_cool
+
+is_doing_bad = is_less_than recent_average 0.3
+is_doing_okay = is_between recent_average 0.3 0.5
+is_doing_good = is_between recent_average 0.5 0.75
+is_doing_cool = is_greater_than recent_average 0.75
+
+was_doing_bad = is_less_than older_average 0.3
+was_doing_okay = is_between older_average 0.3 0.5
+was_doing_good = is_between older_average 0.5 0.75
+was_doing_cool = is_greater_than older_average 0.75
+
+#
+# Figure out what the Parappa message should be.
+#
+if is_doing_bad
+    u_tappin =  "U Tappin' BAD."
+endif
+
+if is_doing_okay
+    u_tappin =  "U Tappin' Okay."
+endif
+
+if is_doing_good
+    u_tappin =  "U Tappin' Good."
+endif
+
+if is_doing_cool
+    u_tappin =  "U Tappin' Cool!"
+endif
+
+
+#
+# Print some miscellaneous status variables.
+#
+:vector2 text_position
+text_position =  make_vector 0 0.9
+text_position = print_variable &player_goodness text_position
+text_position = print_variable &recent_average text_position
+text_position = print_variable &older_average text_position
+
+
+#
+# Print the Parappa string, and also the comment string (the
+# comment string will be empty if no comment is currently
+# appropriate).
+#
+text_position =  make_vector 0 0.1
+text_position = print_string u_tappin text_position
+text_position = print_string comment_string text_position
+
+#
+# Figure out the derivative of the player goodness
+# (done by taking finite differences of the player_goodness variable).
+#
+:real goodness_change
+differences player_goodness &goodness_change
+:real recent_change
+recent_change = sample_tendency goodness_change 20.0
+
+text_position = print_variable &recent_change text_position
+
+
+
+#
+# Now we want to try and detect simple patterns in the
+# player's performance.
+#
+
+#
+# If it's not time to make a new comment (like we already
+# did recently), bail out.
+#
+
+:real time_for_next_comment
+
+:real too_early_for_comment
+too_early_for_comment =  is_greater_than time_for_next_comment time 
+
+if too_early_for_comment
+    end
+endif
+
+comment_string = ""
+
+
+:real recent_improvement
+:real recent_degradation
+:real recent_severe_degradation
+:real recent_stable
+recent_improvement = is_greater_than recent_change 0.01
+recent_degradation = is_less_than recent_change -0.01
+recent_severe_degradation = is_less_than recent_change -0.02
+recent_stable = is_between recent_change -0.008 0.008
+
+#
+# Again, the stuff below is much more verbose than it
+# would be in a real language.
+#
+
+:real comment_good_comeback
+:real comment_consistent_great
+:real comment_losing_it
+:real comment_blew_streak
+:real comment_recent_streak
+:real comment_consistent_bad
+
+
+:real was_doing_good_or_cool
+was_doing_good_or_cool = or was_doing_good was_doing_cool
+:real was_doing_okay_or_good
+was_doing_okay_or_good = or was_doing_okay was_doing_good
+:real was_not_doing_cool
+#
+# "subtract 1 x" is my cheesy way of evaluating "not".
+#
+was_not_doing_cool = subtract 1 was_doing_cool
+
+comment_good_comeback = and was_doing_bad recent_improvement
+comment_consistent_great = and was_doing_cool recent_stable
+comment_losing_it = and was_doing_okay_or_good recent_degradation
+comment_blew_streak = and is_doing_cool recent_degradation
+comment_recent_streak = and was_not_doing_cool is_doing_cool
+comment_consistent_bad = and was_doing_bad is_doing_bad
+
+# XXX comment_consistent_bad will almost always fire as soon as
+# was_doing_bad becomes true... because it can only do that
+# if the instantaneous value is lower than the history value,
+# and is_doing_bad is likely to be closer to the instantaneous
+# value than was_doing_bad.  So you need some really weird
+# behavior before the 'and' becomes necessary I think (or maybe
+# it is not possible at all?  This would be an interesting place
+# for a proof or counterexample).
+
+if comment_good_comeback
+    comment_string = "Good comeback, I thought you were dead!"
+endif
+
+if comment_consistent_great
+    comment_string = "Great!  You're unstoppable!"
+endif
+
+if comment_blew_streak
+    comment_string = "Looks like your winning streak might be over..."
+endif
+
+if comment_recent_streak
+    comment_string = "Wow, you're having a really good streak!"
+endif
+
+if comment_consistent_bad
+    comment_string = "I think you need some lessons."
+endif
+
+if recent_severe_degradation
+    comment_string = "Hey, what happened?!?"
+endif
+
+
+
+#
+# There must be at least 10 seconds between comments.
+#
+:real comment_length
+comment_length = length comment_string
+if comment_length
+    time_for_next_comment =  add time 10.0
+endif

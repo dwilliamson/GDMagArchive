@@ -1,0 +1,55 @@
+Listing 11: The structure of the in-game hash table from command.h, and a
+sample entry from command.c
+
+typedef struct cmdentry CMDENT;
+  struct cmdentry {
+      char *cmdname;
+      NAMETAB *switches;
+      int perms;
+      int extra;
+      int callseq;
+      void (*handler) ();
+  };
+
+NAMETAB, defined in htab.h, is list of switches that modify the command
+behavior. Rather than sending text to an object, a message could be sent to
+an object’s contents with the use of /contents on the @pemit command.
+
+typedef struct name_table NAMETAB;
+  struct name_table {
+      char *name;
+      int minlen;
+      int perm;
+      int flag;
+  };
+
+Example CMDENT entries from command.c:
+
+For the command, @pemit, which sends text to an object, in the form:
+@pemit <object>=<text>.  The command:
+
+      @pemit The Statue=The pigeons are coming!
+
+Would send the text, “The pigeons are coming!” to the object named “The
+Statue.”
+
+{
+        (char *) “@pemit”, 
+        pemit_sw, 
+        CA_NO_GUEST | CA_NO_SLAVE,
+        PEMIT_PEMIT, 
+        CS_TWO_ARG | CS_INTERP,
+        do_pemit
+},
+
+The switches are:
+
+NAMETAB pemit_sw[] =
+{
+    {(char *) “contents”, 1, CA_PUBLIC, PEMIT_CONTENTS},
+    {(char *) “list”, 1, CA_PUBLIC, PEMIT_LIST | SW_MULTIPLE},
+    {(char *) “object”, 1, CA_PUBLIC, 0},
+    {NULL, 0, 0, 0}
+};
+
+

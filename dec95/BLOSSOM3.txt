@@ -1,0 +1,69 @@
+Listing 3. Macintosh Palette Creation
+// Set up the palette from the given Colors
+WinPalette = NewPalette(256, 0, pmExplicit | pmAnimated, 0);
+if (WinPalette)
+{
+	// To maintain compatibility with our Windows cousin, weOll include the Windows static colors 
+	// in the palette. Of course, color 0 must be white and color 255 black
+	char unsigned const WindowsColorsLow[] =
+		{ 0xFF,0xFF,0xFF,
+			0x80,0x00,0x00,  0x00,0x80,0x00,  0x80,0x80,0x00,
+			0x00,0x00,0x80,  0x80,0x00,0x80,  0x00,0x80,0x80,
+			0xC0,0xC0,0xC0,  0xC0,0xDC,0xC0,  0xA6,0xCA,0xF0 };
+	char unsigned const WindowsColorsHigh[] =
+		{ 0xFF,0xFB,0xF0,  0xA0,0xA0,0xA4,  0x80,0x80,0x80,
+			0xFF,0x00,0x00,  0x00,0xFF,0x00,  0xFF,0xFF,0x00,
+			0x00,0x00,0xFF,  0xFF,0x00,0xFF,  0x00,0xFF,0xFF,
+			0x00,0x00,0x00 };
+
+	// WeOll create our palette from these OstaticO colors, filling in whatever gaps are left 
+	// with colors from the requested colors, or a gray wash as before if there are none
+	// Count tells us where to find the appropriate RGB triplet in the requested color array
+	int Count = 0;
+	RGBColor rgb;
+	int i;
+	for (i=0; i<10; ++i)
+	{
+		// Fill in the first ten entries
+		rgb.red = (long)WindowsColorsLow[Count++] << 8;
+		rgb.green = (long)WindowsColorsLow[Count++] << 8;
+		rgb.blue = (long)WindowsColorsLow[Count++] << 8;
+		
+		SetEntryColor(WinPalette, i, &rgb);
+	}
+
+	if (Colors)
+	{
+		// Fill in the middle entries with the requested colors
+		for (; i<246; ++i)
+		{
+			rgb.red = (long)Colors[Count++] << 8;
+			rgb.green = (long)Colors[Count++] << 8;
+			rgb.blue = (long)Colors[Count++] << 8;
+
+			SetEntryColor(WinPalette, i, &rgb);
+		}
+	}
+	else
+	{
+		// Fill in the middle entries with a grey wash
+		for (; i<246; ++i)
+		{
+			rgb.red = rgb.green = rgb.blue = (long)i << 8;
+
+			SetEntryColor(WinPalette, i, &rgb);
+		}
+	}
+
+	Count = 0;
+	for (; i<256; ++i)
+	{
+		// Fill in the remaining static entries
+		rgb.red = (long)WindowsColorsHigh[Count++] << 8;
+		rgb.green = (long)WindowsColorsHigh[Count++] << 8;
+		rgb.blue = (long)WindowsColorsHigh[Count++] << 8;
+
+		SetEntryColor(WinPalette, i, &rgb);
+	}
+	SetPalette(Window, WinPalette, FALSE);
+}

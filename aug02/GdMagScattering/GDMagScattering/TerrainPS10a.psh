@@ -1,0 +1,72 @@
+#line 1 "TerrainPS10.psh"
+; Terrain Pixel shader with Scattering
+; (c) Kenny Mitchell - Westwood Studios EA 2002
+; (c) Preetham - ATI Research, 2002. 
+
+ps.1.0
+
+#line 1 "TerrainPShaderConstants.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#line 40 "TerrainPShaderConstants.h"
+#line 8 "TerrainPS10.psh"
+
+; Equation is 
+;
+; Surf_color = (N.L) * terrain_tex * cloud_covering * self_shadow_term;
+; Final_color =  Surf_color * extinction + inscattering 
+;
+; 
+; Inputs:
+; v0
+; v1
+;
+
+
+tex t0		; Texture Normal_horizon_map
+tex t1		; texture terrain color
+tex t2		; texture cloud later
+		
+dp3_sat	r0.rgb, c[1], t0_bx2	; Lighting (N.L)
+mul r0.rgb, r0, t1				; apply Terrain texture		
++sub_sat r0.a, c[1].a, t0.a		; Shadow term (from Horizon angle)
+mul r0, r0, 1-r0.a				; apply Shadow.				
+mul r0, r0, 1-t2				; apply cloud covering
+mul r0, r0, v0					; Apply extinction
+add r0, r0, v1					; Final color= add inscattering		

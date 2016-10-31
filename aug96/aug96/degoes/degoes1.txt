@@ -1,0 +1,140 @@
+Listing 1.  Vector .HPP (A Vector Object) Targeted to 32-bit OS
+// Note: All functions are inlined for speed
+
+#ifndef __VECTOR3D__
+#define __VECTOR3D__
+#include <Math.H>
+#include <Stdio.H>
+#include <Stdlib.H>
+class Vector3D {
+protected:
+  float i, j, k;
+public:
+  // The constructors:
+  Vector3D () { ( *this ) = 0.0F; }
+  Vector3D ( float Ni, float Nj, float Nk )
+     {
+     Set ( Ni, Nj, Nk );
+     }
+  // Set/Get member functions to provide access to
+  // i, j and k:
+  void Set ( float Ni, float Nj, float Nk )
+     {
+     i = Ni; j = Nj; k = Nk;
+     }
+  float Geti () { return i; }
+  float Getj () { return j; }
+  float Getk () { return k; }
+  // The following two functions return the magnitude of 
+  // the vector:
+  operator float ()
+     {
+     float Mag = sqrt ( ( i * i ) + ( j * j ) + ( k * k ) );
+     return Mag;
+     }
+  float Mag ()
+      {
+      return float ( *this );
+      }
+  // The following function returns the dot product of 
+  // this vector and another:
+  float Dot ( Vector3D &V )
+      {
+      float DP = ( i * V.i ) +
+                 ( j * V.j ) +
+                 ( k * V.k );
+      return DP;
+      }
+  // The following function returns the angle 
+  // (a <= 3.14 >= 0) between this vector and another (angle
+  // returned in radians):
+  float Angle ( Vector3D &V )
+      {
+      float Rad = acos ( this->Dot ( V ) /
+                       ( Mag () * V.Mag () ) );
+      return Rad;
+      }
+  // The following function returns the cosine of the 
+  // angle between this vector and another:
+  float CosTheta ( Vector3D &V )
+      {
+      float CosA = this->Dot ( V ) / ( Mag () * V.Mag () );
+      return CosA;
+      }
+  // The following operators are overloaded for common
+  // operations; some work with both scalars and vectors:
+  Vector3D &operator = ( float Scalar )
+     {
+     i = j = k = Scalar;
+     return *this;
+     }
+  Vector3D operator + ( Vector3D &V )
+     {
+     Vector3D R;
+     R.i = i + V.i;
+     R.j = j + V.j;
+     R.k = k + V.k;
+     return R;
+     }
+  Vector3D operator - ( Vector3D &V )
+     {
+     Vector3D R;
+     R.i = i - V.i;
+     R.j = j - V.j;
+     R.k = k - V.k;
+     return R;
+     }
+  Vector3D &operator += ( Vector3D &V )
+     {
+     i += V.i; j += V.j; k += V.k;
+     return *this;
+     }
+  Vector3D &operator -= ( Vector3D &V )
+     {
+     i -= V.i; j -= V.j; k -= V.k;
+     return *this;
+     }
+  // The following functions calculate the cross-product
+  // of this vector and another:
+  Vector3D operator * ( Vector3D &V )
+     {
+     Vector3D R;
+     R.i = ( j * V.k ) - ( k * V.j );
+     R.j = ( k * V.i ) - ( i * V.k );
+     R.k = ( i * V.j ) - ( j * V.i );
+     return R;
+     }
+  Vector3D &operator *= ( Vector3D &V )
+     {
+     float oi=i, oj=j, ok=k;
+     i = ( oj * V.k ) - ( ok * V.j );
+     j = ( ok * V.i ) - ( oi * V.k );
+     k = ( oi * V.j ) - ( oj * V.i );
+     return *this;
+     }
+  // The following functions multiply a vector
+  // by a scalar:
+  Vector3D operator * ( float Scalar )
+     {
+     Vector3D R;
+     R.i = i * Scalar;
+     R.j = j * Scalar;
+     R.k = k * Scalar;
+     return R;
+     }
+  Vector3D &operator *= ( float Scalar )
+     {
+     i *= Scalar;
+     j *= Scalar;
+     k *= Scalar;
+     return *this;
+     }
+  // The following function normalizes a normal to
+  // a length of 1:
+  void Normalize ()
+     {
+     float OneOverDist = 1.0F / Mag ();
+     ( *this ) *= OneOverDist;
+     }
+};
+#endif

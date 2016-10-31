@@ -1,0 +1,16 @@
+Example 8: Example of a look on TooMUSH
+
+The Office Park Plaza
+You stand in a bright, sunny plaza, just south of the huge Too Corp office
+   building. Nearby, a large marble fountain with water gushing up to great
+   heights, creates a fine mist that is refreshing in the mid-day sun.
+As you look at the ominous Too Corp Tower, you get a bad feeling. Perhaps it is
+   a passing cloud, or maybe that soda you drank earlier ... Or, maybe it is
+   the fact that you know that within the stately office building, some of the
+   most powerful wizards in all the world live and work. Who knows what dark
+   vulgar obscene things these too-powerful beings are up to? Another chill.
+   Best not to think of such things -- it is a pleasant, sunny day after all.
+Exits:  Fish and Feline Farm <W>,  TooCondos <SE>,  Too Tower <N>,  HMO Clinic
+   <NE>,  Restaurant <NW>
+People: Alaric
+

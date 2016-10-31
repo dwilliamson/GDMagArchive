@@ -1,0 +1,15 @@
+Listing 6. Blt(), BltFast() and Flip()
+
+hResult = pBackSurface->BltFast( 0, 0, pTextSurface, NULL,  DDBLTFAST_WAIT | DDBLTFAST_SRCCOLORKEY );
+if ( FAILED( hResult ) )
+	return FALSE;					
+if ( bPageFlip )
+{
+	hResult = pFlipSurface->Flip( NULL, DDFLIP_WAIT );
+}
+else
+{
+	hResult = pFrontSurface->Blt( &rcDest, pBackSurface,  &rcSrc, DDBLT_WAIT, NULL );
+	}
+if ( FAILED( hResult ) )
+	return FALSE;

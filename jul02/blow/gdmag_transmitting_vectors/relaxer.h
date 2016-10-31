@@ -1,0 +1,1 @@
+extern Loaded_Texture_Info spot_texture;

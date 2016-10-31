@@ -1,0 +1,13 @@
+Listing 1. The C++ Inner Loop
+for(int Counter = 0;Counter < AffineLength;Counter++)
+{
+  int UInt = U>>16;
+  int VInt = V>>16;
+
+  *(pDestBits++) = *(pTextureBits + UInt +
+      (VInt * TextureDeltaScan));
+
+  U += DeltaU;
+  V += DeltaV;
+}
+

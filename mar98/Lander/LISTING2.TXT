@@ -1,0 +1,40 @@
+///////////////////////////////////////////////////////////////////////////////
+// Function:	EulerToQuaternion
+// Purpose:		Convert a set of Euler angles to a Quaternion
+// Arguments:	A rotation set of 3 angles, a quaternion to set
+// Discussion:  As the order of rotations is important I am
+//				using the Quantum Mechanics convention of (X,Y,Z)
+//				a Yaw-Pitch-Roll (Y,X,Z) system would have to be
+//				adjusted.  It is more efficient this way though.
+///////////////////////////////////////////////////////////////////////////////
+void EulerToQuaternion(tVector *rot, tQuaternion *quat)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	float rx,ry,rz,tx,ty,tz,cx,cy,cz,sx,sy,sz,cc,cs,sc,ss;
+///////////////////////////////////////////////////////////////////////////////
+	// FIRST STEP, CONVERT ANGLES TO RADIANS
+	rx =  (rot->x * M_PI) / (360 / 2);
+	ry =  (rot->y * M_PI) / (360 / 2);
+	rz =  (rot->z * M_PI) / (360 / 2);
+	// GET THE HALF ANGLES
+	tx = rx * 0.5;
+	ty = ry * 0.5;
+	tz = rz * 0.5;
+	cx = cos(tx);
+	cy = cos(ty);
+	cz = cos(tz);
+	sx = sin(tx);
+	sy = sin(ty);
+	sz = sin(tz);
+
+	cc = cx * cz;
+	cs = cx * sz;
+	sc = sx * cz;
+	ss = sx * sz;
+
+	quat->x = (cy * sc) - (sy * cs);
+	quat->y = (cy * ss) + (sy * cc);
+	quat->z = (cy * cs) - (sy * sc);
+	quat->w = (cy * cc) + (sy * ss);
+}
+// EulerToQuaternion  /////////////////////////////////////////////////////////

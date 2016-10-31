@@ -1,0 +1,39 @@
+Listing 1: Calculate an Axis-Aligned Bounding Box for an Object
+
+///////////////////////////////////////////////////////////////////////////////
+// Procedure:	RecalcFullBBox
+// Purpose:		Recalculates the BBox associated with a bone based on the
+//				new position for the vertices.  Tighter fit in
+//				most cases.  However, has to process all vertices
+///////////////////////////////////////////////////////////////////////////////		
+GLvoid COGLView::RecalcFullBBox(t_Bone *curBone, tVector *min,tVector *max)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	tVector				*temp,tempRes;	// X,Y,Z VECTORS
+	tNormalVertex			*nvData;		// VERTEX WITH NX,NY,NZ,X,Y,Z
+	t_Visual				*visual;
+///////////////////////////////////////////////////////////////////////////////
+	visual = curBone->visuals;			// GET AT THE VISUAL ATTACHED TO A BONE
+	nvData = (tNormalVertex *)visual->vertexData;	// THE ACTUAL INTERLEAVED VERTEX DATA
+	for (int loop = 0; loop < visual->faceCnt * visual->vPerFace; loop++)
+	{
+		temp = (tVector *)&nvData->x;		// POINTER TO THE VERTEX XYZ VALUES
+		MultVectorByMatrix(&curBone->matrix, temp,&tempRes);  // MULT BY THE BONE MATRIX
+		// FIRST VERTEX, SET IT AS THE MAX AND MIN
+		if (loop == 0)
+		{
+			memcpy(min,&tempRes,sizeof(tVector));
+			memcpy(max,&tempRes,sizeof(tVector));
+		}
+		else
+		{
+			if (tempRes.x > max->x) max->x = tempRes.x;
+			if (tempRes.y > max->y) max->y = tempRes.y;
+			if (tempRes.z > max->z) max->z = tempRes.z;
+			if (tempRes.x < min->x) min->x = tempRes.x;
+			if (tempRes.y < min->y) min->y = tempRes.y;
+			if (tempRes.z < min->z) min->z = tempRes.z;
+		}
+		nvData++;
+	}
+}

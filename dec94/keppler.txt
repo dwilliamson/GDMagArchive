@@ -1,0 +1,206 @@
+1	Keppler Listing 1	April 7, 1995  11:22 AM
+
+1	Keppler Listing 1	April 7, 1995  11:22 AM
+
+1	Keppler Listing 1	April 7, 1995  11:22 AM
+
+
+Listing . RNDM.HPP
+
+//RNDM.HPP
+#ifndef RNDM_HPP
+#define RNDM_HPP
+typedef unsigned long ulong;
+const ulong Hoaglin1	= 397204094UL ;
+const ulong Hoaglin2	= 764261123UL ;
+const ulong APL		= 16807UL ;
+class ModM31 {
+		ulong n ;
+	public:
+		ModM31 (ulong m = 0)
+		operator ulong () {return n ;}
+		friend ModM31 operator+ (ModM31, ModM31) ;
+		friend ModM31 operator- (ModM31, ModM31) ;
+		friend ModM31 operator* (ModM31, ModM31) ;
+		friend ModM31 operator/ (ModM31, ModM31) ; } ;
+class UniformVariable {
+		static ModM31 seed ;
+		static ModM31 multiplier ;
+	public:
+		static ulong next (void){return seed = seed * multiplier ;}
+		static void Reset (ulong Seed, ulong mult = 0)
+			{if (seed) seed = Seed ; if (mult) multiplier = mult ;}
+		double operator ()() ;  } ;
+class NormalVariable {
+		UniformVariable U ;
+		int BoxMullerSwitch ;
+		double mn, std ;
+		double U1, U2 ;
+	public:
+		NormalVariable (double mean = 0.0, double stddev = 1.0) ;
+		double operator ()() ;  } ;
+Class ExponentialVariable {
+		UniformVariable U ;
+		double mn ;
+	public:
+		ExponentialVariable (double mean = 1.0) ;
+		double operator ()() ;  } ;
+class PoissonVariable {
+		UniformVariable U ;
+		double mn ;
+	public:
+		PoissonVariable (double mean = 1.0) ;
+		int operator ()() ;  } ;
+class GeometricVariable {
+		UniformVariable U ;
+		double beta;
+	public:
+		GeometricVariable (double p = 0.5) ;
+		int operator ()() ;  } ;
+class BinomialVariable {
+		UniformVariable U ;
+		int nn ;
+		double pr ;
+	public:
+		BinomialVariable (int n = 1, double p = 0.5) ;
+		int operator ()() ;  } ;
+template <class T>
+clss RejectionMethod {
+		UniformVariable U ;
+		TP ;							// density m(x): M(x) = A * m(x)
+		double (*M) (double) ;		// M(x) >= f(x) for every x
+		double (*f) (double) ;		// The density to simulate
+	public:
+		RejectionMethod (double(*Mn)(double),double(*fn)(double)):
+			M(Mn), f(fn) {}
+		double operator ()() ;		// has density f(x)  } ;
+template <class T>
+double RejectionMethod<T>:: operator ()()  {
+		double t ;
+		do {t = P() ;} while (U()*M(t) > f(t)) ;
+		return t ;				1	// # trials is geometric with parameter 1/A  }
+#endif	// RNDM_HPP
+LISTING 2. RNDM.CPP
+
+// RNDM.CPP
+#include <math.h>
+#include Orndm.hppO
+const ulong M31		= 0X7FFFFFFUL ;
+const double dM31	= (double) M31 ;
+const ulong mask16	= 0X0000FFFFUL :
+				//Class ModM31
+ModM31:: ModM31 (ulong m): n(m%M31) {}
+ModM31 operator+ (ModM31 r, ModM31 s) {return r.n + s.n ;}
+ModM31 operator- (ModM31 r, ModM31 s) {return M31 + r.n - s.n ;}
+ModM31 operator* (ModM31 r, ModM31 s) {
+		ulong a = r.n >> 16, b = r.n & mask16 ;
+		ulong c = s.n >> 16, d = s.n & mask16 ;
+		ulong x = a*d + b*c ;
+		return ModM31((a*c+(x>>16))<<1) + ModM31(x<<16) + ModM31(b*d) ;
+	}	// ((a*c+(x>>16))<<1) depends on M31 because 2 == 2^32 (mod M31)
+		// ModM31(x<<16) depends on 32-bit integers, ModM31((x&mask16)<<16)
+static void eqn (ulong a, ulong b, ModM31 &x, ModM31 &y)  {
+		ulong r = a % b ; if (!r){x = 0 ; y = 1 ; return ;}
+		eqn (b,r,x,y) ; ModM31 s = y ; y = x - ModM31(a/b)*y ; x = s ;  }
+ModM31 operator/ (ModM31 a, ModM31 b)
+	{ModM31 x, y ; eqn (M31,b,x,y) ; return a*y ;}
+				// Class UniformVariable
+ModM31 UniformVariable::seed = 3874UL ;
+ModM31 UniformVariable::multiplier = Hoaglin1 ;
+double UniformVariable::operator ()(){return next() / dM31 ;}
+				// Class NormalVariable
+NormalVariable::NormalVariable (double mean, double stddev):
+	BoxMullerSwitch(1), mn(mean), std(stddev) {}
+double NormalVariable::operator ()()  {
+		BoxMullerSwitch = !BoxMullerSwitch ;
+		if (BoxMullerSwitch) return U1*sin(U2) + mn ;
+		U1 = std * sqrt(-2*log(U())) ; U2 = 2*M_PI*U() ;
+		return U1*cos(U2) + mn ;  }
+				// Class ExponentialVariable
+ExponentialVariable::ExponentialVariable(double mean): mn(mean) {}
+double ExponentialVariable::operator ()() {return -mn*log(U(0)) ;}
+				//Class PoissonVariable
+PoissonVariable::PoissonVariable (double mean): mn(exp(-mean)) {}
+int PoissonVariable::operator ()()  {
+		int count = 0 ; double product = U() ;:
+		while (product >= mn){count++ ; product *=U() ;}
+		return count ;  }
+				// Class GeometricVariable
+GeometricVariable::GeometricVariable (double p): beta(1/log(1-p)) {}
+int GeometricVariable::operator ()(){return 1 + (int)(beta*log(U()));}
+				// Class Binomial Varialbe
+BinomialVariable::Binomial Variable (int n, double p): nn(n), pr(p) {}
+int BinomialVariable::operator ()()  {
+		int count = 0 ;
+		for (int i = 0 ; i < nn ; i++) if (U() <= pr) count++ ;
+		return count ;  }
+Listing 3. MAIN.CPP
+
+// MAIN.CPP
+#include <stdlib.h>
+#include <iostream.h>
+#include <iomanip.h>
+#include <math.h>
+#include Orndm.hppO
+// Borland #pragma
+///M(), f() and U2 are for class RejectionMethod
+#pragma argsused
+double M (double x) {return 7.0/6 ;}
+double f (double x) {return x*x + 1.0/6 ;}
+class U2 {
+		UniformVariable U ;
+	public:
+		double operator ()() {return 2*U()-1 ;}  } ;
+template <class T>
+void TestIt (char *p, T &X, int count, double mean, double var)  {
+		double sum = 0.0, sumsq = 0.0, hold ;
+		for (int i=0 ; i<count ; i++)
+			{hold=X() ; sum+=hold ; sumsq+=hold*hold ;}
+		double ave = sum / count ;	// next line protects against roundoff errors
+		double sstd = (sumsq>=ave*sum) ? sqrt((sumsq-ave*sum)/(count-1)) : 0.0 ;
+		cout << setw(11) << p		<<
+			setw 10) << mean		<<
+			setw(10) << sqrt (var)	<<
+			setw(15) << ave			<<
+			setw(15) << sstd		<<
+			setw(15) << (ave-mean) * sqrt(count/var) <<
+			endl ;  }
+void main (int argc, char **argv)
+	{
+		int trials ; double a, b ;
+		trials = (argc>1) ? atoi(argv[1]) : 100 ;
+		if (trials < 2) trials = 2 ;
+		cout  << O\nRandom variable test:  Trials = O << trials << O\nO <<
+			setw(11) << ONameO			<<
+			setw(10) << OMeanO			<<
+			setw(10) << OStdDevO		<<
+			setw(15) << OAverageO		<<
+			setw(15) << OSample StdO	<<
+			setw(15) << ODeltaO<<		O\nO ;
+
+		NormalVariable N(a=0,b=2) ;
+		TestIt (ONormalO, N, trials, a, b*b) ;
+
+		UniformVariable U ;
+		TestIt (OUniformO, U, trials, 0.5, 1.0/12) ;
+
+		ExponentialVariable E(a=12) ;
+		TestIt (OExponentialO, E, trials, a, a*a) ;
+
+		PoissonVariable P(a=4) ;
+		TestIt (OPoissonO, P, trials, a, a) ;
+
+		GeometricVariable G(a=0. 12) ;
+		TestIt (OGeometricO, G, trials, 1/a, (1-a)/(a*a)) ;
+
+		BinomialVariable B(a=10,b=0.02) ;
+		TestIt (OBinomialO, B, trials, a*b, a*b*(1-b)) ;
+
+		RejectionMethod<U2> R(M,f) ;
+		TestIt(ORjectionO, R, trials, 0.0, 23.0/45) ;
+
+		UniformVariable S ; S.Reset(1,APL) ;
+		for (int i = 0 ; i < 9999 ; i++) S.next() ;
+		cout << OTom Ochs, Jan 1991 test for APL: O << S.next() << O\nO<<
+				O Predicted value: O << 1043618065UL << endl ;
+	}

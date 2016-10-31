@@ -1,0 +1,27 @@
+Listing 1. A Function that Creates Awesome Secondary Buffers
+HRESULT CreateDSBuffer(LPDIRECTSOUND lpDS, LPDIRECTSOUNDBUFFER * lplpDSB, 
+            DWORD SoundBytes, DWORD Frequency, int IsStereo, int Is16Bit)
+{
+  DSBUFFERDESC dsbd;
+  PCMWAVEFORMAT fmt;
+  fmt.wf.nChannels=(IsStereo)?2:1;
+  fmt.wBitsPerSample=(Is16Bit)?16:8;
+  fmt.wf.nSamplesPerSec=((DWORD)Frequency);
+  fmt.wf.nBlockAlign=fmt.wf.nChannels*(fmt.wBitsPerSample>>3);
+  fmt.wf.nAvgBytesPerSec=((DWORD)fmt.wf.nSamplesPerSec)*((DWORD)fmt.wf.nBlockAlign);
+  fmt.wf.wFormatTag=WAVE_FORMAT_PCM;
+  memset( &dsbd, 0, sizeof(dsbd) );
+  dsbd.lpwfxFormat=(LPWAVEFORMATEX)&fmt;
+  dsbd.dwSize=sizeof(DSBUFFERDESC);
+  dsbd.dwBufferBytes=SoundBytes;
+  dsbd.dwFlags=0;
+In C++: return( lpDS->CreateSoundBuffer( &dsbd, lplpDSB, 0) );
+In C:  return( IDirectSound_CreateSoundBuffer( lpDS, &dsbd, lplpDSB, 0) );
+   } 
+// Sample use of the CreateDSBuffer function
+LPDIRECTSOUNDBUFFER lpDSB;
+if (CreateDSBuffer( lpDS, &lpDSB, TotalSoundBytes, 22050, 0 , 0) ) { // Open 22050, mono, 8 bit sample
+// Use the DirectSoundBuffer
+In C++: lpDSB->Release();
+In C:  IDirectSoundBuffer_Release( lpDSB );
+}

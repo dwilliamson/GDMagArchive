@@ -1,0 +1,13 @@
+Example 9: After typing “north”
+
+You enter the mighty Too Corp Tower.
+Too Corp Lobby
+“Germ Free” is one way to describe this place -- it looks like bacteria were
+   long-ago exterminated here. Everything is clean and polished with a black,
+   sleek finish to it. It looks nice, if you are into black marble.
+To the north are the closed double-doors for the elevator. To the east is an
+   interestingly out-of-place, and extremely tacky, deli. Above the deli
+   entrance is a sign, “Fast Eddie’s Deli, Bar, and Insurance sales”. It looks
+   like an interesting place.
+Exits:  Elevator <S>,  Deli <E>,  Outside <O>
+

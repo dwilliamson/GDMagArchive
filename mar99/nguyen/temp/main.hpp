@@ -1,0 +1,1 @@
+void print_percent(long p);

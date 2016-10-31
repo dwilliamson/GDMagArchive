@@ -1,0 +1,40 @@
+From: "Jeff Roberts" <jeffr@radgametools.com>
+To: "Jonathan Blow" <jon@number-none.com>
+Subject: Re: adaptive compression + networking
+Date: Mon, 7 Jul 2003 15:18:57 -0700
+
+So, if I understand, then you are saying the client occassionally says "roll
+the stats from these n previously transmitted blocks into this other table,
+and start using that"?  That's a nice way to avoid transmiting new tables,
+but how do you reduce the probility of a symbol if we are always combining
+prob tables together?  Would you have a flush or something?
+
+> About transmitting positions or any other correlated data samples
+
+There are lots of ways to transmit positions, but clustering is probably the
+simplest/most general.  Some thoughts:
+
+1) when transmitting the +/- delta values (with whatever scheme), you
+usually want to encode the absolute value of the difference and separately
+encode the sign bit (and if you send the abs val first, then you don't need
+to send a sign bit at all for zero values as a bonus).  I never encode the
+sign bit of delta values (I just send them raw in a parallal side band)  -
+if you choose your cluster points well, then the sign bit should be random.
+
+2) the right thing to do if you are transmitting a bunch of vectors in one
+block (say 16 or more) is to wavelet decorrelate the block of values first.
+
+3) a simple step forwards clustering is to simply delta off the previous
+vector and encode that difference.
+
+4) when calculating the cluster value for the block of values, using a
+median center vs. an average can improve your compression greatly.  Median
+centers are a bitch to calculate quickly, though.
+
+5) on some blocks of data, it is better to cluster all of the vectors
+together. In other blocks, you can do better by splitting out the scalars
+and clustering that data independently.  If your data is small, you may want
+to try both.
+
+->Jeff
+RAD Game Tools

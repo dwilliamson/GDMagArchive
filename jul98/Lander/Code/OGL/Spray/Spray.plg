@@ -1,0 +1,50 @@
+--------------------Configuration: Spray - Win32 Release--------------------
+Begining build with project "D:\Code\OGL\Spray\Spray.dsp", at root.
+Active configuration is Win32 (x86) Application (based on Win32 (x86) Application)
+
+Project's tools are:
+			"32-bit C/C++ Compiler for 80x86" with flags "/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/Spray.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c "
+			"OLE Type Library Maker" with flags "/nologo /D "NDEBUG" /mktyplib203 /o NUL /win32 "
+			"Win32 Resource Compiler" with flags "/l 0x409 /fo"Release/Spray.res" /d "NDEBUG" "
+			"Browser Database Maker" with flags "/nologo /o"Release/Spray.bsc" "
+			"COFF Linker for 80x86" with flags "opengl32.lib glu32.lib glaux.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/Spray.pdb" /machine:I386 /out:"Release/Spray.exe" "
+			"Custom Build" with flags ""
+			"<Component 0xa>" with flags ""
+
+Creating command line "rc.exe /l 0x409 /fo"Release/Spray.res" /d "NDEBUG" "D:\Code\OGL\Spray\Spray.rc"" 
+Creating temp file "C:\WINDOWS\TEMP\RSPF190.TMP" with contents </nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/Spray.pch" /Yu"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\Code\OGL\Spray\EditEmit.cpp"
+"D:\Code\OGL\Spray\MainFrm.cpp"
+"D:\Code\OGL\Spray\OGLView.cpp"
+"D:\Code\OGL\Spray\Particle.cpp"
+"D:\Code\OGL\Spray\Spray.cpp"
+>
+Creating command line "cl.exe @C:\WINDOWS\TEMP\RSPF190.TMP" 
+Creating temp file "C:\WINDOWS\TEMP\RSPF191.TMP" with contents </nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /Fp"Release/Spray.pch" /Yc"stdafx.h" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\Code\OGL\Spray\StdAfx.cpp"
+>
+Creating command line "cl.exe @C:\WINDOWS\TEMP\RSPF191.TMP" 
+Creating temp file "C:\WINDOWS\TEMP\RSPF192.TMP" with contents <opengl32.lib glu32.lib glaux.lib /nologo /subsystem:windows /incremental:no /pdb:"Release/Spray.pdb" /machine:I386 /out:"Release/Spray.exe" 
+.\Release\EditEmit.obj
+.\Release\MainFrm.obj
+.\Release\OGLView.obj
+.\Release\Particle.obj
+.\Release\Spray.obj
+.\Release\StdAfx.obj
+.\Release\Spray.res>
+Creating command line "link.exe @C:\WINDOWS\TEMP\RSPF192.TMP" 
+Compiling resources...
+Compiling...
+StdAfx.cpp
+Compiling...
+EditEmit.cpp
+MainFrm.cpp
+OGLView.cpp
+Particle.cpp
+Spray.cpp
+Generating Code...
+Linking...
+
+
+
+Spray.exe - 0 error(s), 0 warning(s)

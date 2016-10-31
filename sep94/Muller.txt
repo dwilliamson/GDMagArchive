@@ -1,0 +1,89 @@
+Listing 1 (second try)
+
+
+      Perform collision detection (Method 1).     /
+void ObjectSet::Collision1()
+{
+	int i, j;
+
+	// Box method of collision detection between equal sized objects
+	memset(colour, 0, numobjects * sizeof(UBYTE));
+	for (i = 0; i < numobjects; i++)
+		for (j = 0; j < i; j++)
+			if (abs(xpos[i] - xpos[j]) < 4096L)
+				if (abs(ypos[i] - ypos[j]) < 4096L)
+				{
+					colour[i] = 16;
+					colour[j] = 16;
+				}
+}
+
+Perform collision detection (Method 2).   
+
+void ObjectSet::Collision2()
+{
+	int i, j;
+
+	// Manhattan method of collision detection between equal sized objects
+	memset(colour, 0, numobjects * sizeof(UBYTE));
+	for (i = 0; i < numobjects; i++)
+		for (j = 0; j < i; j++)
+			if (abs(xpos[i] - xpos[j]) + abs(ypos[i] - ypos[j]) < 6144L)
+				{
+					colour[i] = 16;
+					colour[j] = 16;
+				}
+}
+
+Perform collision detection (Method 3).     
+
+void ObjectSet::Collision3()
+{
+	int i, j;
+	long mx, my, dist;
+
+	// Octagon method of collision detection between circular objects
+	memset(colour, 0, numobjects * sizeof(UBYTE));
+	for (i = 0; i < numobjects; i++)
+		for (j = 0; j < i; j++)
+		{
+			mx = abs(xpos[i] - xpos[j]);
+			my = abs(ypos[i] - ypos[j]);
+			if (mx < my)
+				dist = my + (mx >> 1);
+			else 
+				dist = mx + (my >> 1);
+
+			if (dist < 15*256L)
+			{
+				colour[i] = 16;
+				colour[j] = 16;
+			}
+		}
+}
+
+
+Perform collision detection (Method 4). 
+
+void ObjectSet::Collision4()
+{
+	int i, j;
+	long mx, my, dist;
+
+	// Circle method of collision detection between circular objects
+	memset(colour, 0, numobjects * sizeof(UBYTE));
+	for (i = 0; i < numobjects; i++)
+		for (j = 0; j < i; j++)
+		{
+			mx = abs(xpos[i] - xpos[j]) >> 8;
+			my = abs(ypos[i] - ypos[j]) >> 8;
+			dist = mx * mx + my * my;
+			if (dist < 15*15L)
+			{
+				colour[i] = 16;
+				colour[j] = 16;
+			}
+		}
+}
+
+

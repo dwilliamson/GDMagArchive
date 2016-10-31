@@ -1,0 +1,61 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: lerp - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\PHILLI~1\LOCALS~1\Temp\RSP282C.tmp" with contents
+[
+/nologo /MDd /W3 /Gm /GX /ZI /Od /I "include" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"Debug/lerp.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\code\lerp\pool_game.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\PHILLI~1\LOCALS~1\Temp\RSP282C.tmp" 
+Creating temporary file "C:\DOCUME~1\PHILLI~1\LOCALS~1\Temp\RSP282D.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib uuid.lib opengl32.lib glu32.lib delayimp.lib jpg.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/lerp.pdb" /debug /machine:I386 /out:"Debug/lerp.exe" /pdbtype:sept /libpath:"lib" /delayload:opengl32.dll 
+.\Debug\bytecode.obj
+.\Debug\bytecode_builder.obj
+.\Debug\bytecode_runner.obj
+.\Debug\concatenator.obj
+.\Debug\data_structures.obj
+.\Debug\disassembler.obj
+.\Debug\gc.obj
+.\Debug\goal_solver.obj
+.\Debug\hash_table.obj
+.\Debug\interp.obj
+.\Debug\jpeg_load.obj
+.\Debug\lerp_window.obj
+.\Debug\lexer.obj
+.\Debug\main.obj
+.\Debug\memory_manager.obj
+.\Debug\mprintf.obj
+.\Debug\opengl.obj
+.\Debug\parse_declarative.obj
+.\Debug\parse_imperative.obj
+.\Debug\parser.obj
+.\Debug\primitives.obj
+.\Debug\primitives_win32.obj
+.\Debug\printer.obj
+.\Debug\profiler.obj
+.\Debug\schema.obj
+.\Debug\tree_changer.obj
+.\Debug\unicode.obj
+.\Debug\unicode_mine.obj
+.\Debug\pool_game.obj
+.\Debug\robust_math.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\PHILLI~1\LOCALS~1\Temp\RSP282D.tmp"
+<h3>Output Window</h3>
+Compiling...
+pool_game.cpp
+Linking...
+
+
+
+<h3>Results</h3>
+lerp.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -1,0 +1,76 @@
+// Note: This code snippet doesn't cover the definition of the classes
+// it uses, such as Animation and Model. I will explicitly use the "this"
+// to reference class attributes, for clarity. Also, you
+// can assume that no global variables are being referenced in this code.
+
+void Animation::TakeLinearVelocity(Model *theModel, double &xvOut, double &yvOut, double &zvOut, bool ForceVelocity)
+{
+	double modelSize[3];
+	double velocity[3];
+	double start[3],end[3];
+	double curPos[3], dist[3];
+	int i,j;
+
+	theModel->GetMaximumDimensions(modelSize[0],modelSize[1],modelSize[2]);
+	// determine what "small" is
+
+	modelSize[0]/=4;	// If animation moves the root a distance greater than
+	modelSize[1]/=4;	// 1/4 of the largest dimension of the model,
+	modelSize[2]/=4;	// we will extract a velocity.
+	// If ForceVelocity==true, we will extract a velocity no matter how
+	// small the overall root translation is. A good way to force this is
+	// by setting our "small distance" value to 0.
+	if (ForceVelocity)
+		modelSize[0]=modelSize[1]=modelSize[2]=0;
+
+	// When an Animation is constructed, its velocity is initialized to zero.
+	// If we detect that the velocity is not zero, it means we have already
+	// extracted a velocity. Repeating this step again would be disastrous,
+	// so here we do a safety check.
+
+	if ((this->xVelocity!=0.0)||(this->yVelocity!=0.0)||(this->zVelocity!=0.0))
+	{
+		xvOut=this->xVelocity; yvOut=this->yVelocity; zvOut=this->zVelocity;
+		return;	// Velocity was already extracted. Don't repeat!
+	}
+
+	velocity[0]=velocity[1]=velocity[2]=0.0;	// Get ready to find the velocity
+	if (ForceVelocity)
+	{
+		// In the case of a forced velocity, the velocity being forced is passed in
+		// via xvOut, yvOut, zvOut
+		velocity[0]=xvOut; velocity[1]=yvOut; velocity[2]=zvOut;
+	}
+
+
+ this->GetFirstRootTranslationFrame()->GetPosition(start[0],start[1],start[2]);
+ this->GetLastRootTranslationFrame()->GetPosition(end[0],end[1],end[2]);
+ 
+ // Determine linear velocity and subtract it from each keyframe
+ for (i=0; i<2; i++)
+ {
+ 		if (abs(end[i]-start[i])>=modelSize[i])
+		{
+			dist[i]=end[i]-start[i];
+			if (!ForceVelocity)
+				velocity[i]=dist[i]/(this->LastFrameNumber - this->FirstFrameNumber);
+	// This divisor represents the number of >spaces< (of time) between keyframes
+			
+			for (j=0; j<=(this->LastFrameNumber - this->FirstFrameNumber); j++)
+			{
+				this->GetFrame(this->FirstFrameNumber + j)->GetTranslation(curPos[0], curPos[1], curPos[2]);
+				curPos[i]-=velocity[i]*j;
+	// Subtract the distance that the velocity has taken us on frame j
+				this->GetFrame(this->FirstFrameNumber + j)->SetTranslation(curPos[0], curPos[1], curPos[2]);
+			}
+		}
+	}		
+		
+	xVelocity=velocity[0];
+	yVelocity=velocity[1];
+	zVelocity=velocity[2];
+	xvOut=xVelocity;
+	yvOut=yVelocity;
+	zvOut=zVelocity;
+	
+}

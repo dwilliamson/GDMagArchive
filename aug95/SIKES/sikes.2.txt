@@ -1,0 +1,28 @@
+Listing 2.  Map File Structures
+#define NUMPLANES 					3
+#define ALLOCATEDLEVELNAMELENGTH	24
+#define WALL_PLANE					0
+#define SPRITE_PLANE				1
+#define INFO_PLANE					2
+
+// Version structure.
+typedef	struct
+	{
+	char 				Signature[4];
+	unsigned long	Version;
+	} VERSION, *PVERSION;
+
+// Header structure. There are 100 of these in each file.
+typedef struct
+	{
+	unsigned long 	Used;
+	unsigned long 	CRC;
+	unsigned long 	RLEWtag;
+	unsigned long 	MapSpecials;
+	unsigned long 	Planestart[  NUMPLANES ];
+	unsigned long 	Planelength[ NUMPLANES ];
+	char 				Name[ ALLOCATEDLEVELNAMELENGTH ];
+	} RTLMAP, *PRTLMAP;
+
+
+Note: These structure examples are given in the Official ROTT Specifications file, ROTSP1, by Apogee Software.

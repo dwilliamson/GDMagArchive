@@ -1,0 +1,104 @@
+1	Listing 2.  Abbreviated Code for Pressing a Nonbuttton Object	April 7, 1995  9:30 AM
+
+
+Listing 1.  Part of the AI Interface
+
+/*  The computer players start at 2. The human player is player 1.  */
+for(playernumber=2; playernumber<=USER_Players;playernumber++)
+	{
+	// First I want to check out all of the planets they own and
+	// see if they want to do anything with them.
+	for(i=1;i<USER_Planets;i++)
+	{
+		militarychoice=0;
+		socialchoice=0;
+		if(WorldNumber[i].owner==playernumber)
+		{
+			if(WorldNumber[i].MiltProj.WhichOne==0)
+			militarychoice=AIChooseMilitaryProject(&Galaxy, i);
+			if(militarychoice>0)
+			//meaning, if they want to build something 
+			WorldNumber[i].MiltProj.WhichOne=militarychoice;
+			if	(   (WorldNumber[i].SocProj.WhichOne==0
+			&&(WorldNumber[i].WondProj.WhichOne==0)
+			)
+			socialchoice=AIChooseSocialProject(&Galaxy, i);
+			//AIChooseSocialProject is an SDS/AI API call.
+		/* Now if the social choice is between 1 and const_imps then the computer wants to build an improvement. If they return a value */
+		/* greater than const_imps then it is a wonder and the const_imps is subtracted from it to give the proper value. */
+
+		if(	(socialchoice<const_imps)&&(socialchoice>0))
+		{
+			WorldNumber[i].SocProj.WhichOne=socialchoice; WorldNumber[i].WondProj.WhichOne=0;
+		}
+		else
+		if(socialchoice>const_imps)
+		{
+			WorldNumber[i].SocProj.WhichOne=0; 
+			WorldNumber[i].WondProj.WhichOne=socialchoice-const_imps;
+		}  
+		} 
+	} /* end of loop*/
+
+Listing 2.  Abbreviated Code for Pressing a Nonbutton Object on the Screen
+
+/*  This is a PM message that is sent to the window every time the user presses the first mouse button.  */
+case WM_BUTTON1DOWN:
+/*  This will give us the x and y coordinates (in terms of pixels) of the mouse pointer.  */
+position.x=SHORT1FROMMP(mp1);
+position.y=SHORT2FROMMP(mp1);
+/*  See if we pressed on a starship. To do that we need to scan the quadrant for ships.  */
+for(i=0;i<const_shipsinquad;i++)
+	if(Quadrant[StartX][StartY].whichships[i]>0)
+	{
+	pos=  
+		position.x
+		-StarShip[Quadrant[StartX][StartY].whichships[i]].xcoord
+		*ShipMove;
+	if(StarShip[Quadrant[StartX][StartY].whichships[i]].owner==1)
+		if( (pos <40)&&(pos>0))
+		{
+			pos=    
+				position.y 
+				-StarShip[Quadrant[StartX][StartY].whichships[i]].ycoord
+				*ShipMove;
+			/*  We have pressed on a ship that belongs to us.  */
+			if( (pos <40)&&(pos>0))
+			{
+				ShipSelected= Quadrant[StartX][StartY].whichships[i];
+	 			ShipID=i;
+				WinSendMsg(hwndCommandBarClient,WM_SHOWMOVES,0,0);     
+				break;
+			}
+		}
+	}
+/*  If we have made it this far then we apparently did not click on a starship.  LetOs see if we clicked on a star system.  */
+NumberOfStars=Quadrant[StartX][StartY].stars;
+	for(i=1;i<=NumberOfStars;i++)
+	{
+		pos=
+			position.x 
+			-StarNumber[Quadrant[StartX][StartY].whichstars[i]].xcoord 
+			*Move;
+			if( (pos <40)&&(pos>0))
+			{
+			pos=  
+				position.y 
+				-StarNumber[Quadrant[StartX][StartY].whichstars[i]].ycoord
+				*Move;
+			/*  If we clicked on the star AND the player knows it exists then they can load a dialog box that will show a picture of the  */
+			/*  planets that rotate around the clicked on star.  */
+			if	( 
+					(pos<40)
+				 &&(pos>0)
+				 &&(StarNumber[ 
+						Quadrant[StartX][StartY].whichstars[i]].discovered
+						==TRUE)
+				 )
+		{
+				CurrentStar= Quadrant[StartX][StartY].whichstars[i]; WinDlgBox(HWND_DESKTOP,hwnd,ClickStarDlg,0,Click_Star,0);
+				break;
+		}
+	}
+}	/*  end of loop  */
+

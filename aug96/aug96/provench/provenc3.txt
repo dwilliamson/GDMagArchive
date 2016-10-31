@@ -1,0 +1,22 @@
+Listing 3.  Creating Primary and Off-Screen Surfaces
+
+LPDIRECTDRAWSURFACE	pPrimarySurface;
+LPDIRECTDRAWSURFACE	pOffSurface;
+DDSURFDESC		ddPrimSurfDesc;
+DDSURFDESC		ddOffSurfDesc;
+//  Get access to the primary surface
+ddPrimSurfDesc.dwSize  		= sizeof( DDSURFACEDESC );
+ddPrimSurfDesc.dwFlags 		= DDSD_CAPS;
+ddPrimSurfDesc.ddsCaps.dwCaps	= DDSCAPS_PRIMARYSURFACE;
+hResult = pDirectDraw->CreateSurface( &ddPrimSurfDesc, &pPrimarySurface, NULL );
+if ( FAILED( hResult ) )
+	return FALSE;
+//  create an off-screen surface
+ddOffSurfDesc.dwSize		= sizeof( DDSURFACEDESC );
+ddOffSurfDesc.dwFlags 		= DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+ddOffSurfDesc.ddsCaps.dwCaps 	= DDSCAPS_OFFSCREENPLAIN;
+ddOffSurfDesc.dwWidth		= nWidth;
+ddOffSurfDesc.dwHeight		= nHeight;
+hResult = pDirectDraw->CreateSurface( &ddOffSurfDesc, &pOffSurface, NULL );
+if ( FAILED( hResult ) )
+	return FALSE;

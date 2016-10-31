@@ -1,0 +1,117 @@
+Listing 4. A Streaming Example that can be Pasted into a DirectSound Application
+typedef struct DSSTREAMTAG {
+  int  Playing;          	// This field will be non-zero while sound is streaming
+  int  PleaseClose;        	// Set this field to stop sound streaming
+  char* CurrentPosition;   	// The next sound address that will be mixed into the DS buffer
+  DWORD BytesLeft;      	// How many bytes are left from CurrentPosition
+  DWORD NoCallbacks;    	// When this is non-zero the timer callback won't execute
+  DWORD HalfBufferPoint;  	// The size of half the DirectSound buffer (don't change)
+  DWORD LastHalf;   	// The pointer to the last half buffer that we were in (don't change)
+  int  CloseOnNext;  	// Internal flag to mark the end of playback (don't change)
+  LPDIRECTSOUNDBUFFER lpDSB;  	// The DirectSound buffer that is handling the streaming
+  char SilenceByte;  	// The value for silence (different for 8 and 16 bit sounds)
+} DSSTREAM;
+static void StreamCopy(DSSTREAM* s, char* ptr, DWORD len)  // Copy from buffer into DS with end of buffer handling
+{
+  DWORD amt;  
+  amt=(len>s->BytesLeft)?s->BytesLeft:len;    // Only copy what's left in the main sound buffer
+  if (amt) {
+   memcpy(ptr,s->CurrentPosition,amt);
+   s->CurrentPosition+=amt;
+   s->BytesLeft-=amt;
+  }
+  len-=amt;
+  if (len) {              	// Fill the remainder of the buffer with silence
+    memset(ptr+amt,s->SilenceByte,len);
+    s->CloseOnNext=1;     	// Set the "done on the next buffer switch" flag
+  }
+}
+static void StreamFillAHalf(DSSTREAM* s, DWORD half)  // fill a half of the DirectSound buffer
+{
+  char* ptr1;
+  char* ptr2;
+  DWORD len1, len2;
+  
+ TryLockAgainLabel:
+  switch (s->lpDSB->Lock(half, s->HalfBufferPoint, &ptr1, &len1, &ptr2, &len2, 0)) {
+   case DS_OK:
+     StreamCopy(s, ptr1, len1);  // Copy sound data into the first pointer
+    
+     if (ptr2)                   // Copy sound data into the second pointer if necessary
+      StreamCopy(s, ptr2, len2);
+     s->lpDSB->Unlock(ptr1, len1, ptr2, len2); 
+     break;
+   case DSERR_BUFFERLOST:          // The DirectSound buffer was lost - try to restore
+     if (s->lpDSB->Restore() == DS_OK)
+    goto TryLockAgainLabel;
+   break;
+  }
+}
+static void CALLBACK StreamTimer(UINT id, UINT msg, DWORD user, DWORD dw1, DWORD dw2)
+{
+  DWORD playp,writep;
+
+  DWORD whichhalf;
+  DSSTREAM* s=(DSSTREAM*)user;
+  if (s->NoCallbacks++==0) {
+   if (s->PleaseClose) {           // Programmer requested Close - shutdown immediately
+    ShutDownStreamingLabel:
+     timeKillEvent(id);
+     timeEndPeriod(62);     
+     s->lpDSB->Stop();
+     s->lpDSB->Release();
+     s->Playing=0;
+     return;
+   }
+   s->lpDSB->GetCurrentPosition(&playp,&writep);   // Get the current position and figure the current half
+   whichhalf=(playp < s->HalfBufferPoint)?0:s->HalfBufferPoint;
+   if (whichhalf != s->LastHalf) {
+     if (s->CloseOnNext)          // If we previously used up our sound data, then do a shutdown 
+      goto ShutDownStreamingLabel;
+     StreamFillAHalf(s, s->LastHalf);   // Fill the buffer half that we just left
+     s->LastHalf=whichhalf;
+   }
+  }
+  s->NoCallbacks--;
+}
+void StartStreaming(DSSTREAM* s, void* addr, DWORD len, LPDIRECTSOUND lpDS, LPWAVEFORMATEX format)
+{
+  DSBUFFERDESC dsbd;
+  if (s) {
+   memset(s,0,sizeof(DSSTREAM));
+   if ((addr) && (lpDS) && (format)) {
+     memset( &dsbd, 0, sizeof(dsbd) );
+     dsbd.lpwfxFormat=format;
+     dsbd.dwSize=sizeof(DSBUFFERDESC);
+     dsbd.dwBufferBytes= ((format->nAvgBytesPerSec/4)+2047)&~2047;
+     dsbd.dwFlags=0;
+     if (lpDS->CreateSoundBuffer( &dsbd, &s->lpDSB, 0) != DS_OK)
+      return;
+     s->NoCallbacks=1;      // Don't let the callback do anything until we're fully setup
+     timeBeginPeriod( 62 );     
+     if (timeSetEvent( 62, 0, StreamTimer, (DWORD)s, TIME_PERIODIC )==0) {
+      timeEndPeriod( 62 );     
+      s->lpDSB->Release();
+     } else {
+      s->HalfBufferPoint=dsbd.dwBufferBytes/2;    
+      s->CurrentPosition=addr;
+      s->BytesLeft=len;
+      s->SilenceByte= (format->wBitsPerSample==16) ? 0:128;
+      StreamFillAHalf(s, 0);
+      StreamFillAHalf(s, s->HalfBufferPoint);
+      s->CloseOnNext=0;    // Clear the close flag, so that the first two buffers are played
+      s->lpDSB->Play( 0, 0, DSBPLAY_LOOPING );
+      s->NoCallbacks=0;
+     }
+
+   }
+  }
+}
+// Streaming test code:
+volatile DSSTREAM s;
+StartStreaming( (DSSTREAM*)&s, SoundDataAddress, TotalSoundBytes, lpDS, &SoundFormat );
+GetAsyncKeyState(VK_ESCAPE);    // Clear the state of the escape key
+while (s.Playing) {         // wait until the sound is done or the user hits escape
+ if (GetAsyncKeyState(VK_ESCAPE))
+   s.PleaseClose=1;
+}

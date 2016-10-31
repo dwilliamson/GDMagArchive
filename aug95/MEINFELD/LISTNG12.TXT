@@ -1,0 +1,182 @@
+Listing 12: process_command()
+
+/* ---------------------------------------------------------------------------
+ * process_command: Execute a command.
+ */
+
+void
+process_command(player, cause, interactive, command, args, nargs)
+    dbref player, cause;
+    int interactive, nargs;
+    char *command, *args[];
+{
+    char *p, *q, *arg, *lcbuf, *slashp, *cmdsave;
+    int succ, aflags, i;
+    dbref exit, aowner;
+    CMDENT *cmdp;
+
+    [...]
+
+    /* Now comes the fun stuff.  First check for single-letter leadins.
+     * We check these before checking HOME because they are among the most
+     * frequently executed commands, and they can never be the HOME
+     * command. */
+
+    i = command[0] & 0xff;
+    if ((prefix_cmds[i] != NULL) && command[0]) {
+        process_cmdent(prefix_cmds[i], NULL, player, cause,
+                       interactive, command, command, args, nargs);
+        mudstate.debug_cmd = cmdsave;
+        return;
+    }
+    /* Check for the HOME command */
+
+    if (string_compare(command, “home”) == 0) {
+        do_move(player, cause, 0, “home”);
+        mudstate.debug_cmd = cmdsave;
+        return;
+    }
+    /* Only check for exits if we may use the goto command */
+
+    if (check_access(player, goto_cmdp->perms)) {
+
+        /* Check for an exit name */
+
+        init_match_check_keys(player, command, TYPE_EXIT);
+        match_exit_with_parents();
+        exit = last_match_result();
+        if (exit != NOTHING) {
+            move_exit(player, exit, 0, “You can’t go that way.”, 0);
+            mudstate.debug_cmd = cmdsave;
+            return;
+        }
+        /* Check for an exit in the master room */
+
+        init_match_check_keys(player, command, TYPE_EXIT);
+        match_master_exit();
+        exit = last_match_result();
+        if (exit != NOTHING) {
+            move_exit(player, exit, 1, NULL, 0);
+            mudstate.debug_cmd = cmdsave;
+            return;
+        }
+    }
+    /* Set up a lowercase command and an arg pointer for the hashed
+     * command check.  Since some types of argument processing destroy
+     * the arguments, make a copy so that we keep the original command
+     * line intact.  Store the edible copy in lcbuf after the lowercased
+     * command. */
+    /* Removed copy of the rest of the command, since it’s ok to allow
+     * it to be trashed.  -dcm */
+
+        [...]
+
+    /* Strip off any command switches and save them */
+
+    [...]
+
+    /* Check for a builtin command (or an alias of a builtin command) */
+
+    cmdp = (CMDENT *) hashfind(lcbuf, &mudstate.command_htab);
+    if (cmdp != NULL) {
+        process_cmdent(cmdp, slashp, player, cause, interactive, arg,
+                       command, args, nargs);
+        free_lbuf(lcbuf);
+        mudstate.debug_cmd = cmdsave;
+        return;
+    }
+    /* Check for enter and leave aliases, user-defined commands on the
+     * player, other objects where the player is, on objects in the
+     * player’s inventory, and on the room that holds the player.  We
+     * evaluate the command line here to allow chains of $-commands to
+     * work. */
+
+    free_lbuf(lcbuf);
+    lcbuf = exec(player, cause, EV_EVAL | EV_FCHECK | EV_STRIP | EV_TOP, 
+command,
+                 args, nargs);
+    succ = 0;
+
+    /* Idea for enter/leave aliases from R’nice@TinyTIM */
+
+    if (Has_location(player) && Good_obj(Location(player))) {
+
+        /* Check for a leave alias */
+
+        p = atr_pget(Location(player), A_LALIAS, &aowner, &aflags);
+        if (p && *p) {
+            if (matches_exit_from_list(lcbuf, p)) {
+                free_lbuf(lcbuf);
+                free_lbuf(p);
+                do_leave(player, player, 0);
+                return;
+            }
+        }
+        free_lbuf(p);
+
+        /* Check for enter aliases */
+
+        DOLIST(exit, Contents(Location(player))) {
+            p = atr_pget(exit, A_EALIAS, &aowner, &aflags);
+            if (p && *p) {
+                if (matches_exit_from_list(lcbuf, p)) {
+                    free_lbuf(lcbuf);
+                    free_lbuf(p);
+                    do_enter_internal(player, exit, 0);
+                    return;
+                }
+            }
+            free_lbuf(p);
+        }
+    }
+    /* Check for $-command matches on me */
+
+    if (mudconf.match_mine) {
+        if ((!isPlayer(player) ||
+             mudconf.match_mine_pl) &&
+            (atr_match(player, player, AMATCH_CMD, lcbuf, 1) > 0)) {
+            succ++;
+        }
+    }
+    /* Check for $-command matches on nearby things and on my room */
+
+    if (Has_location(player)) {
+        succ += list_check(Contents(Location(player)), player,
+                           AMATCH_CMD, lcbuf, 1);
+        if (atr_match(Location(player), player,
+                      AMATCH_CMD, lcbuf, 1) > 0) {
+            succ++;
+        }
+    }
+    /* Check for $-command matches in my inventory */
+
+    if (Has_contents(player))
+        succ += list_check(Contents(player), player,
+                           AMATCH_CMD, lcbuf, 1);
+
+    /* If we didn’t find anything, try in the master room */
+
+    if (!succ) {
+        if (Good_obj(mudconf.master_room) &&
+            Has_contents(mudconf.master_room)) {
+            succ += list_check(Contents(mudconf.master_room),
+                               player, AMATCH_CMD, lcbuf, 0);
+            if (atr_match(mudconf.master_room,
+                          player, AMATCH_CMD, lcbuf, 0) > 0) {
+                succ++;
+            }
+        }
+    }
+    free_lbuf(lcbuf);
+
+    /* If we still didn’t find anything, tell how to get help. */
+
+    if (!succ) {
+        notify(player, “Huh?  (Type \”help\” for help.)”);
+        [...]
+    }
+    mudstate.debug_cmd = cmdsave;
+    return;
+}
+
+

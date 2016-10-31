@@ -1,0 +1,42 @@
+Listing 4. A 640x480x8 cross-platform demo
+void DemoMain(void)
+{
+	if (BeginFullScreen(640, 480, 8))
+	{
+		// Go for 10 seconds
+		char unsigned Color = 0;
+		long unsigned Time = GetMillisecondTime();
+		while (GetMillisecondTime() - Time < 10000)
+		{
+			if (OffscreenLock())
+			{
+				// WARNING: YOU CANNOT USE A DEBUGGER IN BETWEEN
+				// LOCK..UNLOCK CALLS WHEN USING DIRECTDRAW!
+
+				// Draw a wash offscreen using memset
+				char unsigned *pSurface = GetOffscreenBits();
+				long Stride = GetOffscreenStride();
+
+				for (int i=0; i<480; ++i)
+				{
+					memset(pSurface, (Color + i)%256, 640);
+					pSurface += Stride;
+				}
+
+				OffscreenUnlock();
+				// OK TO USE A DEBUGGER NOW
+
+				// Next time through we'll use a different color
+				// (Allow this to overflow back to zero)
+				++Color;
+			}
+
+			SwapBuffer();
+		}
+	}
+
+	// Undo everything done by BeginFullScreen.
+	// Even if BeginFullScreen failed, it may have partially succeeded
+	// and may require cleaning up
+	EndFullScreen();
+}

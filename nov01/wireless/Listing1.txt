@@ -1,0 +1,41 @@
+"Wireless Game Development: Coding Without a Net"
+by Dale Crowley, Maurice Molyneaux, Wayne Lee, and Ramesh Venkataraman, 
+NuvoStudios
+Game Developer magazine
+November 2001 issue
+
+Listing 1. On the Kyocera QCP 3035 BREW phone, example B is an order of 
+magnitude faster than example A.
+
+
+//	A: Draw background with a bitmap
+
+IIMAGE_Draw(f_bg, 0, 20);
+
+
+//	B: Draw equivalent background with just rectangles
+
+IDisplay *d = a.m_pIDisplay;
+AEERect r;
+r.x = 0;
+r.y = 20;
+r.dx = SCREEN_WIDTH;
+r.dy = 45;
+IDISPLAY_FillRect(d, &r, RGB_BLACK);
+r.y = 65;
+r.dy = 14;
+IDISPLAY_FillRect(d, &r, RGB_WHITE);
+
+r.dy = 1;
+
+r.y = 47;
+IDISPLAY_FillRect(d, &r, RGB_WHITE);
+r.y = 53;
+IDISPLAY_FillRect(d, &r, RGB_WHITE);
+r.y = 59;
+IDISPLAY_FillRect(d, &r, RGB_WHITE);
+r.y = 63;
+IDISPLAY_FillRect(d, &r, RGB_WHITE);
+
+
+

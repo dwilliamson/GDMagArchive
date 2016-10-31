@@ -1,0 +1,29 @@
+; Terrain Pixel shader with Scattering
+; (c) Kenny Mitchell - Westwood Studios EA 2002
+; (c) Preetham - ATI Research, 2002. 
+
+ps.1.4
+
+#include "TerrainPShaderConstants.h"
+
+; Equation is 
+;
+; Surf_color = (N.L) * terrain_tex * cloud_covering * self_shadow_term;
+; Final_color =  Surf_color * extinction + inscattering 
+;
+; 
+; Inputs:
+; VP_EXTINCTION (v0)
+; VP_INSCATTERING (v1)
+;
+
+texld r0, TEX_NORMAL_HORIZON_MAP		; Normal Horizon map
+texld r1, TEX_TERRAIN_COLOR				; Terrain color
+texld r2, TEX_CLOUD_LAYER				; Cloud layer
+
+dp3_sat	r0.rgb, c[CP_SUN_DIRECTION], r0_bx2		; Lighting (N.L)
+mul r0.rgb, r0, r1								; Terrain texture.
++sub_sat r0.a, c[CP_SUN_DIRECTION].a, r0.a		; Shadow term (from Horizon angle)
+mul r0, r0, 1-r0.a								; Add Shadow.
+mul r0, r0, 1-r2								; Add cloud covering
+mad r0, r0, VP_EXTINCTION, VP_INSCATTERING		; Final color

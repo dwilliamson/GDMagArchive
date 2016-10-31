@@ -1,0 +1,25 @@
+proc main {
+    init_ui();
+//    init_world();
+    init_world_2();
+
+    while (1) {
+        // @Refactor we want GL%(...expression...);
+
+        GL.clear(GL.COLOR_BUFFER_BIT + GL.DEPTH_BUFFER_BIT);
+
+        handle_input();
+        simulate();
+
+        draw_playfield();
+        draw_entities(the_world, 1.0);
+
+        draw_predictions();
+
+        draw_hud();
+
+        GL.swapBuffers();
+
+        gc();
+    };
+}

@@ -1,0 +1,25 @@
+Listing 5: Hand optimized Listing 1.
+void TransformVectors( float *pDestVectors,
+const float (*pMatrix)[3], const float *pSourceVectors,
+int NumberOfVectors )
+{
+    int Counter;
+    float Value0, Value1, Value2;
+    for ( Counter = 0; Counter<NumberOfVectors; Counter++ ) {
+            Value0 = pMatrix[0][0] * pSourceVectors[0];
+            Value0 += pMatrix[0][1] * pSourceVectors[1];
+            Value0 += pMatrix[0][2] * pSourceVectors[2];
+            *pDestVectors++ = Value0;
+
+            Value1 = pMatrix[1][0] * pSourceVectors[0];
+            Value1 += pMatrix[1][1] * pSourceVectors[1];
+            Value1 += pMatrix[1][2] * pSourceVectors[2];
+            *pDestVectors++ = Value1;
+
+            Value2 = pMatrix[2][0] * pSourceVectors[0];
+            Value2 += pMatrix[2][1] * pSourceVectors[1];
+            Value2 += pMatrix[2][2] * pSourceVectors[2];
+            *pDestVectors++ = Value2;
+            pSourceVectors += 3;
+    }
+}

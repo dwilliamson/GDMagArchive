@@ -1,0 +1,128 @@
+Listing 1.  The Integer Rasterizer (Continued on p. 26)
+struct edge {
+	edge(gradients const &Gradients, POINT3D const *pVertices,
+			int Top, int Bottom );
+	inline int Step( void );
+
+	long X, XStep, Numerator, Denominator;			// DDA info for x
+	long ErrorTerm;
+	int Y, Height;									// current y and vertical count
+	float OneOverZ, OneOverZStep, OneOverZStepExtra;// 1/z and step
+	float UOverZ, UOverZStep, UOverZStepExtra;		// u/z and step
+	float VOverZ, VOverZStep, VOverZStepExtra;		// v/z and step
+};
+
+inline int edge::Step( void ) {
+	X += XStep; Y++; Height¥;
+	UOverZ += UOverZStep; VOverZ += VOverZStep;
+	OneOverZ += OneOverZStep;
+
+	ErrorTerm += Numerator;
+	if(ErrorTerm >= Denominator) {
+		X++;
+		ErrorTerm -= Denominator;
+		OneOverZ += OneOverZStepExtra;
+		UOverZ += UOverZStepExtra; VOverZ += VOverZStepExtra;
+	}
+	return Height;
+}
+
+void DrawScanLine( BITMAPINFO const *pDestInfo, BYTE *pDestBits,
+	gradients const &Gradients, edge *pLeft, edge *pRight,
+	BITMAPINFO const *pTextureInfo, BYTE *pTextureBits );
+
+/******** TextureMapTriangle **********/
+
+/********** handle floor divides and mods correctly ***********/
+
+inline void FloorDivMod( long Numerator, long Denominator, long &Floor,
+				long &Mod )
+{
+	assert(Denominator > 0);						// we assume itOs positive
+	if(Numerator >= 0) {
+		// positive case, C is okay
+		Floor = Numerator / Denominator;
+		Mod = Numerator % Denominator;
+	} else {
+		// Numerator is negative, do the right thing
+		Floor = -((-Numerator) / Denominator);
+		Mod = (-Numerator) % Denominator;
+		if(Mod) {
+			// there is a remainder
+			Floor¥; Mod = Denominator - Mod;
+		}
+	}
+}
+
+/********** edge constructor ***********/
+
+edge::edge( gradients const &Gradients, POINT3D const *pVertices.
+		int Top, int Bottom )
+{
+	Y = pVertices[Top].Y;
+	Height = pVertices[Bottom].Y - Y;
+	int Width = pVertices[Bottom].X - pVertices[Top].X;
+
+	if(Height) {
+		// this isnOt necessary because we always start at TopY,
+		// but if you want to start somewhere else youOd make
+		// Y your start
+		FloorDivMod(Width * (Y - pVertices[Top].Y) - 1,
+				Height,X,ErrorTerm);
+		X += pVertices[Top].X + 1;
+	
+		FloorDivMod(Width,Height,XStep,Numerator);
+		Denominator = Height;
+	
+		OneOverZ = Gradients.aOneOverZ[Top];
+		OneOverZStep = XStep * Gradients.dOneOverZdX
+					+ Gradients.dOneOverZdY;
+		OneOverZStepExtra = Gradients.dOneOverZdX;
+	
+		UOverZ = Gradients.aUOverZ[Top];
+		UOverZStep = XStep * Gradients.dUOverZdX
+					+ Gradients.dUOverZdY;
+		UOverZStepExtra = Gradients.dUOverZdX;
+	
+		VOverZ = Gradients.aVOverZ[Top];
+		VOverZStep = XStep * Gradients.dVOverZdX
+					+ Gradients.dVOverZdY;
+		VOverZStepExtra = Gradients.dVOverZdX;
+	}
+}
+
+/********** DrawScanLine ************/
+
+void DrawScanLine( BITMAPINFO const *pDestInfo, BYTE *pDestBits,
+	gradients const &Gradients, edge *pLeft, edge *pRight,
+	BITMAPINFO const *pTextureInfo, BYTE *pTextureBits )
+{
+	// assume dest and texture are top-down
+	assert((pDestInfo->bmiHeader.biHeight < 0) &&
+			(pTextureInfo->bmiHeader.biHeight < 0));
+
+	int DestWidthBytes = (pDestInfo->bmiHeader.biWidth + 3) & ~3;
+	int TextureWidthBytes = (pTextureInfo->bmiHeader.biWidth + 3) & ~3;
+
+	int XStart = pLeft->X;
+	int Width = pRight->X - XStart;
+
+	pDestBits += pLeft->Y * DestWidthBytes + XStart;
+
+	float OneOverZ = pLeft->OneOverZ;
+	float UOverZ = pLeft->UOverZ;
+	float VOverZ = pLeft->VOverZ;
+
+	while(Width¥ > 0) {
+		float Z = 1/OneOverZ;
+		int U = UOverZ * Z;
+		int V = VOverZ * Z;
+
+		*(pDestBits++) = *(pTextureBits + U + (V * TextureWidthBytes));
+
+		OneOverZ += Gradients.dOneOverZdX;
+		UOverZ += Gradients.dUOverZdX;
+		VOverZ += Gradients.dVOverZdX;
+	}
+}
+

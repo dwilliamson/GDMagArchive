@@ -1,0 +1,16 @@
+Listing 3: A Damped Spring Force
+
+p1 = &system[spring->p1];
+p2 = &system[spring->p2];
+VectorDifference(&p1->pos,&p2->pos,&deltaP);	// Vector distance 
+dist = VectorLength(&deltaP);				// Magnitude of deltaP
+
+Hterm = (dist - spring->restLen) * spring->Ks;	// Ks * (dist - rest)
+
+VectorDifference(&p1->v,&p2->v,&deltaV);		// Delta Velocity Vector
+Dterm = (DotProduct(&deltaV,&deltaP) * spring->Kd) / dist; // Damping Term
+
+ScaleVector(&deltaP,1.0f / dist, &springForce);	// Normalize Distance Vector
+ScaleVector(&springForce,-(Hterm + Dterm),&springForce);	// Calc Force
+VectorSum(&p1->f,&springForce,&p1->f);			// Apply to Particle 1
+VectorDifference(&p2->f,&springForce,&p2->f);	// - Force on Particle 2

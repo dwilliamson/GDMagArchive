@@ -1,0 +1,315 @@
+1	Listing 4.  AIBUILD	April 7, 1995  9:16 AM
+
+
+Listing 1.  Formal Descriptors for a Hand
+
+
+#define HCP	1				/* ASPECT 1 -- High Card Points (HCP) */
+	#define G0x7		1
+	#define G0x10	2
+	#define G4x8		3
+	#define G6x10	4
+	#define G6x12	5
+	#define G8x10	6
+	#define G8x12	7
+	#define G10x12	8
+	#define G13x15	9
+	#define G15x17	10
+	#define G16x18	11
+	#define G20x21	12
+	#define G21x22	13
+	#define G24x25	14
+	#define G25x26	15
+	#define G8P	16			/* >= 8 */
+	#define G10P	17			/* >= 10 */
+	#define G13P	18
+	#define G16P	19
+	#define G18P	20
+	#define G21P	21
+
+#define TCP	2				/* ASPECT 2 -- Total Card Points (TCP) values are same as for HCP */
+
+#define DIST	3				/* ASPECT 3 -- Distribution */
+	#define FLAT	1			/* 4-4-3-2 or 4-3-3-3 */
+	#define MAJOR4	2		/* 4 card major */
+	#define MINOR4	3		/* 4 card minor */
+	#define MAJOR5	4		/* 5 card major */
+	#define MINOR5	5		/* 5 card minor, balanced (at least two cards, each suit) */
+	#define UNBAL	6		/* for example, 4-4-4-1, 4-4-5-0 */
+	#define SUIT5	7
+	#define SUIT6	8
+	#define SUIT7	9
+	#define SUIT8	10		/* >= 8 card suit  */
+
+#define OPP			4		/* ASPECT 4 -- Opponent Status */
+	#define NB		1		/* no bid yet */
+	#define BOP		2		/* both opponent passed */
+	#define LHOP		3		/* LHO passed */
+	#define RHOP		4		/* RHO passed */
+	#define OO		5		/* opponent opened */
+	#define LHOO		6		* LHO opened */
+	#define RHOO		7		/* RHO opened */
+	#define OOV		8 
+	#define LHOV		9		/* LHO overcalled */
+	#define RHOV		10		/* RHO overcalled */
+	#define ONT		11		/* opponent opened NT */
+	#define LHONT	12		/* LHO opened NT */
+	#define RHONT	13 	/* RHO opened NT  */
+	#define OS		14		/* opponent showed strong hand */
+	#define LHOS		15
+	#define RHOS		16
+	#define OD		17
+	#define LHOD		18		/* LHO doubled */
+	#define RHOD		19		/* RHO doubled */
+	#define OPR		20		/* opponent preempted */
+	#define LHOPR	21		/* LHO preempted */
+	#define RHOPR	22		/* RHO preempted */
+	#define ORV		3		/* opponent reversed */
+	#define LHORV	24		/* LHO reversed */
+	#define RHORV	25		/* RHO reversed */
+	#define ORD		26		/* opponent redoubled */
+	#define OBG		27		/* opponent bid game */
+	#define ONS		28		/* opponent showed new suit */
+	#define OST		29		/* opponent supported trump */
+	#define LHOB		30		/* lhop bust */
+	#define RHOB		31		/* rhop bust */
+	#define LASTO	31
+
+#define PARTNER		5		/* ASPECT 5 -- Partner Status  statPart[] */
+	#define NB		1		/* no bid yet */
+	#define PP		2		/* partner passed */
+	#define PO		3		/* partner opened */
+	#define POV		4		/* partner overcalled */
+	#define PN		5		/* partner showed new suit over opening */
+	#define PS		6		/* partner showed strong hand */
+	#define PRV		7		/* partner reversed */
+	#define PNT		8		/* partner opened NT */
+	#define PPR		9		/* partner preempted */
+	#define PBG		10		/* partner bid game */
+	#define PST		11		/* partner supported my trump */
+	#define PD		12		/* partner doubled */
+	#define PRD		13		/* partner redoubled */
+	#define PB		14		/* partner bust */
+	#define LASTP	14
+
+#define ME			6		/* ASPECT 6 -- my status */
+	... similar to the above
+
+#define VUL			7		/* ASPECT 7 -- vulnerability */
+	#define WE		1
+	#define THEY		2
+	#define ALL		3
+	#define NOTUS	4		/* that is, either neither or just them */
+
+#define EXCEPT	8			/* ASPECT 7 -- exceptions */
+	#define SCLUBS	1		/* clubs -- longest suit is clubs */
+	#define SVCLUBS	2		/* longest suit is clubs and no void */
+	#define SMINORS	3		/* minors -- longest suit is a minor */
+	#define SMAJORS	4		/* majors -- longest suit is a major */
+	#define NCLUBS	5		/* longest is not clubs */
+	#define NVCLUBS	6		/* longest is not clubs, and no void */
+	#define NMINORS	7		/* not minors longest is not minor */
+	#define NMAJORS	8		/* not majors longest is not major */
+	#define NOVOID	9		/* does not have a void */
+	#define NSINGLE	10		/* does not have a singleton */
+	#define NSECMAJ	11		/* second suit is not a major */
+	#define T1MAJOR	12		/* agreed trump is major */
+	#define T2MAJOR	13		* agreed 2nd trump is major */
+	#define NSUIT5	14		/* no suit of 5 or more */
+	#define NJACOBY	15		/* not playing JACOBY */
+
+	....
+
+#define TRUMPS			13		/* ASPECT 13 -- trump support  */
+	#define POOR			1
+	#define FAIR			2		/* 2+ trump, or < 4 HCP */
+	#define GOOD			3		/* 3+trump, or 4-5 HCP */
+	#define EXCEL		4		/* 4+ trump, or 6HCP in trump */
+	#define GOODOPP		5		/* 4+ of oppOs trump */
+	#define EXCELOPP	6		/* 5+ trump, or 4 with more than Q */
+
+#define PRIORITY		14		/* ASPECT 14  an actual value*/
+
+#define CONVENTION		15		/* ASPECT 15 */
+	enum { TAKEOUT=1, STAYMAN, BLACKWOOD, GERBER, WEAK2, STRONG2, NEGDBL, JACOBY, NTFORCE, GAMBLING, TEXAS, UNUSUAL, WKJUMP,
+		MICHAELS, MINORTFR};
+
+
+Listing 2. Results of the AI Engine (Decoding Rules)
+
+
+ABCD
+
+1xCx  C=1, PASS,  2=DOUBLE, 3=REDOUBLE
+
+2xxx  new suit
+2Bxx  B = 0 relative level for D
+	1 = absolute level (eg, preempts)
+2xCx  C = 1 longest suit
+	2 No trump
+	3 4 card major
+	4 second suit
+	5 transfer (bid 1 lower than actual suit)
+
+4xxx  raise of suit previously bid
+4Bxx  B = 0 relative level for D
+	1 = absolute level (eg, preempts)
+4xCx  C= 1 partnerOs first 
+	= 2 NT
+	= 3 my first 
+	= 4 partnerOs second suit 
+	= 5 my second 
+4xxD  D= # of levels (next eligible bid)
+
+Listing 3. Examples of Bidding Rules
+
+
+A. REGULAR BIDS
+
+/* -------- OPENING BIDS */
+/* standard opening */
+0,G13x15,	SUIT5,  NB, NB,NB,	0,0, 0,		1,0,0,0, 4,0,0,0,		2011,	OOPEN-NB-1O
+0,G13P,		SUIT6, NB, NB,NB,	0,SMAJORS,	0,1,0,0,0, 6,0,0,0,	2011,	OOPEN-MAJ6O
+0,G13P,		MAJOR5, NB, NB,NB,	0,0, 0,		1,0,0,0, 4,0,0,0,		2011,	OOPEN-NB-MAJ5O
+0,G13P,		0, NB, NB,NB,		0,0, 0,		1,0,0,0, 2,0,0,0,		2011,	OOPEN-NB-MAJ4O
+
+/* -------- RESPONSES*/
+/* raise of partnerOs suit */
+G6x10,0,0,	0,PO,NB, 0,T1MAJOR,0,1,0,0,		GOOD, 4,0,0,0,	4011,	ORA-MAJ-1LVLO,
+G10x12,0,0,	0,PO,NB, 0,T1MAJOR,0,1,0,0,		GOOD, 3,0,0,0,	4012,	ORA-MAJ-2LVLO,
+G6x10,0,0,	0,PO,NB, 0,0,0,1, 0, 0,			GOOD, 3,0,0,0,	4011,	ORA-1LVLO,
+G10x12,0,0,	0,PO,NB, 0,0,0,1, 0, 0,			GOOD, 2,0,0,0,	4012,	ORA-2LVLO,
+0,0,0,		0,PO,0,  0,0,0,2, 0, 0,			EXCEL,3,0,0,0,	4011,	ORA-1LVL-WK1O,
+0,0,0,		OOV,PO,0,0,0,0,2, 0, 0,			EXCEL,3,0,0,0,	4011,	ORA-1LVL-WK2O,
+/* rebids */
+0,0,0,		0,PO, IST, 0,0,0,0,LT25,0, 0,	4,0,0,0,			4113,	OIFIT-GAMETRYO,
+0,0,0,		0,PO, IST, 0,0,0,0,GE25,0,		FAIR, 4,0,UNBID,0,NT3,	OIFIT-NTO,
+
+B: CONVENTIONS
+
+Conventions are handled differently from other bids.  Only the initial conventional bid is generated from these rules.  Once the convention is triggered, the responses and rebids are handled by special convention routines. 
+
+Lowest priority for a convention is 7.
+HCP TCP DIST | OP PT ME |VL EXC QT LVL TP LAST | TR PR CONV Stp 2nd VObj | name
+
+/* ============= STAYMAN */ 
+/* start Stayman sequence? */
+G8P,0,MAJOR4, NB,PNT,0, 0,0,0,2,0,LPART,	0,8,STAYMAN,0,0, C2,	OSTAY-2C-1O,
+0,G8P,MAJOR4, NB,PNT,0, 0,0,0,2,0,LPART,	0,8,STAYMAN,0,0, C2,	OSTAY-2C-2O,
+G4x8,0,MAJOR4,NB,PNT,0, 0,0,0,2,0,LPART,	0,8,STAYMAN,0,0, C2,	OSTAY-2C-3O,
+G8P,0,MAJOR4, NB,PNT,0, 0,0,0,3,0,LPART,	0,7,STAYMAN,0,0, C3,	OSTAY-3C-2O,
+G8x10, 0,FLAT, 0,PNT,0, 0,0,0,2,0, 0,		0,6,STAYMAN,0,0, NT2,	OSTAY-NT-RSPO,
+
+/* ============= JACOBY    5    */
+0,0,SUIT6,  NB,PNT,0, 0,NMINORS,0,2,0,LPART, 0,9,JACOBY,0,0, 2051, OJACOBY-MAJOR6O,
+
+Listing 4.  AIBUILD
+
+
+int AI_build_master_tran(int who)
+{
+int jcards[] = { 84, 74, 81, 75, 65 };	/* asc equiv of honors */
+int side, partner, lopp, ropp, tp, lbid;
+int x, z, i, j, k, nr, zlen;
+char bidder[6];
+int dcard, oppSuit;
+	side		= getSide(who);
+	partner	= getPartner(who);
+	lopp		= getLHO(who);
+	ropp		= getRHO(who);
+
+	/* set aspect 1 (HCP) */
+	if(hcp[who] >= 0 && hcp[who] <= 7)	setAsp(side,HCP,G0x7);
+	if(hcp[who] >= 0 && hcp[who] <= 10)	setAsp(side,HCP,G0x10);
+	if(hcp[who] >= 4 && hcp[who] <= 8)	setAsp(side,HCP,G4x8);
+	if(hcp[who] >= 6 && hcp[who] <= 10)	setAsp(side,HCP,G6x10);
+	if(hcp[who] >= 6 && hcp[who] <= 12)	setAsp(side,HCP,G6x12);
+	....
+	if(hcp[who] >= 8)  setAsp(side,HCP,G8P);
+	if(hcp[who] >= 10) setAsp(side,HCP,G10P);
+	if(hcp[who] >= 13) setAsp(side,HCP,G13P);
+	if(hcp[who] >= 16) setAsp(side,HCP,G16P);
+	if(hcp[who] >= 18) setAsp(side,HCP,G18P);
+	if(hcp[who] >= 21) setAsp(side,HCP,G21P);
+
+	/* set aspect 2 (TCP) */
+	.....
+	/* same as for HCP */
+
+/* set aspect 3 (DIST) */
+AI_build_dist_pattern(who);  
+
+/* all hands with singleton or void are unbalanced */
+if(pattern[3] < 2) setAsp(side,DIST,UNBAL);
+if(pattern[3] >= 2 && pattern[0] < 5) setAsp(side,DIST,FLAT);
+for (i=CLUBS; i<=DIAMONDS;i++) {
+	if (dist[who][i] >= 4) setAsp(side,DIST,MINOR4);
+	if (dist[who][i] >= 5) {
+		setAsp(side,DIST, MINOR5);
+		setAsp(side,DIST, SUIT5);
+	}
+}
+for (i=HEARTS; i<=SPADES;i++) {
+	if (dist[who][i] >= 4) setAsp(side,DIST,MAJOR4);
+	if (dist[who][i] >= 5) {
+		setAsp(side,DIST, MAJOR5);
+		setAsp(side,DIST, SUIT5);
+	}
+}
+if (pattern[0] >= 6) setAsp(side,DIST,SUIT6);
+if (pattern[0] >= 7) setAsp(side,DIST,SUIT7);
+if (pattern[0] >= 8) setAsp(side,DIST,SUIT8);
+
+	/* set attribute for aspect 4 (OPP) */
+if (statLHO[who] >= LHOP) setAsp(side,OPP, statLHO[who]);
+if (statRHO[who] >= RHOP) setAsp(side,OPP, statRHO[who]);
+if ((statLHO[who] <= LHOP && statRHO[who] <= RHOP) ) {
+	setAsp(side,OPP, NB);
+	statOpp[who] = BOP;
+}
+if (statRHO[who] == RHOO || statLHO[who] == LHOO) statOpp[who] = OO;
+if (statRHO[who] == RHOV || statLHO[who] == LHOV) statOpp[who] = OOV;
+if (statRHO[who] == RHOPR || statLHO[who] == LHOPR) statOpp[who] = OPR;
+if (statRHO[who] == RHONT || statLHO[who] == LHONT) statOpp[who] = ONT;
+setAsp(side,OPP, statOpp[who]);
+
+	/* set aspect 5 (PARTNER) */
+if(statPart[who] == PP) setAsp(side,PARTNER,NB);
+setAsp(side,PARTNER,statPart[who] );
+
+/* set aspect 6 (ME) */
+setAsp(side,ME,statMe[who]);
+if(statMe[who] == IP) setAsp(side,ME,NB);
+
+/* set aspect 7 (VUL) */
+if(vul[who] == 1)								setAsp(side,VUL,WE);
+if(vul[getRHO(who)] == 1)						setAsp(side,VUL,THEY);
+if(vul[who]==1 && vul[getRHO(who)]==1)		setAsp(side,VUL,ALL);
+if(vul[who] != 1)								setAsp(side,VUL,NOTUS);
+
+/* set aspect 13 (TRUMPS) */
+setAsp(side,TRUMPS,0); /* reset */
+z = getSuitBid(partner, 1);
+if (z >= CLUBS && z <= SPADES) {
+	switch(support[who][z])  {
+		case POOR: setAsp(side,TRUMPS,POOR); break;
+		case FAIR: setAsp(side,TRUMPS,FAIR); break;
+		case GOOD: setAsp(side,TRUMPS,GOOD); break;
+		case EXCEL:
+			setAsp(side,TRUMPS,EXCEL);
+			setAsp(side,TRUMPS,GOOD);
+			break;
+	}
+}
+if (getSide(lastBidder) == getSide( getLHO(who) )) {
+	oppSuit = getSuit(lastCall);
+	if (oppSuit >= CLUBS && oppSuit <= SPADES) {
+		if (dist[who][oppSuit] > 4) {
+			if (holding[who][oppSuit] > Q) setAsp(side,TRUMPS,EXCELOPP);
+			else setAsp(side,TRUMPS,GOODOPP);
+		}
+		if (dist[who][oppSuit] > 5) setAsp(side,TRUMPS,EXCELOPP);
+	}
+}
+	setAsp(side,PRIORITY,2);		/* set aspect 14 (PRIORITY) to 2 */
+

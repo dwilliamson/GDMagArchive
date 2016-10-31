@@ -1,0 +1,392 @@
+Listing 3.  Splitting a Colorspace Box (Continued on p. 39)
+/*----------------------------------------*/
+/* Splits box along the axis which will
+/* minimize the two new box's overall
+/* variance. A brute force search is used
+/* to locate the optimum split point. */
+/*----------------------------------------*/
+static void split_box(box *old_box)
+{
+	int i, j;
+	box *new_box;
+
+	uint total_weight;
+	uint tt_sum, t_ur, t_ug, t_ub;
+	int  ir, ig, ib, jr, jg, jb;
+
+	uint total_weight1;
+	uint tt_sum1, t_ur1, t_ug1, t_ub1;
+	int  ir1, ig1, ib1, jr1, jg1, jb1;
+
+	uint total_weight2;
+	uint tt_sum2, t_ur2, t_ug2, t_ub2;
+	int  ir2, ig2, ib2, jr2, jg2, jb2;
+
+	uint total_weight3;
+	uint tt_sum3, t_ur3, t_ug3, t_ub3;
+
+	uint lowest_variance, variance_r, variance_g, variance_b;
+	int  pick_r, pick_g, pick_b;
+
+	new_box = boxes + num_boxes;
+	num_boxes++;
+
+	total_weight	= old_box->total_weight;
+	tt_sum	= old_box->tt_sum;
+	t_ur		= old_box->t_ur;
+	t_ug		= old_box->t_ug;
+	t_ub		= old_box->t_ub;
+	ir			= old_box->ir;
+	ig			= old_box->ig;
+	ib			= old_box->ib;
+	jr			= old_box->jr;
+	jg			= old_box->jg;
+	jb			= old_box->jb;
+
+	/* left box's initial statistics */
+
+	total_weight1	= 0;
+	tt_sum1	= 0;
+	t_ur1		= 0;
+	t_ug1		= 0;
+	t_ub1		= 0;
+
+	/* right box's initial statistics */
+
+	total_weight2	= total_weight;
+	tt_sum2	= tt_sum;
+	t_ur2		= t_ur;
+	t_ug2		= t_ug;
+	t_ub2		= t_ub;
+
+	/* locate optimum split point on red axis */
+
+	variance_r = 0xFFFFFFFF;
+
+	for (i = ir; i < jr; i++)
+	{
+		uint total_variance;
+
+		/* calculate the statistics for the area being taken
+		* away from the right box and given to the left box
+		*/
+
+		sum(i, ig, ib, i, jg, jb,
+			&total_weight3, &tt_sum3, &t_ur3, &t_ug3, &t_ub3);
+
+#ifdef DEBUGGING
+		if (total_weight3 > total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* update left and right box's statistics */
+
+		total_weight1	+= total_weight3;
+		tt_sum1	+= tt_sum3;
+		t_ur1		+= t_ur3;
+		t_ug1		+= t_ug3;
+		t_ub1		+= t_ub3;
+
+		total_weight2	-= total_weight3;
+		tt_sum2	-= tt_sum3;
+		t_ur2		-= t_ur3;
+		t_ug2		-= t_ug3;
+		t_ub2		-= t_ub3;
+
+#ifdef DEBUGGING
+		if ((total_weight1 + total_weight2) != total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* calculate left and right box's overall variance */
+
+		total_variance = variance(total_weight1, tt_sum1, t_ur1, t_ug1, t_ub1) +
+				variance(total_weight2, tt_sum2, t_ur2, t_ug2, t_ub2);
+
+		/* found better split point? if so, remember it */
+
+		if (total_variance < variance_r)
+		{
+			variance_r = total_variance;
+			pick_r = i;
+		}
+	}
+
+	/* left box's initial statistics */
+
+	total_weight1	= 0;
+	tt_sum1	= 0;
+	t_ur1		= 0;
+	t_ug1		= 0;
+	t_ub1		= 0;
+
+	/* right box's initial statistics */
+
+	total_weight2	= total_weight;
+	tt_sum2	= tt_sum;
+	t_ur2		= t_ur;
+	t_ug2		= t_ug;
+	t_ub2		= t_ub;
+
+	/* locate optimum split point on green axis */
+
+	variance_g = 0xFFFFFFFF;
+
+	for (i = ig; i < jg; i++)
+	{
+		uint total_variance;
+
+		/* calculate the statistics for the area being taken
+		* away from the right box and given to the left box
+		*/
+
+		sum(ir, i, ib, jr, i, jb,
+			&total_weight3, &tt_sum3, &t_ur3, &t_ug3, &t_ub3);
+
+#ifdef DEBUGGING
+		if (total_weight3 > total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* update left and right box's statistics */
+
+		total_weight1	+= total_weight3;
+		tt_sum1	+= tt_sum3;
+		t_ur1		+= t_ur3;
+		t_ug1		+= t_ug3;
+		t_ub1		+= t_ub3;
+
+		total_weight2	-= total_weight3;
+		tt_sum2	-= tt_sum3;
+		t_ur2		-= t_ur3;
+		t_ug2		-= t_ug3;
+		t_ub2		-= t_ub3;
+
+#ifdef DEBUGGING
+		if ((total_weight1 + total_weight2) != total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* calculate left and right box's overall variance */
+
+		total_variance = 
+			variance(total_weight1, tt_sum1,
+				t_ur1, t_ug1, t_ub1) +
+			variance(total_weight2, tt_sum2,
+				t_ur2, t_ug2, t_ub2);
+
+		/* found better split point? if so, remember it */
+
+		if (total_variance < variance_g)
+		{
+			variance_g = total_variance;
+			pick_g = i;
+		}
+	}
+
+	/* left box's initial statistics */
+
+	total_weight1	= 0;
+	tt_sum1	= 0;
+	t_ur1		= 0;
+	t_ug1		= 0;
+	t_ub1		= 0;
+
+	/* right box's initial statistics */
+
+	total_weight2	= total_weight;
+	tt_sum2	= tt_sum;
+	t_ur2		= t_ur;
+	t_ug2		= t_ug;
+	t_ub2		= t_ub;
+
+	variance_b = 0xFFFFFFFF;
+
+	/* locate optimum split point on blue axis */
+
+	for (i = ib; i < jb; i++)
+	{
+		uint total_variance;
+
+		/* calculate the statistics for the area being taken
+		* away from the right box and given to the left box
+		*/
+
+		sum(ir, ig, i, jr, jg, i,
+			&total_weight3, &tt_sum3, &t_ur3, &t_ug3, &t_ub3);
+
+#ifdef DEBUGGING
+		if (total_weight3 > total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* update left and right box's statistics */
+
+		total_weight1	+= total_weight3;
+		tt_sum1	+= tt_sum3;
+		t_ur1		+= t_ur3;
+		t_ug1		+= t_ug3;
+		t_ub1		+= t_ub3;
+
+		total_weight2	-= total_weight3;
+		tt_sum2	-= tt_sum3;
+		t_ur2		-= t_ur3;
+		t_ug2		-= t_ug3;
+		t_ub2		-= t_ub3;
+
+#ifdef DEBUGGING
+		if ((total_weight1 + total_weight2) != total_weight)
+			ASSERT(TRUE)
+#endif
+
+		/* calculate left and right box's overall variance */
+
+		total_variance = 
+			variance(total_weight1, tt_sum1,
+				t_ur1, t_ug1, t_ub1) +
+			variance(total_weight2, tt_sum2,
+				t_ur2, t_ug2, t_ub2);
+
+		/* found better split point? if so, remember it */
+
+		if (total_variance < variance_b)
+		{
+			variance_b = total_variance;
+			pick_b = i;
+		 }
+	}
+
+	/* now find out which axis should be split */
+
+	lowest_variance = variance_r;
+	i = 0;
+
+	if (variance_g < lowest_variance)
+	{
+		lowest_variance = variance_g;
+		i = 1;
+	}
+
+	if (variance_b < lowest_variance)
+	{
+		lowest_variance = variance_b;
+		i = 2;
+	}
+
+	/* split the selected axis into two new boxes */
+
+	ir1 = ir; ig1 = ig; ib1 = ib;
+	jr2 = jr; jg2 = jg; jb2 = jb;
+
+	switch (i)
+	{
+		case 0:
+		{
+			jr1 = pick_r + 0; jg1 = jg; jb1 = jb;
+			ir2 = pick_r + 1; ig2 = ig; ib2 = ib;
+			break;
+		}
+		case 1:
+		{
+			jr1 = jr; jg1 = pick_g + 0; jb1 = jb;
+			ir2 = ir; ig2 = pick_g + 1; ib2 = ib;
+			break;
+		}
+		case 2:
+		{
+			jr1 = jr; jg1 = jg; jb1 = pick_b + 0;
+			ir2 = ir; ig2 = ig; ib2 = pick_b + 1;
+			break;
+		}
+	}
+
+	/* shrink the new boxes to their minimum possible sizes */
+
+	shrink_box(ir1, ig1, ib1, jr1, jg1, jb1,
+				&ir1, &ig1, &ib1, &jr1, &jg1, &jb1);
+
+	shrink_box(ir2, ig2, ib2, jr2, jg2, jb2,
+				&ir2, &ig2, &ib2, &jr2, &jg2, &jb2);
+
+	/* update statistics */
+
+	sum(ir1, ig1, ib1, jr1, jg1, jb1,
+		&total_weight1, &tt_sum1, &t_ur1, &t_ug1, &t_ub1);
+
+	total_weight2	= total_weight - total_weight1;
+	tt_sum2	= tt_sum - tt_sum1;
+	t_ur2		= t_ur - t_ur1;
+	t_ug2		= t_ug - t_ug1;
+	t_ub2		= t_ub - t_ub1;
+
+	/* create the new boxes */
+
+	old_box->variance		= variance(total_weight1, tt_sum1, t_ur1, t_ug1, t_ub1);
+	old_box->total_weight	= total_weight1;
+	old_box->tt_sum		= tt_sum1;
+	old_box->t_ur		= t_ur1;
+	old_box->t_ug		= t_ug1;
+	old_box->t_ub		= t_ub1;
+	old_box->ir			= ir1;
+	old_box->ig			= ig1;
+	old_box->ib			= ib1;
+	old_box->jr			= jr1;
+	old_box->jg			= jg1;
+	old_box->jb			= jb1;
+
+	new_box->variance		= variance(total_weight2, tt_sum2, t_ur2, t_ug2, t_ub2);
+	new_box->total_weight	= total_weight2;
+	new_box->tt_sum		= tt_sum2;
+	new_box->t_ur		= t_ur2;
+	new_box->t_ug		= t_ug2;
+	new_box->t_ub		= t_ub2;
+	new_box->ir			= ir2;
+	new_box->ig			= ig2;
+	new_box->ib			= ib2;
+	new_box->jr			= jr2;
+	new_box->jg			= jg2;
+	new_box->jb			= jb2;
+
+	/* enter all splittable boxes into the priory queue */
+
+	i = 0;
+	if ((jr1 - ir1) + (jg1 - ig1) + (jb1 - ib1)) i = 2;
+	if ((jr2 - ir2) + (jg2 - ig2) + (jb2 - ib2)) i++;
+
+	switch (i)
+	{
+		case 0:
+		{
+			heap[1] = heap[heap_size];
+
+			heap_size--;
+
+			if (heap_size)
+				down_heap();
+
+			break;
+		}
+		case 1:
+		{
+			heap[1] = new_box;
+
+			down_heap();
+
+			break;
+		}
+		case 2:
+		{
+			down_heap();
+
+			break;
+		}
+		case 3:
+		{
+			down_heap();
+
+			insert_heap(new_box);
+
+			break;
+		}
+	}
+}

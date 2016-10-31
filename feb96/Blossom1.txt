@@ -1,0 +1,115 @@
+void CPaddleGameWindow::Idle(void)
+{
+	// Don't do anything while backgrounded
+	if (!IsActiveFlag)
+		return;
+
+	// Control the frame rate
+	long unsigned CurrentTime = GetMillisecondTime();
+	if (CurrentTime < NextBallTime &&
+		 CurrentTime < NextPaddleTime)
+		return;
+
+	//-------------------------------
+	// Prepare the buffer
+
+	COffscreenBuffer* pBuffer = GetOffscreenBuffer();
+	if (!pBuffer)
+		return;
+
+	pBuffer->Lock();
+
+	if (CurrentTime >= NextBallTime)
+	{
+		NextBallTime = CurrentTime + BallSpeed;
+
+		// Erase the ball
+	int BallDirtyLeft = BallX;
+	int BallDirtyRight = BallX + kBallSize;
+	int BallDirtyTop = BallY;
+	int BallDirtyBottom = BallY + kBallSize;
+	FillRectangle(pBuffer,
+		BallX, BallY, kBallSize, kBallSize,
+		kColorGameBackground);
+
+		//-----------------------------
+		// Move the ball and calculate a bounce off any walls
+
+		// ***** CODE OMITTED: SAME AS LAST MONTH *****
+		// *****     AVAILABLE ON THE FTP SITE    *****
+
+		// Enlarge the ball's dirty rect
+		if (BallDirtyLeft > BallX) BallDirtyLeft = BallX;
+		if (BallDirtyRight < BallX + kBallSize)
+			BallDirtyRight = BallX + kBallSize;
+
+		if (BallDirtyTop > BallY) BallDirtyTop = BallY;
+		if (BallDirtyBottom < BallY + kBallSize)
+			BallDirtyBottom = BallY + kBallSize;
+
+		// Draw the ball in its new position
+	FillRectangle(pBuffer,
+		BallX, BallY, kBallSize, kBallSize,
+		kColorBall);
+
+	pBuffer->SwapRect(BallDirtyLeft, BallDirtyTop,
+		BallDirtyRight, BallDirtyBottom);
+
+		//-----------------------------
+		// Perform any velocity changes due to bounces
+
+		if (BounceX) BallXSpeed = -BallXSpeed;
+		if (BounceY) BallYSpeed = -BallYSpeed;
+	}
+
+	//-------------------------------
+	// Follow the ball with the paddle center when in demo mode,
+	// allow the user to control the paddle in play mode
+
+	if (CurrentTime >= NextPaddleTime)
+	{
+		// Erase the paddle
+	int PaddleDirtyLeft = PaddleX - kPaddleWidth/2;
+	int PaddleDirtyRight = PaddleX + kPaddleWidth/2;
+	FillRectangle(pBuffer,
+		PaddleX - kPaddleWidth/2, kPlayAreaBottom - kPaddleHeight,
+		kPaddleWidth, kPaddleHeight,
+		kColorGameBackground);
+
+		NextPaddleTime = CurrentTime + PaddleSpeed;
+
+		if (IsDemoMode)
+		{
+			if (PaddleX < BallX + kBallSize/2) ++PaddleX;
+			else if (PaddleX > BallX + kBallSize/2) -PaddleX;
+		}
+		else
+		{
+			PaddleX += PaddleXSpeed;
+		}
+
+		// Make sure the paddle doesn't move out of the play area!
+		if (PaddleX < kPlayAreaLeft + kPaddleWidth/2)
+			PaddleX = kPlayAreaLeft + kPaddleWidth/2;
+		else if (PaddleX > kPlayAreaRight - kPaddleWidth/2)
+			PaddleX = kPlayAreaRight - kPaddleWidth/2;
+
+		// Enlarge the paddle's dirty rect
+		if (PaddleX - kPaddleWidth/2 < PaddleDirtyLeft)
+			PaddleDirtyLeft = PaddleX - kPaddleWidth/2;
+		if (PaddleX + kPaddleHeight/2 > PaddleDirtyRight)
+			PaddleDirtyRight = PaddleX + kPaddleWidth/2;
+
+		// Draw the paddle in its new position
+	FillRectangle(pBuffer,
+		PaddleX - kPaddleWidth/2, kPlayAreaBottom - kPaddleHeight,
+		kPaddleWidth, kPaddleHeight,
+		kColorPaddle);
+
+	pBuffer->SwapRect(PaddleDirtyLeft,
+		kPlayAreaBottom - kPaddleHeight,
+		PaddleDirtyRight, kPlayAreaBottom);
+	}
+
+	pBuffer->Unlock();
+}

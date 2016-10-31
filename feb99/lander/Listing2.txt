@@ -1,0 +1,34 @@
+Listing 2: Faster AABB Calculation using Starting OBB
+
+///////////////////////////////////////////////////////////////////////////////
+// Procedure:	RecalcBBox
+// Purpose:		Recalculates the BBox associated with a bone based on the
+//				original bounding box.  This is faster then the true BBox in
+//				most cases.  However, this BBox is not as tight a fit.
+///////////////////////////////////////////////////////////////////////////////		
+GLvoid COGLView::RecalcBBox(t_Bone *curBone, tVector *min,tVector *max)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	tVector	tempRes;
+	int		loop;
+///////////////////////////////////////////////////////////////////////////////		
+	for (loop = 0; loop < 8; loop++)	// LOOP THROUGH ALL 8 BBOX COORDS
+	{
+		MultVectorByMatrix(&curBone->matrix, &curBone->visuals->bbox[loop],&tempRes);
+		memcpy(&curBone->visuals->transBBox[loop],&tempRes,sizeof(tVector));
+		if (loop == 0)
+		{
+			memcpy(min,&tempRes,sizeof(tVector));
+			memcpy(max,&tempRes,sizeof(tVector));
+		}
+		else
+		{
+			if (tempRes.x > max->x) max->x = tempRes.x;
+			if (tempRes.y > max->y) max->y = tempRes.y;
+			if (tempRes.z > max->z) max->z = tempRes.z;
+			if (tempRes.x < min->x) min->x = tempRes.x;
+			if (tempRes.y < min->y) min->y = tempRes.y;
+			if (tempRes.z < min->z) min->z = tempRes.z;
+		}
+	}
+}

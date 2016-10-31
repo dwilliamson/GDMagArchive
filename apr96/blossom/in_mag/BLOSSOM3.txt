@@ -1,0 +1,52 @@
+Listing 3. Locking a DirectDraw surface
+static char unsigned *pBits;
+static long Stride;
+
+int OffscreenLock(void)
+{
+	int ReturnValue = 0;
+
+	pBits = 0;
+	Stride = 0;
+
+	DDSURFACEDESC SurfaceDesc;
+	ZeroMemory(&SurfaceDesc, sizeof(SurfaceDesc));
+	SurfaceDesc.dwSize = sizeof(SurfaceDesc);
+
+	// Loop until an error occurs or the lock succeeds
+	HRESULT DDReturn = DD_OK;
+	while (1)
+	{
+		// Attempt the lock
+		DDReturn = pOffscreenSurface->Lock(0, &SurfaceDesc, 0, 0);
+
+		if (DDReturn == DD_OK)
+		{
+			// Successful lock - store bits and stride
+			pBits = (char unsigned *)SurfaceDesc.lpSurface;
+			Stride = SurfaceDesc.lPitch;
+			ReturnValue = 1;
+			break;
+		}
+		else if (DDReturn == DDERR_SURFACELOST)
+		{
+			// Attempt to restore the surfaces
+			DDReturn = pPrimarySurface->Restore();
+			if (DDReturn == DD_OK)
+				DDReturn = pOffscreenSurface->Restore();
+
+			if (DDReturn != DD_OK)
+			{
+				// Surfaces could not be restored - lock fails
+				break;
+			}
+		}
+		else if (DDReturn != DDERR_WASSTILLDRAWING)
+		{
+			// Some other error happened - fail
+			break;
+		}
+	}
+
+	return ReturnValue;
+}

@@ -1,0 +1,28 @@
+// Note about how these are placeholders.
+struct Integer {
+    Float junk;
+}
+
+struct String {
+    Float junk;
+}
+
+
+// Note about how this is fragile!  (Globals?!?)
+
+proc main {
+    Integer result;
+    result = thread_create();
+
+    String name;
+    if result then {
+        name = "Flim";
+    } else {
+        name = "Flam";
+    }
+
+    each (1..10) {
+        print("Thread '", name, "': step ", $0, "\n");
+        thread_yield();
+    }
+}

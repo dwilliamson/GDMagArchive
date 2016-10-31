@@ -1,0 +1,255 @@
+struct Entity {
+    Vector3 position;
+    Vector3 velocity;
+    Float radius;
+    Float mass;
+    Float r, g, b;
+}
+    
+struct Database {
+    Float timestep;
+    Entity cue_ball;  // @The_Point @Refactor: Should be able to search this guy!
+}
+
+proc make_entity(Float x, Float y, Float radius, Float r, Float g, Float b) {
+    Entity e;
+
+    e.position = make_vector3(x, y, 0.0);
+    e.velocity = make_vector3(0.0, 0.0, 0.0);
+
+    e.radius = radius;
+    e.r = r * 1.0;
+    e.g = g * 1.0;
+    e.b = b * 1.0;
+    e.mass = 1.0;
+
+    the_world .+ ['Entity e];
+
+    return e;
+}
+
+proc init_world_base {
+    Database world;
+    the_world = world;
+
+    the_world.timestep = 0.0;
+
+    play_field_width = 3.0;  // meters
+    play_field_height = 3.5;  // meters
+    ball_radius = 1.5 / 20.0;
+    aim_theta = PI * 0.5;
+    shot_power = 0.5;
+
+    balls_in_motion = 0;
+}
+
+
+proc position_ball1(Entity top, Entity b) {
+    Float r = top.radius;
+    Float s = r * 1.01;
+    Float t = s * 1.727;
+    
+    Float x = (top.position)[1];
+    Float y = (top.position)[2];
+
+    b.position = make_vector3(x + s, y + t, 0);
+}
+
+proc position_ball2(Entity top, Entity a, Entity b) {
+    Float r = top.radius;
+    Float s = r * 1.01;
+    Float t = s * 1.727;
+    
+    Float x = (top.position)[1];
+    Float y = (top.position)[2];
+
+    a.position = make_vector3(x - s, y + t, 0);
+    b.position = make_vector3(x + s, y + t, 0);
+}
+
+proc init_world {
+    init_world_base();
+
+    Float r = ball_radius;
+
+    Float x0 = play_field_width * 0.5;
+    Float y0 = play_field_height * 0.5;
+
+    Entity r1 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r2 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r3 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r4 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r5 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r6 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r7 = make_entity(0, 0, r, 1, 0, 0);
+
+    Entity b1 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b2 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b3 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b4 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b5 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b6 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b7 = make_entity(0, 0, r, 0, 0, 1);
+
+    Entity eightball = make_entity(0, 0, r, 0, 0, 0);
+
+    the_world.cue_ball = make_entity(x0, r * 6, r, 1, 1, 1);
+    (the_world.cue_ball).mass = 1.2;
+
+    r1.position = make_vector3(x0, y0, 0);
+    position_ball2(r1, b1, r2);
+    position_ball2(b1, r3, eightball);
+    position_ball1(r2, b2);
+    position_ball2(r3, r4, b3);
+    position_ball2(b2, r5, b4);
+    position_ball2(r4, r6, b5);
+    position_ball2(r5, b6, b7);
+    position_ball1(b4, r7);
+}
+
+proc init_world_3 {
+    init_world_base();
+
+    Float r = ball_radius;
+
+    Float x0 = play_field_width * 0.5;
+    Float y0 = play_field_height * 0.5;
+
+    Entity r1 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r2 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r3 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r4 = make_entity(0, 0, r, 1, 0, 0);
+    Entity r5 = make_entity(0, 0, r, 1, 0, 0);
+
+    Entity b1 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b2 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b3 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b4 = make_entity(0, 0, r, 0, 0, 1);
+    Entity b5 = make_entity(0, 0, r, 0, 0, 1);
+
+    Entity eightball = make_entity(0, 0, r, 0, 0, 0);
+
+    the_world.cue_ball = make_entity(x0, r * 6, r, 1, 1, 1);
+    (the_world.cue_ball).mass = 1.2;
+
+    r1.position = make_vector3(x0, y0, 0);
+    position_ball2(r1, b1, r2);
+    position_ball2(b1, r3, eightball);
+    position_ball1(r2, b2);
+    position_ball2(r3, r4, b3);
+    position_ball2(b2, r5, b4);
+    position_ball1(b3, b5);
+}
+
+proc init_world_2 {
+    init_world_base();
+
+    Float r = ball_radius;
+
+    Float x0 = play_field_width * 0.5;
+    Float y0 = play_field_height * 0.5;
+
+    Float s = r * 1.01;
+    Float t = s * 1.727;
+
+    make_entity(x0, y0, r, 1, 0, 0);
+    make_entity(x0 - s, y0 + t, r, 0, 1, 0);
+    make_entity(x0 + s, y0 + t, r, 0, 0, 1);
+
+    the_world.cue_ball = make_entity(x0, r * 6, r, 1, 1, 1);
+    (the_world.cue_ball).mass = 1.2;
+}
+
+proc get_shot_vector() {
+    Float ct = cos(PI - aim_theta);  
+    Float st = sin(PI - aim_theta);
+    Float speed = 40 * (the_world.cue_ball).radius * shot_power;
+    return make_vector3(ct * speed, st * speed, 0.0);
+}
+
+proc handle_input {
+    Float time = seconds_since_startup();
+    Float dt = time - last_frame_time;
+    last_frame_time = time;
+    current_dt = dt;
+    if (dt == 0.0) dt = 0.05;
+    
+
+    Windows.do_window_events();
+    handle_mouse(dt);
+    
+    if Keyboard.['key_pressed " "] then {
+        Vector3 speed = get_shot_vector();
+        ((the_world.cue_ball).velocity) = speed;
+    }
+
+    if Keyboard.['key_pressed '1] then {
+        init_world();
+        return;
+    }
+
+    if Keyboard.['key_pressed '2] then {
+        init_world_2();
+        return;
+    }
+
+    if Keyboard.['key_pressed '3] then {
+        init_world_3();
+        return;
+    }
+
+    Float THETA_RATE = 1.0;
+    Float INTENSITY_RATE = 0.7;
+    if Keyboard.['key_held_down 'W] then shot_power += INTENSITY_RATE * dt;
+    if Keyboard.['key_held_down 'S] then shot_power -= INTENSITY_RATE * dt;
+    
+    if shot_power < 0 then shot_power = 0.0;
+    if shot_power > 1 then shot_power = 1.0;
+
+    if Keyboard.['key_held_down 'A] then aim_theta += THETA_RATE * dt;
+    if Keyboard.['key_held_down 'D] then aim_theta -= THETA_RATE * dt;
+
+    Float fine_rate = (1.0 - shot_power * 0.9);  // XXX
+    fine_rate *= 0.01;
+
+    if Keyboard.['key_held_down 'Z] then aim_theta += THETA_RATE * dt * fine_rate;
+    if Keyboard.['key_held_down 'C] then aim_theta -= THETA_RATE * dt * fine_rate;
+
+    the_world.timestep = dt;
+
+    had_focus_last_frame = has_focus_this_frame;
+}
+
+proc simulate {
+//    Database result = pool_simulate(the_world, current_dt);
+    Database result = Billiards_Sim.simulate(the_world, 0.03);
+    the_world = result;
+
+    Integer old_balls_in_motion = balls_in_motion;
+
+    balls_in_motion = 0;
+    Float SPEED_LIMIT = 0.005;
+
+    each the_world.['Entity ?x] if length(x.velocity) > SPEED_LIMIT then balls_in_motion = 1;
+
+    if old_balls_in_motion then {  // XXXXX Need logical AND?
+        if !balls_in_motion then each the_world.['Entity ?x] x.velocity = make_vector3(0.0, 0.0, 0.0);
+        // Or with implicit each, it could be:  if !balls_in_motion then the_world.['Entity ??].velocity = make_vector3(0.0, 0.0, 0.0);  ... but do we evaluate RHS once or many?  And copy-on-write?
+    }
+}
+
+
+proc draw_predictions {
+    Entity e = the_world.cue_ball;
+
+    // Temporary hack to modify e's velocity if we are setting up a shot...
+    // we change it back later.
+
+    Vector3 velocity_tmp = e.velocity;
+    if !balls_in_motion then e.velocity = get_shot_vector();
+
+    Database predict = Billiards_Sim.simulate_until_everything_is_at_rest(the_world, 0.03);
+    draw_entities(predict, 0.15);
+
+    if !balls_in_motion then e.velocity = velocity_tmp;
+}

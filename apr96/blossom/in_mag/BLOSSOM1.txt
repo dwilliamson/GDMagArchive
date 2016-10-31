@@ -1,0 +1,133 @@
+Listing 1. Setting up a full-screen environment using DirectDraw
+static HWND Window;
+static HINSTANCE ghInstance;
+
+static LPDIRECTDRAW pDirectDraw;
+static LPDIRECTDRAWSURFACE pPrimarySurface;
+static LPDIRECTDRAWSURFACE pOffscreenSurface;
+static LPDIRECTDRAWPALETTE pPalette;
+
+static int PageFlip;
+
+int BeginFullScreen(int Width, int Height, int Depth)
+{
+	// Create a Width x Height popup window using the STATIC
+// control class so we don't have to implement a window
+// procedure right now
+	Window = CreateWindow("STATIC", "FullScreen", WS_POPUP,
+		0, 0, Width, Height,
+		0, 0, ghInstance, 0);
+	if (!Window)
+		goto Failure;
+
+	ShowWindow(Window, SW_SHOWNORMAL);
+	UpdateWindow(Window);
+
+	// Connect to DirectDraw, if not already connected
+	if (!pDirectDraw)
+		DirectDrawCreate(0, &pDirectDraw, 0);
+	if (!pDirectDraw)
+		goto Failure;
+
+	// Set up DirectDraw for full-screen exclusive mode at the
+	// requested resolution
+	HRESULT DDReturn;
+	DDReturn = pDirectDraw->SetCooperativeLevel(Window,
+		DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
+	if (DDReturn != DD_OK)
+		goto Failure;
+
+	DDReturn = pDirectDraw->SetDisplayMode(Width, Height, Depth);
+	if (DDReturn != DD_OK)
+		goto Failure;
+
+	// Create the primary surface
+	// Try to get a triple-buffered one we can page flip
+	PageFlip = 1;
+	DDSURFACEDESC SurfaceDesc;
+	ZeroMemory(&SurfaceDesc, sizeof(SurfaceDesc));
+	SurfaceDesc.dwSize = sizeof(SurfaceDesc);
+	SurfaceDesc.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+	SurfaceDesc.dwBackBufferCount = 2;
+	SurfaceDesc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE |
+		DDSCAPS_FLIP |
+		DDSCAPS_COMPLEX |
+		DDSCAPS_VIDEOMEMORY;
+	DDReturn = pDirectDraw->CreateSurface(&SurfaceDesc,
+		&pPrimarySurface, 0);
+	if (DDReturn != DD_OK)
+	{
+		// We couldn't get a triple buffer, try a double-buffer
+		SurfaceDesc.dwBackBufferCount = 1;
+		DDReturn = pDirectDraw->CreateSurface(&SurfaceDesc,
+			&pPrimarySurface, 0);
+		if (DDReturn != DD_OK)
+		{
+			// We couldn't get a page-flip-able surface at all.
+			PageFlip = 0;
+
+			// Just go for a no-frills primary surface
+			SurfaceDesc.dwFlags = DDSD_CAPS;
+			SurfaceDesc.dwBackBufferCount = 0;
+			SurfaceDesc.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+			DDReturn = pDirectDraw->CreateSurface(&SurfaceDesc,
+				&pPrimarySurface, 0);
+			if (DDReturn != DD_OK)
+				goto Failure;
+		}
+	}
+
+	if (PageFlip)
+	{
+		// Get the attached page-flip-able surface as the
+		// offscreen buffer
+		DDSCAPS caps;
+		caps.dwCaps = DDSCAPS_BACKBUFFER;
+		DDReturn = pPrimarySurface->GetAttachedSurface(&caps,
+			&pOffscreenSurface);
+	}
+	else
+	{
+		// Create a second surface for the offscreen buffer
+		ZeroMemory(&SurfaceDesc, sizeof(SurfaceDesc));
+		SurfaceDesc.dwSize = sizeof(SurfaceDesc);
+		SurfaceDesc.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+		SurfaceDesc.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+		SurfaceDesc.dwWidth = Width;
+		SurfaceDesc.dwHeight = Height;
+
+		DDReturn = pDirectDraw->CreateSurface(&SurfaceDesc,
+			&pOffscreenSurface, 0);
+	}
+
+	if (DDReturn != DD_OK)
+		goto Failure;
+
+	// Set up a palette - a grey wash in 0..255
+	PALETTEENTRY PaletteColors[256];
+	int i;
+	for (i=0; i<256; ++i)
+	{
+		PaletteColors[i].peRed = i;
+		PaletteColors[i].peGreen = i;
+		PaletteColors[i].peBlue = i;
+		PaletteColors[i].peFlags = PC_RESERVED;
+	}
+
+	DDReturn = pDirectDraw->CreatePalette(DDPCAPS_8BIT,
+		PaletteColors, &pPalette, 0);
+	if (DDReturn != DD_OK)
+		goto Failure;
+
+	// Attach the palette to the surface
+	DDReturn = pPrimarySurface->SetPalette(pPalette);
+	if (DDReturn != DD_OK)
+		goto Failure;
+
+	// Success!
+	return 1;
+
+Failure:
+	return 0;
+}
+

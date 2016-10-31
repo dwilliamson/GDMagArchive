@@ -1,0 +1,5 @@
+The demo application that accompanies Chris Hecker's feature on physical controllers can be found on his website:
+
+http://www.d6.com/users/checker/dynamics.htm
+
+-Alex Dunne, Editorial Director

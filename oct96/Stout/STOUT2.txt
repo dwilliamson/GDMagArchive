@@ -1,0 +1,24 @@
+Listing 2. Dijkstra's search algorithm
+
+priority queue	Open
+
+DijkstraSearch
+  node   n, n', s
+	s.cost = 0
+	s.parent = null   // s is a node for the start
+	push s on Open
+	while Open is not empty
+		pop node n from Open  // n has lowest cost in Open
+		if n is a goal node 
+			construct path 
+			return success
+		for each successor n' of n
+			newcost = n.cost + cost(n,n')
+			if n' is in Open
+			 and n'.cost <= newcost
+				continue
+			n'.parent = n
+			n'.cost = newcost
+			if n' is not yet in Open
+				push n' on Open
+	return failure  // if no path found

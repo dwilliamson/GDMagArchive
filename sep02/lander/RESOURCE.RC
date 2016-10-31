@@ -1,0 +1,185 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+APPICON                 ICON    DISCARDABLE     "Ropes.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New",                        ID_FILE_NEWSIM
+        MENUITEM "&Load Simulation",            ID_FILE_LOADSIMULATION
+        MENUITEM "&Save Simulation",            ID_FILE_SAVESIMULATION
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_FILE_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Springs",                    ID_VIEW_SPRINGS
+        MENUITEM "&CVs",                        ID_VIEW_CVS
+    END
+    POPUP "&Physics"
+    BEGIN
+        MENUITEM "Use &Friction",               ID_USE_FRICTION
+        MENUITEM "Use &Gravity",                ID_USE_GRAVITY
+        MENUITEM "Grid Snap",                   ID_PHYSICS_GRIDSNAP
+        MENUITEM SEPARATOR
+        MENUITEM "&Sim Running\tS",             ID_PHYSICS_SIMRUNNING
+        MENUITEM "&Reset\tR",                   ID_PHYSICS_RESET
+        MENUITEM "&Add Spring\tENTER",          ID_PHYSICS_ADDSPRING
+        MENUITEM "Sim &Properties\tP",          ID_PHYSICS_SIMPROPERTIES
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About",                      ID_HELP_ABOUT
+    END
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_ABOUT DIALOG DISCARDABLE  0, 0, 165, 100
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Ropes"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,108,78,50,14
+    LTEXT           "OpenGL Rope Simulation",IDC_STATIC,7,7,93,11
+    LTEXT           "Copyright (c) 2002 Darwin 3D, LLC\nJeff Lander\tjeffl@darwin3d.com",
+                    IDC_STATIC,7,19,115,18
+    LTEXT           "Right Mouse button and drag to set Ground",IDC_STATIC,7,
+                    42,151,11
+    ICON            "APPICON",IDC_STATIC,132,7,21,20
+    LTEXT           "Left Mouse button to create and select points",
+                    IDC_STATIC,7,53,151,11
+END
+
+IDD_SIMPROP DIALOG DISCARDABLE  0, 0, 193, 177
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Simulation Properties"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_GRAVX,46,14,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_GRAVY,89,14,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_GRAVZ,132,14,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_COEFREST,122,35,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_Damping,122,50,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SPRINGCONST,122,70,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SPRINGDAMP,122,88,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_YOUNG,122,108,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_FRACTURE,122,134,37,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,156,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,136,156,50,14
+    LTEXT           "Gravity",IDC_STATIC,7,15,32,9
+    LTEXT           "Coefficient of Restitution",IDC_STATIC,7,37,100,9
+    LTEXT           "Hook's Spring Constant",IDC_STATIC,7,72,100,9
+    LTEXT           "World Damping Factor",IDC_STATIC,7,52,100,9
+    LTEXT           "Spring Damping",IDC_STATIC,7,90,100,9
+    LTEXT           "Young's Modulus\n(Elasticity Constant)",IDC_STATIC,7,
+                    110,100,18
+    LTEXT           "Fracture Threshold",IDC_STATIC,7,136,100,9
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 158
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 92
+    END
+
+    IDD_SIMPROP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 186
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 170
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

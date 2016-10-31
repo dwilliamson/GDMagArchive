@@ -1,0 +1,9 @@
+; Sky Pixel Shader
+; Preetham (c) ATI Research, 2002.
+
+ps.1.0
+
+; Sky is just the inscattering term.
+
+
+mov r0, v1	; Sky color is just inscattering term.

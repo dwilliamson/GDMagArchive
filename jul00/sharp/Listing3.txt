@@ -1,0 +1,28 @@
+Brian Sharp
+"Go with the Flow: Improving Fluid Rendering Using Implicit Surfaces"
+Game Developer magazine
+July 2000 issue.
+
+Listing 3. Pseudocode to calculate both the potential value and color at a point given a number of molecules.
+
+potential(Point p)
+{
+  float totalValue = 0
+  Color finalColor = Black
+    
+  foreach molecule
+  {
+    float distance = distanceFrom(molecule center, p)
+    float contribution = (1 / distance^2) - 1
+    if contribution > 0
+    {
+      totalValue += contribution
+      finalColor += contribution * molecule color
+    } 
+  }  
+  
+  // Normalize the color
+  finalColor /= totalValue
+
+  return totalValue and finalColor
+}

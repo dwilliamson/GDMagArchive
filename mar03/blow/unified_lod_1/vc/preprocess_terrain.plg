@@ -1,0 +1,38 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: preprocess_terrain - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP342.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib uuid.lib jpg.lib zlib.lib /nologo /subsystem:console /incremental:no /pdb:"preprocess_terrain___Win32_Release/preprocess_terrain.pdb" /machine:I386 /out:"preprocess_terrain___Win32_Release/preprocess_terrain.exe" /libpath:"..\app_shell\lib" 
+.\preprocess_terrain___Win32_Release\bt_loader.obj
+.\preprocess_terrain___Win32_Release\make_terrain.obj
+.\preprocess_terrain___Win32_Release\preprocess_terrain.obj
+.\preprocess_terrain___Win32_Release\tangent_frames.obj
+.\preprocess_terrain___Win32_Release\error_quadric.obj
+.\preprocess_terrain___Win32_Release\mesh_builder.obj
+.\preprocess_terrain___Win32_Release\mesh_reducer.obj
+.\preprocess_terrain___Win32_Release\mesh_topology_handler.obj
+.\preprocess_terrain___Win32_Release\auto_array.obj
+.\preprocess_terrain___Win32_Release\bit_array.obj
+.\preprocess_terrain___Win32_Release\data_structures.obj
+.\preprocess_terrain___Win32_Release\geometry.obj
+.\preprocess_terrain___Win32_Release\lightweight_proximity_grid.obj
+.\preprocess_terrain___Win32_Release\priority_queue.obj
+.\preprocess_terrain___Win32_Release\mesh.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP342.tmp"
+<h3>Output Window</h3>
+Linking...
+
+
+
+<h3>Results</h3>
+preprocess_terrain.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -1,0 +1,12 @@
+Listing 1.  The Inner Loop
+while(Width-- > 0) {
+	float Z = 1/OneOverZ;
+	int U = UOverZ * Z + 0.5;
+	int V = VOverZ * Z + 0.5;
+
+	*(pDestBits++) = *(pTextureBits + U + (V * TextureDeltaScan));
+
+	OneOverZ += Gradients.dOneOverZdX;
+	UOverZ += Gradients.dUOverZdX;
+	VOverZ += Gradients.dVOverZdX;
+}

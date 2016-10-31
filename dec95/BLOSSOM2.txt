@@ -1,0 +1,69 @@
+Listing 2.  Windows Palette Creation
+// A dummy LOGPALETTE structure
+struct
+{
+	WORD Version;
+	WORD NumberOfEntries;
+	PALETTEENTRY aEntries[256];
+} LogPalette = { 0x300, 256 };
+
+// Grab the current palette for the display and count the
+// number of static colors itOs using
+HDC hdcScreen = GetDC(0);
+int StaticColorCount = 20;
+if (hdcScreen)
+{
+	StaticColorCount = GetDeviceCaps(hdcScreen, NUMCOLORS);
+	GetSystemPaletteEntries(hdcScreen, 0, 256, LogPalette.aEntries);
+	ReleaseDC(hdcScreen, 0);
+}
+
+// WeOll create our palette from the static colors,
+// filling in whatever gaps are left with colors from
+// the requested colors, or a gray wash as before if
+// there are none.
+int i;
+for (i=0; i<StaticColorCount/2; ++i)
+{
+	// Fill in the peFlags of the first static entries
+	LogPalette.aEntries[i].peFlags = 0;
+}
+
+if (Colors)
+{
+	// Fill in the middle entries with the requested colors
+	// Count tells us where to find the appropriate RGB
+	// triplet in the requested color array
+	int Count = i * 3;
+
+	for (; i<256 - StaticColorCount/2; ++i)
+	{
+		LogPalette.aEntries[i].peRed = Colors[Count++];
+		LogPalette.aEntries[i].peGreen = Colors[Count++];
+		LogPalette.aEntries[i].peBlue = Colors[Count++];
+
+		// Mark as PC_RESERVED to guarantee identity palette
+		LogPalette.aEntries[i].peFlags = PC_RESERVED;
+	}
+}
+else
+{
+	// Fill in the middle entries with a grey wash
+	for (; i<256 - StaticColorCount/2; ++i)
+	{
+		LogPalette.aEntries[i].peRed =
+		LogPalette.aEntries[i].peGreen =
+		LogPalette.aEntries[i].peBlue = i;
+
+		LogPalette.aEntries[i].peFlags = PC_RESERVED;
+	}
+}
+
+for (; i<256; ++i)
+{
+	// Fill in the peFlags of the remaining static entries
+	LogPalette.aEntries[i].peFlags = 0;
+}
+
+// Finally, create the palette!
+Palette = CreatePalette((LOGPALETTE*)&LogPalette);

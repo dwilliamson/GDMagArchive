@@ -1,0 +1,313 @@
+I know this is long, but this complete program illustrates what the MUD has to 
+do to provide communications between many people.  Many people can connect to this program, and their text will be shown to each user, like (from the server’s perspective):
+
+
+(130) edmond.riker% dsmd
+<connection from cmiley.cmf.nrl.navy.mil>
+<connection from minerva.cmf.nrl.navy.mil>
+minerva.cmf.nrl.navy.mil: Hello!
+cmiley.cmf.nrl.navy.mil: Hello!
+cmiley.cmf.nrl.navy.mil: Well, here I am.
+minerva.cmf.nrl.navy.mil: Yes, there you are.  (So?)
+minerva.cmf.nrl.navy.mil: I’m outta here.
+cmiley.cmf.nrl.navy.mil: Hm
+<disconnection from minerva.cmf.nrl.navy.mil>
+
+
+And, from the client’s perspective:
+
+
+(70) edmond.cmiley% telnet riker 9876
+Trying 134.207.10.69 ...
+Connected to riker.cmf.nrl.navy.mil.
+Escape character is ‘^]’.
+!minerva.cmf.nrl.navy.mil: Hello!
+Hello
+cmiley.cmf.nrl.navy.mil: Hello!
+Well, here I am.            
+cmiley.cmf.nrl.navy.mil: Well, here I am.
+minerva.cmf.nrl.navy.mil: Yes, there you are.  (So?)
+minerva.cmf.nrl.navy.mil: I’m outta here.
+Hm
+cmiley.cmf.nrl.navy.mil: Hm
+^]
+telnet> q
+Connection closed.
+
+
+Here is the code.  It is written by myself, so there is no problem in using it:
+
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <stdarg.h>
+#include <signal.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <assert.h>
+#include <errno.h>
+
+enum { NOTHING, CONNECTION_SOCKET, TCP_CONNECTION, ATM_CONNECTION };
+static const int PORT = 9876;
+
+/***********************************************************************
+ * global_struct defines the typedef, GlobalData which is used to
+ * partitions the global name space.  Since static is used, this is more
+ * to suit my anal-retentive nature, than anything.
+ */
+
+static struct global_struct {
+        int socket;                             /* server socket */
+        int max_fds;                    /* max number of FDs per process */
+        int connected;                  /* how many have connected */
+        int *fd;                                /* array of FDs, storing type */
+        char **hostname;                /* connected host name */
+} globs;
+
+
+/***********************************************************************
+ * init_server_sock() will set up the socket that will accept
+ * command/connection requests. For an explanation, see UNIX Network
+ * Programming, by Stevens.
+ */
+
+static int init_server_sock()
+{
+        struct sockaddr_in sockaddr;
+
+        /* Create the Server Socket, here the combination of AF_INET
+         * SOCK_STREAM indicates the request for the TCP/IP
+         */
+
+        assert((globs.socket = socket(AF_INET, SOCK_STREAM, 0)) >= 0);
+        bzero(&sockaddr, sizeof(sockaddr));
+
+        /* Set up the sockaddr_in structure.  First, set the socket so it
+         * can be reused locally -- mainly so we can restart quickly.
+         */
+
+        sockaddr.sin_family = AF_INET;
+        sockaddr.sin_port = PORT;
+        setsockopt(globs.socket, SOL_SOCKET, SO_REUSEADDR, 0, 0);
+
+        /* bind() the socket, instructing the system to hand over all messages
+         * addressed to this socket.
+         * Listen() will indicate to the system that this process is willing
+         * to accept connection.
+         */
+
+        assert(bind(globs.socket, &sockaddr, sizeof(sockaddr)) == 0);
+        assert(listen(globs.socket, 5) >= 0);
+
+        /* set the connection socket in the fd array */
+
+        globs.fd[globs.socket] = CONNECTION_SOCKET;
+        return globs.socket;
+}
+
+/***********************************************************************
+ * add_connection() will accept a TCP connetion, and fill the globs.fd[]
+ * with the type of file descriptor (TCP_CONNECTION), set the socket
+ * non-blocking and then get the hostname, and store that in the
+ * globs.hostname[] pointer.
+ */
+
+void add_connection()
+{
+        struct hostent *hp;
+        char *host;
+        struct sockaddr_in sockaddr;
+        int socket, size = sizeof(sockaddr), n;
+
+        /* accept the connection */
+
+        assert((socket = accept(globs.socket, &sockaddr, &size)) >= 0 &&
+                socket < globs.max_fds);
+        globs.fd[socket] = TCP_CONNECTION;
+        globs.connected++;
+
+        /* Make the socket non-blocking */
+
+        assert(fcntl(socket, F_SETFL, FNDELAY) > -1);
+
+        /* Get the hostname */
+
+        hp = gethostbyaddr((char*)&sockaddr.sin_addr.s_addr, 
+                sizeof(unsigned long));
+        if (hp != NULL)
+                host = hp->h_name;
+        else
+                host = inet_ntoa(sockaddr.sin_addr);
+        
+        /* Since we have the hostname, may as well store it */
+
+        globs.hostname[socket] = (char *) malloc(strlen(host) + 1);
+        strcpy(globs.hostname[socket], host);
+        printf(“<connection from %s>\n”, host);
+}
+
+
+/***********************************************************************
+ * close_connection() will clean up the global structure, and close the
+ * socket.
+ */
+
+void close_connection(int which)
+{
+        printf(“<disconnection from %s>\n”, globs.hostname[which]);
+
+        /* clear out the global memory structure */
+
+        globs.fd[which] = NOTHING;
+        free(globs.hostname[which]);
+        globs.hostname[which] = NULL;
+        globs.connected--;
+
+        shutdown(which, 2);
+        close(which);
+}
+
+
+/***********************************************************************
+ * print_all_cons() will dump text to all connections and standard out.
+ * var args is *not* the right way to do it.  Note the cheesy 2048
+ * buffer limit.
+ */
+
+void print_all_cons(const char *fmt, ...)
+{
+        int i;
+        char buf[2048];
+        va_list args;
+
+        va_start(args, fmt);
+        vsprintf(buf, fmt, args);
+
+        printf(“%s”, buf);
+        for (i=0; i<globs.max_fds; i++)  {
+                if (globs.fd[i] == TCP_CONNECTION)
+                        if (send(i, buf, strlen(buf), 0) < 1)
+                                        close_connection(i);
+        }
+}
+
+/***********************************************************************
+ * handle_requests() will select() the file descriptors that have activity
+ * and service those descriptors.
+ */
+
+void handle_requests()
+{
+        fd_set fds;
+        struct timeval timeout;
+        char buf[256];
+        int i, n;
+
+        memset(buf, 0, 256);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+
+        /* Initially block until there is a connection request 
+         * But first, set the connection socket’s FD and have select()
+         * block until a connection request occurs.
+         */
+
+        FD_ZERO(&fds);
+        FD_SET(globs.socket, &fds);
+        if (select(globs.max_fds, &fds, 0, 0, &timeout) == -1)  {
+                perror(“select1”);
+                printf(“errno: %d\n”, errno);
+        }
+
+        /* Loop about forever, handling the socket requests */
+
+        for(;;)  {
+
+                /* Check for connection requests, first.  If there is one,
+                 * handle the request in add_connection()
+                 */
+
+                if (FD_ISSET(globs.socket, &fds))
+                        add_connection();
+
+                /* Set all the bits for the TCP connections -- also set the bit
+                 * for the connection socket. Why? So, connection requests get
+                 * a fair chance, interrupting the blocking select().
+                 */
+
+                FD_ZERO(&fds);
+                for(i=0; i< globs.max_fds; i++) {
+                        if (globs.fd[i]==TCP_CONNECTION 
+                          || globs.fd[i]==CONNECTION_SOCKET)
+                                FD_SET(i, &fds);
+                }
+                
+                /* select() will block indefinitely until there is activity on
+                 * one of the FDs in the fd_set fds.
+                 */
+
+                if (select(globs.max_fds, &fds, 0, 0, 0) == -1) {
+                        perror(“select2”);
+                        printf(“errno: %d\n”, errno);
+                }
+
+                /* select() is through blocking, so an FD should be ready to be
+                 * read from. We iterate through all our socket FDs, reading
+                 * from the ones containing data.
+                 */
+
+                for(i=0; i<globs.max_fds; i++)  {
+                        if (globs.fd[i] != TCP_CONNECTION)
+                                continue;
+                        if (FD_ISSET(i, &fds))  {
+                                while ((n = recv(i, buf, 255, 0)) > 0)  {
+                                        buf[n] = ‘\0’;
+                                        print_all_cons(“%s: %s”,  globs.hostname[i], buf);
+                                }
+                        }
+                }
+        }
+}
+
+/***********************************************************************
+ * main(), it sets up the process to be a daemon, initializes the TCP
+ * server socket and then processes requests forever.
+ */
+
+void main()
+{
+        /* initialize members from the global struture */
+
+        assert((globs.max_fds = sysconf(_SC_OPEN_MAX)) > 0);
+        globs.connected = 0;
+
+        /* allocate space for the array of fd types, and clear mem */
+
+        assert((int)(globs.fd = (int *) malloc(sizeof(int) * globs.max_fds))
+                != 0);
+        memset(globs.fd, 0, sizeof(int) * globs.max_fds);
+
+        /* allocate space for the array of hostnames, and clear mem */
+
+        assert((int)(globs.hostname = (char **) 
+                malloc(sizeof(char *) * globs.max_fds)) != 0);
+        memset(globs.hostname, 0, sizeof(char *) * globs.max_fds);
+
+        assert(init_server_sock() > -1);
+
+        /* handle rude disconnections gracefully -- ignore broken pipes */
+
+        signal(SIGPIPE, SIG_IGN);
+
+        /* and away we go ... */
+
+        handle_requests();
+}
+

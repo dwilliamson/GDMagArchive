@@ -1,0 +1,14 @@
+Listing 1.  Structure Used for a Colorspace Box
+typedef struct
+{
+uint variance;			/* weighted variance */
+	uint total_weight;	/* total weight */
+	uint tt_sum; 		/* tt_sum += r*r+g*g+b*b*weight over entire box */
+
+	uint t_ur;			/* t_ur += r*weight over entire box */
+	uint t_ug;			/* t_ug += g*weight over entire box */
+	uint t_ub;			/* t_ub += b*weight over entire box */
+
+	int  ir, ig, ib;	/* upper and lower bounds */
+	int  jr, jg, jb;
+} box;

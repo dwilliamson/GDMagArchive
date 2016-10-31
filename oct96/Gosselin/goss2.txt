@@ -1,0 +1,29 @@
+Listing  2.  The JOYCAPS Structure
+
+typedef struct { 
+    WORD wMid;                  \\ manufacturer identifier 
+    WORD wPid;                  \\ product identifier 
+    CHAR szPname[MAXPNAMELEN];  \\ Driver name  
+    UINT wXmin;                 \\ min. x-coordinate 
+    UINT wXmax;                 \\ max. x-coordinate 
+    UINT wYmin;                 \\ min. y-coordinate 
+    UINT wYmax;                 \\ max. y-coordinate 
+    UINT wZmin;                 \\ min. z-coordinate 
+    UINT wZmax;                 \\ max. z-coordinate 
+    UINT wNumButtons;           \\ no. of joystick buttons 
+    UINT wPeriodMin;            \\ minimum supported polling freq. 
+    UINT wPeriodMax;            \\ Maximum supported polling Freq
+\\  The following members are not in previous versions of Windows. 
+    UINT wRmin;                 \\ min  r-coordinate 
+    UINT wRmax;                 \\ max. r-coordinate 
+    UINT wUmin;                 \\ min  u-coordinate 
+    UINT wUmax;                 \\ max. u-coordinate 
+    UINT wVmin;                 \\ min  v-coordinate 
+    UINT wVmax;                 \\ max. v-coordinate 
+    UINT wCaps;                 \\ Point of View Capabilities 
+    UINT wMaxAxes;              \\ max. Axes supported 
+    UINT wNumAxes;              \\ max. Axes used 
+    UINT wMaxButtons;           \\ Max buttons on device
+    CHAR szRegKey[MAXPNAMELEN]; \\ Registry key for the msjstick.drv 
+    CHAR szOEMVxD[MAXOEMVXD];   \\ Oem's VXD name 
+} JOYCAPS; 

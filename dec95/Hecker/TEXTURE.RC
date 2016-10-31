@@ -1,0 +1,53 @@
+/*
+
+This material is Copyright 1995, 1996 Chris Hecker, All Rights Reserved.
+It's for you to read and learn from, not to put in your own articles
+or books or on your website, etc.  Thank you.
+
+Chris Hecker
+checker@netcom.com
+
+*/
+
+#include "windows.h"
+#include "texture.h"
+
+AppIcon  ICON	texture.ico
+
+AppAbout DIALOG DISCARDABLE  0, 0, 255, 86
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "About the Cheesy Texture Harness"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,5,65,50,14
+    LTEXT           "Cheesy Texture Test App for my Game Developer Magazine articles",
+                    -1,5,5,250,8
+    LTEXT           "by Chris Hecker (checker@netcom.com)",-1,5,15,150,8
+    LTEXT           "Arrow keys and left-click/drag mouse moves the view.",
+                    -1,5,30,215,8
+    LTEXT           "i and o keys move in and out.",-1,5,40,215,8
+    LTEXT           "PgUp and PgDn rotate left and right.",-1,5,50,215,8
+	ICON			"AppIcon",-1,225,30,0,0
+END
+
+AppMenu menu
+begin
+	POPUP "&Tools"
+	BEGIN
+		MENUITEM "&About",	MENU_ABOUT
+		MENUITEM "A&nimate\aA", MENU_ANIMATE
+		MENUITEM "&Time\aT", MENU_TIME
+		MENUITEM "T&est\aCTRL+T", MENU_TEST
+		MENUITEM SEPARATOR
+		MENUITEM "&Exit", MENU_EXIT
+	END
+	POPUP "&Mapper"
+	BEGIN
+		MENUITEM "", MENU_MAPPER
+	END
+	POPUP "&View"
+	BEGIN
+		MENUITEM "", MENU_VIEW
+	END
+end
+

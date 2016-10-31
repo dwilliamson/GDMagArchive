@@ -1,0 +1,62 @@
+"Wireless Game Development: Coding Without a Net"
+by Dale Crowley, Maurice Molyneaux, Wayne Lee, and Ramesh Venkataraman, 
+NuvoStudios
+Game Developer magazine
+November 2001 issue
+
+
+Listing 2. SmallerClass results in compiled code that is 30 percent smaller than 
+BiggerClass.
+
+public class BiggerClass
+{
+	private int f_health;
+	private boolean f_isGroggy;
+	private int f_forwardDir;
+	private int f_index;
+
+	public void setHealth(int h)
+	{
+		f_health = h;
+	}
+	
+	public void setGroggy(boolean groggy)
+	{
+		f_isGroggy = groggy;
+	}
+
+	public int getIndex()
+	{
+		return f_index;
+	}
+	
+	public void setForwardDir(int f)
+	{
+		f_forwardDir = f;
+	}
+		
+	public static void ExampleUsage(BiggerClass obj)
+	{
+		obj.setHealth(100);
+		obj.setGroggy(true);
+		obj.setForwardDir(obj.getIndex() == 1 ? 1 : -1);
+	}
+}
+
+
+public class SmallerClass
+{
+	public int f_health;
+	public boolean f_isGroggy;
+	public int f_forwardDir;
+	public int f_index;
+
+	public static void ExampleUsage(SmallerClass obj)
+	{
+		obj.f_health = 100;
+		obj.f_isGroggy = true;
+		obj.f_forwardDir = obj.f_index == 1 ? 1 : -1;
+	}
+}
+
+

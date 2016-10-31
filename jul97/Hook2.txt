@@ -1,0 +1,6 @@
+LISTING 2. Triangle rendering without using execute buffers.
+lpD3DDevice->Begin( 0, Vertex, TriangleList ); // begin drawing a triangle list 
+  lpD3DDevice->Vertex( lpVertex1 );            // vertex 1  
+  lpD3DDevice->Vertex( lpVertex2 );            // vertex 2
+  lpD3DDevice->Vertex( lpVertex3 );            // vertex 3
+lpD3Ddevice->End( 0 );                         // end drawing

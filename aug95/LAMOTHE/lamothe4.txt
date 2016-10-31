@@ -1,0 +1,42 @@
+Listing 4.  The Core FSM Logic for Figure 7
+	typedef unsigned short DISTANCE;
+	const DISTANCE Tracking_Threshold = 50;
+	const DISTANCE Random_Threshold = 100;
+	DISTANCE theDistance;
+	//Define states and initialize
+	enum states{new, random, track, pattern};
+	states currentState = new;
+	//FSM loop
+	for(;;){
+		switch (currentState){
+					case new:
+						//Note: Switchbox only, causes no behavior
+						theDistance = CalcDistanceToPlayer();
+						if (theDistance > Random_Threshold){
+								currentState = random;
+						}else{
+								if (theDistance > Tracking_Threshold){
+										currentState = pattern;
+								}else{
+										currentState = track;
+								}
+						}
+						break;
+					case track:
+						DoTrackBehavior();
+						currentState = new;
+						break;
+					case pattern:
+						DoPatternBehavior();
+						currentState = new;
+						break;
+					case random:
+						DoRandomBehavior();
+						currentState = new;
+						break;
+					case default:
+						cerr<<"state machine has entered an unknown 
+	state\n";
+						assert(FAIL);
+		}
+	}

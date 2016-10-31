@@ -1,0 +1,83 @@
+Example 4: Common TinyMUSH Commands
+
+
+say <text>
+
+Enable the user to “speak aloud” to a group of people sharing the same 
+location as the typist. If the user was named Shadow, the results would 
+be:
+
+Shadow types: say I have ants in my pants!
+Shadow sees:  You say “I have ants in my pants!”
+Everyone else sees: Shadow says “I have ants in my pants!”
+
+
+move <exit name>
+
+Will transport the user through the exit named if, and only if, the exit 
+exists, and is not locked against the player trying to move through it.
+
+@teleport <object> = <location> | <location> 
+
+@teleport, when used with just the location, will teleport the user to 
+that location, if the user own that room, or the room is set JUMP_OK, 
+and the room is not teleport-locked against that player.
+
+
+pose <text>
+
+Enables the user to affect an action, or strike a pose.  The tricky part 
+is typing the text in using the third person.  It comes with practice!  
+Again, if Shadow uses it the results would be:
+
+Shadow types: pose jumps about trying to lose the ants!
+Shadow sees: Shadow jumps about trying to lose the ants!
+Everyone sees: Shadow jumps about trying to lose the ants!
+
+In this case both Shadow and everyone see the same thing.  Think about 
+it -- there is no other easy way to handle this.
+
+
+page <player>=<text>
+
+This allows two people who do not share the same room to communicate.  
+As usual, we’ll watch Shadow and learn:
+
+Shadow types: page Alaric=Hey, where are you?
+Shadow sees:  You paged Alaric with “Hey, where are you?”
+Alaric sees: Shadow pages: Hey, where are you?
+
+
+whisper <player>=<text>
+
+Enables the typist to secretly speak to another player in the same room. 
+Again, let’s watch Shadow:
+
+Shadow types: whisper Alaric=So-n-so can be such a ween.
+Shadow sees:  You whisper “So-n-so can be such a ween.” to Alaric.
+Alaric sees:  Shadow whispers “So-n-so can be such a ween.”
+
+
+WHO [<A-Z>]
+
+Will show all the players on-line currently.  For popular MUDs, with 
+many players, a single letter can be supplied to receive only the 
+players whose names begin with that letter.
+
+Shadow types:  WHO F
+Shadow sees:
+
+Player Name        On For Idle   Doing
+Firsa               02:11  14m   Not much.
+Fluff               03:30   0s   Graduating.
+Fire                04:08  11s
+Frog                06:12   6m   Hanging out on my pad.
+Felan               06:57  12m   Destroying players.
+39 Players logged in.
+
+help [<topic>]
+
+This command accesses the on-line help facility for TinyMUSH. Due to the 
+large size of the text files, many of the older entries are out of date, 
+or just wrong. Still, the majority is right, and there is no excuse for 
+not reading at least some of the help.

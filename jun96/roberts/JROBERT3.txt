@@ -1,0 +1,17 @@
+Listing 3. Code to Play a DirectSoundBuffer
+     DWORD status;
+     TryPlayAgainLabel:
+In C++: if ( lpDSB->Play( 0, 0, 0 ) == DS_BUFFERLOST )
+In C:  if ( IDirectSoundBuffer_Play( lpDSB, 0, 0, 0 ) == DSERR_BUFFERLOST )
+      if ( LoadSoundData( lpDSB, SoundDataAddress, TotalSoundBytes ) == DS_OK )
+        goto TryPlayAgainLabel;            // Try to play the buffer again
+     GetAsyncKeyState(VK_ESCAPE);            // Clear the state of the Escape key 
+     for (;;) {
+In C++:   lpDSB->GetStatus(&status);
+In C:    IDirectSoundBuffer_GetStatus(lpDSB, &status);
+      if (status!=DSBSTATUS_PLAYING)
+       break;
+      if (GetAsyncKeyState(VK_ESCAPE))        // If the Escape key is hit, stop the sound
+In C++:    lpDSB->Stop();
+In C:     IDirectSoundBuffer_Stop( lpDSB );
+     }

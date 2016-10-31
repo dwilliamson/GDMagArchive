@@ -1,0 +1,41 @@
+struct Database {
+    [?Integer ?Float];
+}
+
+
+proc subby(Integer x) {
+    x += 1; 
+
+    print("Subby: x is ", x, "\n");
+    return 5;
+}
+
+proc main {
+    Integer x = 1;
+    print("First: x is ", x, "\n");
+    subby(2);
+    print("Second: x is ", x, "\n");
+
+
+    // Now test whether matching variables in an 'each' do the right thing
+    Database db;
+    db .+ [1 0.3];
+    db .+ [2 0.4];
+    db .+ [3 (-0.1)];
+    db .+ [4 0.0];
+
+    each db.[?x ?f] {
+        print("Solution: ", x, " ... x is ", x, "; f is ", f, ".\n");
+    }
+
+    print("Third: x is ", x, "\n");
+
+
+    // Test to see if blocks do the right thing...
+    {
+        Integer x = 100;
+        print("Block: x is ", x, "\n");
+    }
+
+    print("Fourth: x is ", x, "\n");
+}

@@ -1,0 +1,62 @@
+Example 11: Sticky rooms in TinyMUSH
+
+Players are like young children, leaving their things all about creating
+an awful mess. A sticky room is one way to prevent this. After the last player
+leaves the room, all the objects not linked to that room, are transported to
+where the sticky room is linked.
+
+> look
+Too Heaven(#86R)
+White fluffy clouds, check. People in white sheets playing harps, check. White,
+   feathered wings sticking out of everyone’s backside, check. Yep, this must
+   be heaven.
+Obvious exits:
+The Plaza
+
+> @dig The Closet=The Closet;closet;close;clo;cl;c;tc,Out;o;leave
+The Closet created with room number 712.
+Opened.
+Linked.
+Opened.
+Linked.
+
+> @link here=#712
+Dropto set.
+
+> @set here=sticky
+Set.
+
+> @create A messy pile of clothes
+A messy pile of clothes created as object #715
+
+> drop clothes
+Dropped.
+
+> look
+
+Too Heaven(#86RS)
+White fluffy clouds, check. People in white sheets playing harps, check. White,
+   feathered wings sticking out of everyone’s backside, check. Yep, this must
+   be heaven.
+Contents:
+A messy pile of clothes(#715)
+Obvious exits:
+The Closet  The Plaza
+
+> closet
+The Closet(#712RF)
+Obvious exits:
+Out
+
+> look
+The Closet(#712RF)
+Contents:
+A messy pile of clothes(#715)
+Obvious exits:
+Out
+
+
+After the player moves to the closet, the messy pile of clothes is moved.
+Since the completion of move occurs after the move, the contents are not
+shown until after the player types “look” Now, Too Heaven is 
+self-cleaning, every house-keeper’s dream.

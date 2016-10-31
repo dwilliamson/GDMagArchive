@@ -1,0 +1,1 @@
+The 3 zip files contained in this month's archive (mocapsrc.zip, mocapapp.zip, and Acclaim.zip) all relate to Jeff Lander's article on motion capture.  These archives contain the source code, the working motion capture application, and Acclaim file format documentation, respectively.

@@ -1,0 +1,391 @@
+Listing 1. A 256-Color Sprite
+/*	========================================================================	*/
+/*	COMPLBMP.C - Routine to compile a 256-color bitmap image for				*/
+/*					Mode X or Mode 13h.										*/
+/*	Author:  Matt Pritchard for Game Developer Magazine.						*/
+/*			  Adapted from MODEX108											*/
+/*	========================================================================	*/
+
+	/*	This stuff could go into a .h file			*/
+
+	/*	Macro Definitions needed by Compile_Bitmap	*/
+
+#define ucharf	unsigned char far
+#define uchar	unsigned char
+#define uint		unsigned int
+
+#define hi_word( x )	(unsigned char)	(x >> 8)
+#define lo_word( x )	(unsigned char)	(x & 0x00FF)
+
+	/* Prototypes for Compiled Bitmap Routines */
+
+ucharf * Compile_Bitmap (ucharf *, int, int, int, int);
+
+void far pascal draw_compiled_bitmap (uchar far *, int, ints);
+void far pascal draw_compiled_bitmap_13h (uchar far *, int, ints);
+
+/* ¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥¥*/
+
+/*	This function takes a Sprite that is stored in a two-dimensional array, such
+	as char ImageData[32][32], and creates a buffer that contains the machine
+	language code to quickly draw that image in Mode 13h or Mode X.
+
+	The sprite data is stored line by line, from top to bottom.  Each line
+	is stored from left to right.  A transparant color value is used to
+	indicate which pixels are not part of the image and should not be drawn.
+
+	Because Mode X supports various screen sizes, we must know the width
+	of the screen a sprite will be displayed on in advance.  For Mode 13h,
+	that width is normally 320.
+
+	When possible, two adjacent pixels will be drawn with one 16-bit MOV
+	instruction.  This results in smaller and faster code.
+
+	This function allocates a buffer to hold the compiled code and 
+	returns a far pointer to it.  The pointer need only be a char type
+	pointer, since our assembly language routine does the actual calling of it.
+
+	If the sprite is too big or the program has run out of memory, a null pointer
+	is returned, otherwise a pointer to the compiled code is returned.	
+*/
+
+ucharf * Compile_Bitmap (ucharf * theImage,	/* Far Ptr to the Sprite 	*/
+int X_width,									/* Width of the Sprite	*/
+int Y_width,									/* Height of the Sprite 	*/
+int Trans_Color,								/* Transparent Color 	*/
+int Screen_Width)							/* Width of the screen	*/
+{
+
+	int	x, y, p;								/* Loop counters for X, Y, and plane	*/
+	int	Words, Bytes;						/* Count of each type of instruction	*/
+	int	b1, b2;								/* Valid pixel flags					*/
+	uint	VidOffset, Offset;					/* Offsets for memory calculations	*/
+
+	int	BytesPerLine;						/* Width of display in address bytes	*/
+	long	CompiledBufferSize;					/* The size of the compiled sprite code*/
+	long	c;									/* Counter for the code writing loop	*/
+
+	ucharf * theBuffer;						/* Pointer to the compiled code buffe	*/
+
+	int	Num_Planes;							/* The number of video planes (4 or 1)*/
+	int	Next_Pixel;							/* The number of bytes between adjacent pixel*/
+	int	Code_Overhead;						/* Size of any overhead code needed		*/
+
+/*	The variable Mode_X controls if we are compiling a sprite for Mode 13h or
+	Mode X.  For Mode X, we must split the image into four separate planes and
+	add plane switching code to the compiled sprite.  If the value of Mode_X is
+	0, we compile for Mode 13h, otherwise we compile for Mode X.					*/
+
+	int	Mode_X = -1;		/* -1 = Mode X,  0 = Mode 13h								*/
+
+	if (Mode_X) {
+		Num_Planes = 4;
+		Next_Pixel = 4;
+		Code_Overhead = 20;
+	} else {
+		Num_Planes = 1;
+		Next_Pixel = 1;
+		Code_Overhead = 5;
+	}
+
+	BytesPerLine = Screen_Width / Num_Planes;
+
+/*	First, we pass through the bitmap and count up the number of adjacent pixel
+	pairs and the number of single pixels. With this information, we will know
+	how big a buffer to allocate.													*/
+	Words = Bytes = 0;
+
+	for (p = 0; p < Num_Planes; p++)
+	{
+		for (y = 0; y < Y_width; y++)
+		{
+			Offset = y * X_width;
+			for (x = p; x < X_width; x+=Next_Pixel)
+			{
+				/* Check the current pixel to see if it should be displayed		*/
+
+				b1 = (theImage[Offset+x] != Trans_Color) ? -1 : 0;
+
+				/*	Check the next adjacent pixel (if there is one), and see if
+					it should also be displayed									*/
+
+				if  ((x + Next_Pixel) < X_width) {
+					b2 = (theImage[Offset+x+Next_Pixel] != Trans_Color) ? -1 : 0;
+				} else {
+					b2 = 0;
+				}
+
+				/* Check for a pair of adjacent pixels, or a lone single pixel		*/
+
+				if (b1) {
+					if (b2) {
+						Words++;		/*	Another adjacent pixel pair				*/
+					x+=Next_Pixel;	/*	Skip over the next pixel					*/
+						} else {
+					Bytes++;			/*	One more lone pixel						*/
+					}
+				}
+			}
+		}
+	}
+
+/*	Determine how big a buffer we need for the compiled code, allocate it, and
+	get a far pointer to it.	*/
+	CompiledBufferSize = Code_Overhead + (6 * Words) + (5 * Bytes);
+
+/*	Here is where the users can insert their own error handling code				*/
+	if (CompiledBufferSize > 65535) {
+		/*	Error; compiled sprite would be too large (greater than 64K).			*/
+		return (0);
+	}
+
+	if ( (theBuffer = (ucharf *) malloc( (size_t) CompiledBufferSize)) == 0) {
+		/*	Error allocating buffer; out of memory.								*/
+		return (0);
+	}
+
+/*	Now, we go through the image again, this time creating the code to write into
+	the compile code buffer.														*/
+
+	c = 0;
+	for (p = 0; p < Num_Planes ; p++)
+	{
+		for (y = 0; y < Y_width; y++)
+		{
+			Offset = y * X_width;
+			for (x = p; x < X_width; x+=Next_Pixel)
+			{
+
+			/*	Check the current pixel to see if it should be displayed		*/
+
+			b1 = (theImage[Offset+x] != Trans_Color) ? -1 : 0;
+
+			/*	Check the next adjacent pixel (if there is one), and see if it
+				should also be displayed 										*/
+
+			if ((x + Next_Pixel) < X_width) {
+				b2 = (theImage[Offset+x+Next_Pixel] != Trans_Color) ? -1 : 0;
+			} else {
+				b2 = 0;
+			}
+
+			/*	Generate code for a pair of pixels, or for a single pixel.		*/
+
+			if (b1) {
+				VidOffset = (BytesPerLine * y) + ((x-p) / Num_Planes);
+
+		if (b2) {			/*	Create Code to write Word Constant			*/
+
+			theBuffer[c++] = 0xC7;						/*	MOV word ptr		*/
+			theBuffer[c++] = 0x87;
+			theBuffer[c++] = lo_word( VidOffset );		/*	BX+VidOffset		*/
+			theBuffer[c++] = hi_word( VidOffset );
+			theBuffer[c++] = (uchar) theImage[Offset+x];
+			theBuffer[c++] = (uchar) theImage[Offset+x+Next_Pixel];
+
+			x+=Next_Pixel;								/*	Skip over second pixel*/
+
+		} else {											/*	Create Code to write Byte Constant*/
+
+			theBuffer[c++] = 0xC6;						/*	MOV byte ptr		*/
+			theBuffer[c++] = 0x87;
+			theBuffer[c++] = lo_word( VidOffset );		/*	BX+VidOffset		*/
+			theBuffer[c++] = hi_word( VidOffset );
+			theBuffer[c++] = (uchar) theImage[Offset+x];
+				}
+			}
+		}
+	}
+
+		if ( (Mode_X) && (p < 3) ) {						/*	Generate plane switching code*/
+
+			theBuffer[c++] = 0xD0;						/*	ROL	AL, 1	; Get New mask*/
+			theBuffer[c++] = 0xC0;
+			theBuffer[c++] = 0x13;						/*	ADC	BX, CX	; Add in Addr wrap*/
+			theBuffer[c++] = 0xD9;
+			theBuffer[c++] = 0xEE;						/*	OUT	DX, AL	; Select new Plane*/
+		}
+	}
+
+	/*	Create exit code to return to the calling program	*/
+
+	theBuffer[c++] = 0x5D;								/*	POP	BP	; Restore BP		*/
+	theBuffer[c++] = 0x1F;								/*	POP	DS	; Restore DS		*/
+	theBuffer[c++] = 0xCA;								/*	RETF	8	; Exit & Clean Up Stack*/
+	theBuffer[c++] = 0x08;
+	theBuffer[c++] = 0x00;
+
+	/*	Return a pointer to the Buffer containing the Compiled Code			*/
+
+	return (theBuffer);
+
+}
+Listing 2. Compiled Sprite Setup and Call Routine
+; =========================================================;
+; COMPLBMP.ASM  - Compiled Sprite Setup & Call Routines for;
+; 					 Mode X or Mode 13h.						;
+; Author;  Matt Pritchard for Game Developer Magazine.		;
+; 			 Adapted from MODEX108							;
+; Assembler Used; MASM 5.10a									;
+; =========================================================;
+
+.MODEL Medium
+.286
+.CODE
+ 
+; ===== General Constants & Macros =====
+ 
+wp	EQU	WORD PTR
+dp	EQU	DWORD PTR
+fp	EQU	FAR PTR
+
+; ===== VGA Register Values & Constants =====
+ 
+VGA_Segment		EQU	0A000h				;Vga Memory Segment
+
+SC_Index			EQU	03C4h 				; VGA Sequencer Controller
+SC_Data				EQU	03C5h				; VGA Sequencer Data Port
+
+MAP_MASK_PLANE2 	EQU	01102h 				; Map Register + Plane 1
+PLANE_BITS 		EQU 	03h				; Bits 0-1 of Xpos = Plane#
+
+;==========================================================
+;  DRAW_COMPILED_BITMAP (CompiledImage, X_pos, Y_Pos)
+;==========================================================
+;
+; Sets up a call to a compiled bitmap in Mode X.
+;
+; ENTRY;	Image  = Far Pointer to Compiled Bitmap Data
+; 			Xpos   = X position to Place Upper Left pixel at
+; 			Ypos   = Y position to Place Upper Left pixel at
+;
+; EXIT;  No meaningful values returned
+;
+
+  DCB_STACK	STRUC
+				DW  ?,?						; DS, BP
+				DD  ?						; Caller
+  DCB_Ypos		DW  ? 						; Y position to Draw Bitmap at
+  DCB_Xpos		DW  ? 						; X position to Draw Bitmap at
+  DCB_Image		DD  ? 						; Far Pointer to Graphics Bitmap
+  DCB_STACK    ENDS
+
+  PUBLIC 	DRAW_COMPILED_BITMAP
+ 
+  DRAW_COMPILED_BITMAP    PROC    FAR
+
+  Push	DS 									; Save DS
+  Push	BP									; AX-DX are destroyed
+  Mov	BP,	SP 								; Set up Stack Frame
+ 
+; Get DS;BX to point to (Xpos,Ypos) on the current
+; display page in VGA memory
+
+; ***** USER NOTE ***** MODIFY AS NEEDED *****
+;
+; Line_Offset is lookup table containing the start
+; offset for each line in VGA display memory.
+; Here, I assume it to be a table of word values
+; which are stored in the current code segment.
+
+  Mov	BX,	[BP].DCB_Ypos 				; BX = Ypos
+  Add	BX,	BX 							; Scale BX to Word Offset
+  Mov	BX,	wp CS;Line_Offset[BX] 	; Get Offset of Line Ypos
+
+  Mov	AX,	[BP].DCB_Xpos 	 			; Get UL Corner Xpos
+  Mov	CL, AL							; Save Plane # in CL
+  Shr	AX,	2 							; X/4 = Offset Into Line
+; ***** USER NOTE ***** MODIFY AS NEEDED *****
+;
+; CURRENT PAGE is a DWORD pointer to the currently active
+; Mode X video memory page.  The first word is the offset
+; into the video adaptor, and the second is the constant
+; value of A000 - the VGAOs graphics memory segment.
+; Here, I assume it to be in DGROUP.
+ 
+  Lds	DX,	dp CURRENT_PAGE 			; Get Current VGA Page
+  Add	BX,	DX 							; DS;BX->Start of Line
+  Add	BX,	AX 							; DS;BX->Upper Left Pixel
+
+; Select the first video plane, and set up the registers
+; so the next 3 planes can be quickly selected.
+
+  And	CL,	PLANE_BITS 				; CL = Starting Plane #
+  Mov	AX,	MAP_MASK_PLANE2 			; Mask & Plane Select
+  Shl	AH,	CL							; Select correct Plane
+  Mov	DX,	SC_Index 					; VGA Sequencer ports
+  Out	DX,	AX 							; Set Initial Vid Plane
+  Inc	DX 								; Point DX to SC_Data
+  Mov	AL,	AH 							; Mask for future OUTOs
+  Clr	CX 								; CX = Constant 0
+
+; Setup DS;	BX = Upper left corner of Image in VGA memory
+;				BP = Local Stack Frame
+;				AL = OUT mask for Selecting video Plane
+;				CX = Constant value 0 for ADC
+;				DX = SC_Data; VGA Sequencer Data Port
+;				AH = Destroyed
+;				SI,DI = Not modified during call
+;
+; Now we jump to the compiled code which actually draws the
+; sprite.  The compiled code will return to the caller.
+ 
+ Jmp 	dp [BP].DCB_Image 				; Draw Sprite
+ 
+  DRAW_COMPILED_BITMAP	ENDP
+
+
+
+;=============================================================
+;  DRAW_COMPILED_BITMAP_13h (CompiledImage, X_pos, Y_Pos)
+;=============================================================
+;
+; Sets up a call to a compiled bitmap in Mode 13h.
+;
+; ENTRY;	Image  = Far Pointer to Compiled Bitmap Data
+;			Xpos   = X position to Place Upper Left pixel at
+; 			Ypos   = Y position to Place Upper Left pixel at
+;
+; EXIT;  No meaningful values returned
+;
+ 
+  PUBLIC    DRAW_COMPILED_BITMAP_13H
+ 
+  DRAW_COMPILED_BITMAP_13H	PROC	FAR
+ 
+  Push	DS 										; Save DS
+  Push	BP 										; AX-DX are destroyed
+  Mov	BP,,	SP 								; Set up Stack Frame
+
+; Get DS;BX to point to (Xpos, Ypos) in VGA memory
+
+; ***** USER NOTE ***** MODIFY AS NEEDED *****
+;
+; Line_Offset is lookup table containing the start
+; offset for each line in VGA display memory.
+; Here, I assume it to be a table of word values
+; which are stored in the current code segment.
+ 
+  Mov	BX,	[BP].DCB_Ypos 						; BX = Ypos
+  Add	BX,	BX 									; Scale BX to Word Offset
+  Mov	BX,	wp CS;Line_Offset[BX] 			; Get Offset of Line Ypos
+  Add	BX,	BP].DCB_Xpos 						; Get UL Corner of Sprite
+
+  Mov	AX,	VGA_Segment 						; Segment A000
+  Mov	DS,	AX 									; DS;BX -> VGA memory
+
+; Setup DS;	BX = Upper left corner of Image in VGA memory
+;				BP = Local Stack Frame
+;				AX = Destroyed
+;		 SI,	DI = Not modified during call
+;		 CX,	DX = Not modified during call
+;
+; Now we jump to the compiled code which actually draws the
+; sprite.  The compiled code will return to the caller.
+
+  Jmp	dp [BP].	DCB_Image 					; Draw Sprite
+ 
+DRAW_COMPILED_BITMAP_13H 	ENDP
+
+  END
+

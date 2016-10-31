@@ -1,0 +1,20 @@
+///////////////////////////////////////////////////////////////////////////////
+// Function:	QuatToAxisAngle
+// Purpose:		Convert a Quaternion to Axis Angle representation
+// Arguments:	A quaternion to convert, a axisAngle to set
+///////////////////////////////////////////////////////////////////////////////
+void QuatToAxisAngle(tQuaternion *quat,tQuaternion *axisAngle)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	float scale,tw;
+///////////////////////////////////////////////////////////////////////////////
+	tw = (float)acos(quat->w) * 2;
+	scale = (float)sin(tw / 2.0);
+	axisAngle->x = quat->x / scale;
+	axisAngle->y = quat->y / scale;
+	axisAngle->z = quat->z / scale;
+
+	// NOW CONVERT THE ANGLE OF ROTATION BACK TO DEGREES
+	axisAngle->w = (tw * (360 / 2)) / (float)M_PI;
+}
+// QuatToAxisAngle  /////////////////////////////////////////////////////////

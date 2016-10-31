@@ -1,0 +1,177 @@
+EXAMPLE 1
+* Sample code derived from Quake Client implementation
+ * This code shows how we integrated the TEN Datagram 
+ * into a DOS quake client running under Windows 95.
+ *
+ *  Additional documentation for this code may be found on the
+ *    TEN developers website:   http://www.ten.net
+ *
+ *  A class is created for each socket 
+ *     Incoming data is handled in a polled function, 
+ * 	   TEN_CheckNewConnections (void)
+ *  Other functions are called from Quake when needed:
+ *  	TEN_OpenSocket(), TEN_CloseSocket(int socket)
+ *  	TEN_Read(), TEN_Write(), TEN_Listen(), TEN_CheckNewConnections()
+ *   
+ *  Name lookup functions are supported by TEN but have been removed
+ *   in the interest of clarity.
+ */
+/* TEN header files */
+#include "ten/environ.h"
+#include "ten/comport.h"
+#include "ten/tendefs.h"
+#include "ten/tenaddr.h"
+#include "ten/tenutils.h"
+#include "ten/dgport.h"
+#include "ten/wsdgport.h"
+#include "ten/debuglib.h"
+
+static int net_acceptsocket = -1;       // socket for fielding new connections
+
+// Declare a special class with a "dataReady" member
+class idDgPort : public winSockDgPort
+{   public: int  dataReady; };
+
+/*
+ * A maximum of 20 sockets in use simultaneously
+ */
+ 
+#define MAXSOCKETS 20
+static idDgPort *cur_socket_list[MAXSOCKETS];
+
+/* simple constuctor for idDgPort */
+idDgPort::idDgPort()
+{        dataReady = FALSE; }
+
+/* callback for when udp data comes in */
+static void onDataToRead(idDgPort *port)
+{        port->dataReady = TRUE; }
+
+//============================================================
+
+// open the specified UDP port. 
+int TEN_OpenSocket (int port)
+{        int i,err;
+        char addrstr[100];
+        idDgPort *dgport;
+ 
+        /* find an empty entry in the socket list */
+        for(i=0;i<MAXSOCKETS;i++){
+                if (cur_socket_list[i] == NULL){
+                        break;
+                }
+        }
+        if (i == MAXSOCKETS)
+                return -1;      /* list is full */
+ 
+        /* create TEN format address string */
+        sprintf(addrstr,"type 'udp' port '%d'", port);
+ 
+        /* allocate a dgport */
+        dgport = new idDgPort;
+ 
+        /* bind it to the specified address */
+        err = dgport->bind(addrstr);
+        if (err){
+                Sys_Error ("TEN_OpenSocket: 10sock32 not running\n");
+                return -1;
+        }
+ 
+        /* establish the onData callback */
+        dgport->onDataCallback((void (*)(dgPort *)) onDataToRead);
+ 
+        cur_socket_list[i] = dgport;
+        return i;
+}
+//============================================================
+ 
+// close the specified UDP port. 
+int TEN_CloseSocket (int socket)
+{        idDgPort *dgport; 
+        dgport = cur_socket_list[socket];
+ 
+        if (dgport == NULL)
+                return -1;
+ 
+        dgport->close();
+ 
+        delete dgport;
+ 
+        cur_socket_list[socket] = NULL;
+ 
+        return 0;
+}
+//============================================================
+ 
+// read from the specified UDP port. 
+int TEN_Read (int socket, byte *buf, int len, struct sockaddr *addr)
+{
+        int ret = 0;
+        tenAddress tenaddr;
+        idDgPort *dgport;
+        size_t size = len;
+ 
+        dgport = cur_socket_list[socket];
+ 
+        if (dgport == NULL)
+                return 0;
+ 
+        ret = dgport->receiveFrom(&tenaddr, buf, &size);
+ 
+        if (ret == eNoError) {
+                dgport->dataReady = FALSE;
+        } 
+ 
+        return size;
+}
+
+//============================================================
+ 
+// write to the specified UDP port. 
+int TEN_Write (int socket, byte *buf, int len, struct sockaddr *addr)
+{
+        int ret;
+        tenAddress tenaddr(XPORT_UDP);
+        idDgPort *dgport;
+ 
+        dgport = cur_socket_list[socket];
+ 
+        if (dgport == NULL)
+                return -1;
+ 
+        tenaddr.setAddr(addr,sizeof(struct sockaddr));
+ 
+        ret = dgport->sendTo(&tenaddr, buf, len);
+        if (ret)
+                return 0;
+        return len;
+}
+//===========================================================
+
+// open a UDP port for listening
+void TEN_Listen (void)
+{
+	if (net_acceptsocket != -1)
+		return;
+	if ((net_acceptsocket = TEN_OpenSocket (net_hostport)) == -1)
+		Sys_Error ("TEN_Listen: Unable to open accept socket\n");
+	return;
+}
+//============================================================
+
+// check the listening UDP port for a new connection 
+int TEN_CheckNewConnections (void)
+{
+        idDgPort *dgport;
+ 
+        dgport = cur_socket_list[net_acceptsocket];
+ 
+        if (dgport == NULL)
+                return -1;
+if (dgport->dataReady == TRUE)
+        {
+                return net_acceptsocket;
+        }
+        return -1; }
+
+	A second task was to add the TEN ARENA library to the Quake client.  This was done to coordinate the execution of the game client with the TEN user interface, to handle events when players enter or leave a game, and to tell the client with which Quake client to connect.  Several hooks were added to the network code to facilitate this and are shown in example 2.

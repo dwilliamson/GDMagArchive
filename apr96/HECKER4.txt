@@ -1,0 +1,11 @@
+Listing 4, Adding Numbers Quickly
+fld   [a1]      ; 1
+fadd  [b1]      ; 1
+fld   [c1]      ; 1
+fadd  [d1]      ; 1
+fld   [e1]      ; 1
+fadd  [f1]      ; 1
+fxch  st(2)      ; 0
+fstp  [a1]      ; 2
+fstp  [c1]      ; 2
+fstp  [e1]      ; 2

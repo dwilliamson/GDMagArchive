@@ -1,0 +1,4 @@
+LIBRARY d3dviewport
+EXPORTS
+SECTIONS
+	.data READ WRITE

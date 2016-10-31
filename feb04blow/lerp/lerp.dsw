@@ -1,0 +1,80 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "billiards_sim"=.\pool\sim_module\billiards_sim.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name gl_and_windows_0
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name lerp
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name primitives_0
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "gl_and_windows_0"=.\modules_source\gl_and_windows_0.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lerp
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "lerp"=.\lerp.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "primitives_0"=.\modules_source\primitives_0.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name lerp
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

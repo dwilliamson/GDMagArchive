@@ -1,0 +1,26 @@
+class FuzzySet{
+public:
+ ...
+ float Membership(const float& inVal);
+private:
+float lowMin, lowTrue, highTrue, highMin;
+}
+
+float FuzzySet::MemberShip(const float& inVal){
+   if(inVal > lowMin && inVal < highMin){
+	if(inVal > lowTrue){
+		if(inVal < highTrue){
+			membership = 1.0;
+		}else{
+			//must be on high edge 
+			membership = (inVal - lowTrue) / (highMin - lowTrue);
+		}
+	}else{
+		//must be on low edge
+		membership = (inVal - lowMin) / (lowTrue - lowMin);
+	}
+   }else{
+	membership = 0.0;
+   }
+   return membership;
+);

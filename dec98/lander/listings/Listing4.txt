@@ -1,0 +1,35 @@
+Listing 4: Handling a face line in an .OBJ
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Procedure:	HandleFace
+// Purpose:	Handles the Face Line in an OBJ file.  Extracts index info to 
+//		a face Structure
+// Arguments:	Array of words from the face line, place to put the data
+// Notes:	Not an Official OBJ loader as it doesn't handle more then
+//		3 vertex polygons.  This only handles Triangles
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void HandleFace(CStringArray *words,t_faceIndex *face)
+{
+/// Local Variables /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	int loop;
+	CString temp;
+	CString vStr,nStr,tStr;	// HOLD POINTERS TO ELEMENT POINTERS
+	int nPos,tPos;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LOOP THROUGH THE 3 WORDS OF THE FACELIST LINE, WORD 0 HAS 'f'
+for (loop = 1; loop < 4; loop++)
+{
+	temp = words->GetAt(loop);	// GRAB THE NEXT WORD
+	// FACE DATA IS IN THE FORMAT vertex/texture/normal
+	tPos = temp.Find('/');		// FIND THE '/' SEPARATING VERTEX AND TEXTURE
+	vStr = temp.Left(tPos);		// GET THE VERTEX NUMBER
+	temp.SetAt(tPos,' ');		// CHANGE THE '/' TO A SPACE SO I CAN TRY AGAIN
+	nPos = temp.Find('/');		// FIND THE '/' SEPARATING TEXTURE AND NORMAL
+	tStr = temp.Mid(tPos + 1, nPos - tPos - 1);		// GET THE TEXTURE NUMBER
+	nStr = temp.Right(temp.GetLength() - nPos - 1);	// GET THE NORMAL NUMBER
+	face->v[loop - 1] = atoi(vStr);	// STORE OFF THE INDEX FOR THE VERTEX
+	face->t[loop - 1] = atoi(tStr);	// STORE OFF THE INDEX FOR THE TEXTURE
+	face->n[loop - 1] = atoi(nStr);	// STORE OFF THE INDEX FOR THE NORMAL
+	}
+}
+///// HandleFace /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

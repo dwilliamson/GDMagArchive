@@ -1,0 +1,23 @@
+Listing 1.  Translating a WM_KEYDOWN Message
+case WM_KEYDOWN:
+	// Only send KeyDown if the key is just going down
+	// (no auto repeat)
+	if (!(lParam & 0x40000000))
+	{
+		// We want the ASCII code of the key thatOs going down
+		// Begin with the key scan code, part of the virtual key
+		UINT ScanCode = (lParam & 0x00FF0000) >> 16;
+
+		// Wish we didnOt have to get all 256 entries, but...
+		BYTE KeyState[256];
+		GetKeyboardState(KeyState);
+
+		// Convert the scan code to 1 or 2 ASCII characters
+		char unsigned Key[2];
+		int KeyCount =
+			ToAscii(wParam, ScanCode, KeyState, (LPWORD)&Key, 0);
+
+		// Only send the key if it translates to one ASCII char
+		if (KeyCount == 1)
+			pXSplatWindow->KeyDown((char unsigned)Key[0]);
+	}

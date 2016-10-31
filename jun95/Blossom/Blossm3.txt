@@ -1,0 +1,69 @@
+Listing 3. Macintosh Implementation
+COffscreenBuffer::COffscreenBuffer(void)
+{
+	// Use the current GDevice and GrafPort to make a GWorld
+	CGrafPtr CurrentPort;
+	GDHandle CurrentDevice;
+	GetGWorld(&CurrentPort, &CurrentDevice);
+	// Get the color table from the current port
+	PixMapHandle CurrentPixMap = CurrentPort->portPixMap;
+	HLock((Handle)CurrentPixMap);
+	CTabHandle ColorTable = (*CurrentPixMap)->pmTable;
+	// Create a new GWorld with this information
+	NewGWorld(&OffscreenGWorld, 8, &CurrentPort->portRect, ColorTable,
+		CurrentDevice, noNewDevice);
+	// Store data that doesnOt change
+	Width = CurrentPort->portRect.right - CurrentPort->portRect.left;
+	Height = CurrentPort->portRect.bottom - CurrentPort->portRect.top;
+	// Release the current PixMap
+	HUnlock((Handle)CurrentPixMap);
+}
+
+COffscreenBuffer::~COffscreenBuffer(void)
+{
+	// Free the allocated GWorld
+	if (OffscreenGWorld)
+		DisposeGWorld(OffscreenGWorld);
+}
+
+void COffscreenBuffer::Lock(void) const
+{
+	PixMapHandle OffscreenPixMap = GetGWorldPixMap(OffscreenGWorld);
+	if (OffscreenPixMap)
+	{
+		// Lock the PixMap memory and pull some info off the PixMap structure
+		LockPixels(OffscreenPixMap);
+		Stride = (*OffscreenPixMap)->rowBytes & 0x3FFF;
+		pBits = (char unsigned *)GetPixBaseAddr(OffscreenPixMap);
+
+		// Make sure the MMU is in true 32-bit access mode
+		StoredMMUMode = true32b;
+		SwapMMUMode(&StoredMMUMode);
+	}
+}
+
+void COffscreenBuffer::Unlock(void) const
+{
+	PixMapHandle OffscreenPixMap = GetGWorldPixMap(OffscreenGWorld);
+	if (OffscreenPixMap)
+	{
+		// Unlock the PixMap memory and reset Stride and pBits
+		UnlockPixels(OffscreenPixMap);
+		Stride = 0;
+		pBits = 0;
+
+		// Restore the previous MMU mode
+		SwapMMUMode(&StoredMMUMode);
+	}
+}
+
+void COffscreenBuffer::SwapBuffer(void) const
+{
+	// Copy all bits from the offscreen GWorld to the active GrafPort
+	// Note: The offscreen GWorld should be locked!
+	CopyBits(&((GrafPort)OffscreenGWorld)->portBits,
+		&((GrafPort)thePort)->portBits,
+		&OffscreenGWorld->portRect, &thePort->portRect,
+		srcCopy, thePort->visRgn);
+}
+

@@ -1,0 +1,76 @@
+Listing 3.  A Bunch of Dumb Flies
+// Random logic demo
+// moves a flock of flies around
+// hit any key to exit
+
+
+#include <io.h>
+#include <conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <dos.h>
+#include <bios.h>
+#include <math.h>
+#include <string.h>
+
+#include "gmod.h" // include our graphics module
+
+#define NUM_FLIES 64 // start off with 64 flies
+
+typedef struct fly_typ
+		{
+ 		int x,y; // position of fly
+		} fly;
+
+int main(void)
+{
+
+fly flys[NUM_FLIES]; // the array of flies
+
+int index; // looping variable
+
+// set the video mode to 13h
+Set_Graphics_Mode(0x13);
+
+// initialize all flies to random position
+for (index=0; index<NUM_FLIES; index++)
+	{
+	flys[index].x = rand()%320;
+	flys[index].y = rand()%200;
+	} // end for index
+
+// main event loop
+while(!kbhit())
+	{
+		// erase flies
+
+		for (index=0; index<NUM_FLIES;
+  index++)
+		Plot_Pixel(flys[index].x,flys[index].y,0);
+
+		// perform fly logic, translate
+  each fly +-2 pixels
+		for (index=0; index<NUM_FLIES;
+  index++)
+			{
+			flys[index].x+=(-2+rand()%5);
+			flys[index].y+=(-2+rand()%5);
+		} // end for index
+
+		// draw flies
+		for (index=0; index<NUM_FLIES;
+  index++)
+			Plot_Pixel(flys[index].x,flys[index].y,10);
+
+		// wait a bit
+		Time_Delay(2);
+
+		} // end main while
+
+// reset graphics back to text
+Set_Graphics_Mode(0x03);
+
+// return success to DOS
+return(0);
+
+} // end main

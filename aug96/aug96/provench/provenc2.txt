@@ -1,0 +1,20 @@
+Listing 2. The DDSURFACEDESC Structure typedef struct _DDSURFACEDESC
+
+{
+    DWORD               dwSize;             // size of the structure for version checking
+    DWORD               dwFlags;            // what fields are in use?
+    DWORD               dwHeight;           // height of the corresponding surface
+    DWORD               dwWidth;            // width of the surface
+    LONG                lPitch;             // bytes between scan lines
+    DWORD               dwBackBufferCount;  // number of back buffers attached
+    DWORD               dwZBufferBitDepth;  // pixel bit depth for Z buffer
+    DWORD               dwAlphaBitDepth;    // pixel bit depth for alpha channel
+    DWORD               dwReserved;         // reserved
+    LPVOID              lpSurface;          // pointer to the surface memory when locked
+    DDCOLORKEY          ddckCKDestOverlay;  // color key for destination overlays
+    DDCOLORKEY          ddckCKDestBlt;      // color key for destination blits
+    DDCOLORKEY          ddckCKSrcOverlay;   // color key for source overlays
+    DDCOLORKEY          ddckCKSrcBlt;       // color key for source blits
+    DDPIXELFORMAT       ddpfPixelFormat;    // format of the surfaces pixels
+    DDSCAPS             ddsCaps;            // capabilities of the surface
+} DDSURFACEDESC;

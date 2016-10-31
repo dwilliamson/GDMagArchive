@@ -1,0 +1,12 @@
+Listing 2. Blitting a sprite onto the background
+
+procedure TForm1.SpeedDraw1PaintProc(Sender: TObject);
+var
+  hr: HResult;
+begin
+ hr := SpeedDraw1.BackSurface.BltFast(200, 75,
+          FNewSurface, FDinoRect,
+          DDBLTFAST_WAIT or DDBLTFAST_SRCCOLORKEY);
+ if hr <> DD_OK then
+   raise EDDError.CreateFmt('No blit $%x %s', [hr, GetOleError(hr)]);
+end;

@@ -1,0 +1,121 @@
+#include "inpqpriv.h"
+#pragma inline;
+
+/*
+** timer_events
+*/
+
+static void interrupt timer_events (void);
+
+/* Local Data */
+
+static void (interrupt *BIOS_timer_handler) (void) = NULL;
+static u32		clock_ticks;
+static u16		counter;
+
+/* Interface Global Routines */
+
+/*
+** INPQ_set_alarm
+*/
+		
+void INPQ_set_alarm (s16 alarmord, u16 milliseconds, BOOLEAN one_shot)
+{
+	if (alarmord < 0 || alarmord > LAST_ALARM)
+		return;
+
+	if (milliseconds <= 0)
+	{
+		alarminit[alarmord] = -1;
+		alarm[alarmord] = -1;
+	}
+	else 
+	{
+		if (!one_shot)
+		alarminit[alarmord] = milliseconds;
+		alarm[alarmord] = milliseconds;
+	}
+}
+
+/* Library Global Routines	*/
+
+/*
+** initialize_timer
+*/
+
+BOOLEAN initialize_timer (void)
+{
+	if (!BIOS_timer_handler)
+	{
+		clock_ticks = 0;
+		counter = PIT_FREQ / MILLISECOND;
+		outp (PIT_COMMAND, PIT_SETFREQ);
+		outp (PIT_CH0, counter & 0xFF);
+		outp (PIT_CH0, (counter & 0xFF00) >> 8);
+		BIOS_timer_handler = getvect (TIMER_INT);
+		setvect (TIMER_INT, timer_events);
+		return True;
+	}
+	return False;
+}
+
+/*
+** release_timer
+*/
+
+void release_timer (void)
+{
+	if (BIOS_timer_handler)
+	{
+		outp (PIT_COMMAND, PIT_SETFREQ);
+		outp (PIT_CH0, 0);
+		outp (PIT_CH0, 0);
+		setvect (TIMER_INT, BIOS_timer_handler);
+		BIOS_timer_handler = NULL;
+	}
+}
+
+/*
+** timer_events
+*/
+
+static void interrupt timer_events (void)
+{
+	u16		i;
+	EVENT *e;
+
+	// adjust the count of the clock ticks
+	clock_ticks = clock_ticks + counter;
+
+	// time to call the BIOS timer to update the time of day?
+	if (clock_ticks >= BIOS_COUNT)
+	{
+		// adjust clock tick count and call BIOS timer interrupt handler
+		// (don't need to acknowledge interrupt since BIOS handler will.)
+		clock_ticks -= BIOS_COUNT;
+		asm {
+				pushf
+				call	dword ptr BIOS_timer_handler
+		}
+	}
+	else
+	{
+		// acknowledge interrupt
+		outp (PIC_REGISTER, NONSPECIFIC_EOI);
+	}
+
+	// process count-down timers, post events if appropriate
+	for (i=0; i<=LAST_ALARM; i++)
+		if (alarm[i] > 0)
+		{
+			-alarm[i];
+			if (!alarm[i])
+			{
+				// queue timeout event
+				e = allocate_event ();
+				e->type = timer_alarm;
+				e->data.timer.alarm = i;
+				alarm[i] = alarminit[i];
+			}
+		}
+}

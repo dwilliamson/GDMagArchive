@@ -1,0 +1,134 @@
+
+Listing 1.  The PACIFIC.DAT File Structure. 
+
+
+*********************************
+HEADER
+Bytes 0-3		Number of embedded File Records.
+Bytes 4-7		Offset of the first File Record.
+
+FILE DESCRIPTION RECORDS
+Bytes 8-XX		File Description Records.  Each record is 74
+			bytes long.  XX = 7 + (74 * Number of File Records)
+
+FILE RECORDS
+Bytes (XX+1)-EOF  	File Records.
+
+
+
+EXAMPLE HEADER AND FILE DESCRIPTION RECORD C STRUCTURES
+#define	BYTE	unsigned char
+struct	PACIFICDATHEADER 
+	{
+	long	NumFileRecords;			// offsets 0-3
+	long	Unidentified;			// offsets 4-7
+	};
+
+struct	FILEDESCRIPTIONRECORD 
+	{
+	BYTE	Unidentified1;			// offset 0, always value of 1
+	char	OriginalPathFileName[32];	// offsets 1-32
+	BYTE	Unidentified2[33];		// offsets 33-65
+	long	FileRecordOffset;		// offsets 66-69, PACIFIC.DAT
+						//   FILE RECORD OFFSET
+	long	FileRecordSize;			// offsets 70-73, FILE RECORD 
+						//   SIZE
+	};
+
+
+*********************************
+
+
+Listing 2. Several Types of RECORD Data
+*********************************
+
+
+
+*********************************
+#define		BYTE			unsigned char
+#define		WORD			unsigned int   	
+
+// Data in AREA Record
+// Note there are Type C and S AREA RECORD data. The type is determined
+// by the contents of AreaType.  The Type C and S data are different sizes.
+struct	AREA_TypeC
+	{
+	BYTE	AreaType;			// offset 0, C char
+	char	AreaName[33];			// off 1-33, text or 0x2E
+	long	XAxis;				// off 34-37, X pos of object
+	long	YAxis;				// off 38-41, Y pos of object
+	long	ZAxis;				// off 42-45, Z pos of object
+	WORD	AreaWidth;			// off 46-47
+	WORD	Blank0;				// off 48-49
+	WORD	AreaHeight;			// off 50-51
+	BYTE	Blank1;				// off 52
+	};
+
+struct	AREA_TypeS
+	{
+	BYTE	AreaType;			// offset 0, S char
+	char	AreaName[33];			// off 1-33, text or 0x2E
+	long	XAxis;				// off 34-37, X pos of object
+	long	YAxis;				// off 38-41, Y pos of object
+	long	ZAxis;				// off 42-45, Z pos of object
+	WORD	AreaWidth;			// off 46-47
+	BYTE	Blank0;				// off 48
+	};
+	
+// Data in DYNMDYNM Record
+struct DYNMDYNM
+	{
+	BYTE	unknown0;			// off 0
+	BYTE	unknown1;			// off 1
+	BYTE	AirplaneWeight;			// off 2, real wt in lbs/600
+	BYTE	unknown2;			// off 3
+	};
+
+// Data in HPTS Record
+struct	HPTS
+	{
+	BYTE	Type;				// off 0, Hardpoint type 0-4
+	long	XAxis;				// off 1-4,  X pos of hardpoint
+	long	YAxis;				// off 5-8,  Y pos of hardpoint
+	long	ZAxis;				// off 9-12, Z pos of hardpoint
+	};
+
+// Data in PART Record
+struct	PART
+	{
+	WORD	MemberNumber;			// off 0-1, Cast Member Number
+	char	MemberName[16];			// 2-17,  IFF File Record name
+	char	WeaponLoad[8];			// 18-25, IFF File Record name
+	WORD	Unknown0;			// 26-27
+	WORD	Unknown1;			// 28-29
+	long	XAxisRelative;			// 30-33, X pos rel to AREA
+	long	YAxisRelative;			// 34-37, Y pos rel to AREA 
+	WORD	ZAxisRelative;			// 38-39, Z pos rel to AREA
+	BYTE	Controls[22];			// 40-61, various control bytes
+	};
+
+// Data in THRS Record
+struct	THRS
+	{
+	BYTE	Blank0[5];			// off 0-4
+	WORD	HorsePower;			// off 5-6, Engine HP
+	BYTE	Blank1;				// off 7
+	BYTE	Flags0;				// off 8
+	BYTE	Flags1;				// off 9
+	BYTE	Unknown0;			// off 10
+	BYTE	Blank2;				// off 11
+	BYTE	Drag1Factor;			// off 12, 1st drag factor
+	BYTE	Blank3[3] ;			// off 13-15
+	BYTE	Drag2Factor;			// off 16, 2nd drag factor
+	BYTE	Blank4[2];			// off 17-18
+	};
+
+// Data in WPNS Record
+struct	WPNS
+	{
+	WORD	WeaponLoad;			// Number of bullets, bombs, etc
+	char	WeaponName[8];			// Weapon IFF File Record name
+	};
+	
+
+*********************************

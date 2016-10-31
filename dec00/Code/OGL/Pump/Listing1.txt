@@ -1,0 +1,77 @@
+Jeff Lander
+Graphic Content: "3D Objects That Don't Deflate"
+Game Developer magazine
+December 2000 issue
+
+Listing 1. Calculating the transformation matrix for the deformable object.
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	ComputeObjLocalFrame 
+// Purpose:	Computes a local transformation matrix for a deformable model
+// Notes:	Makes use of vector class for most operations
+///////////////////////////////////////////////////////////////////////////////
+void ComputeObjLocalFrame(tMatrix *obj_matrix)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+    int i;
+	CVector vObjectCenter;
+	CVector vX_Axis,vY_Axis,vZ_Axis;
+	CVector vX_Min,vX_Max,vY_Min,vY_Max;
+///////////////////////////////////////////////////////////////////////////////
+    // Compute the center of the object by averaging
+    for (i = 0; i < g_ParticleCount; i++)
+        vObjectCenter += g_CurrentSys[i].pos;
+    vObjectCenter /= g_ParticleCount;	// Divide by count to get average
+
+    // Compute the min and max of the X axis
+    for (i = 0; i < CUBE_DEPTH * CUBE_HEIGHT; i++)
+	{
+        vX_Max += g_CurrentSys[i * CUBE_WIDTH].pos;
+        vX_Min += g_CurrentSys[(i * CUBE_WIDTH) + (CUBE_WIDTH - 1)].pos;
+	}
+    vX_Max /= CUBE_DEPTH * CUBE_HEIGHT;	// Average the side
+    vX_Min /= CUBE_DEPTH * CUBE_HEIGHT;
+
+    // Compute the min and max of the Y axis
+    for (i = 0; i < CUBE_WIDTH * CUBE_DEPTH; i++)
+	{
+        vY_Max += g_CurrentSys[i].pos;
+        vY_Min += g_CurrentSys[i + (CUBE_WIDTH * CUBE_DEPTH * (CUBE_HEIGHT - 1))].pos;
+	}
+    vY_Max /= CUBE_WIDTH * CUBE_DEPTH;	// Average the side
+    vY_Min /= CUBE_WIDTH * CUBE_DEPTH;
+
+	vX_Axis = vX_Max - vX_Min;	// Calculate X-axis vector
+	vX_Axis.NormalizeVector();
+
+	vY_Axis = vY_Max - vY_Min;	// Calculate Y-axis vector
+	vY_Axis.NormalizeVector();
+
+	// Use Cross product to get the Z axis
+	vZ_Axis.CrossProduct(&vX_Axis, &vY_Axis);
+
+	// Make certain the X is orthogonal using Cross product
+	vX_Axis.CrossProduct(&vY_Axis, &vZ_Axis);
+
+	// Create the OpenGL ready matrix
+	IdentityMatrix(obj_matrix);	// Reset it
+	// X-Axis
+	obj_matrix->m[0] = vX_Axis.x;
+	obj_matrix->m[1] = vX_Axis.y;
+	obj_matrix->m[2] = vX_Axis.z;
+
+	// Y-Axis
+	obj_matrix->m[4] = vY_Axis.x;
+	obj_matrix->m[5] = vY_Axis.y;
+	obj_matrix->m[6] = vY_Axis.z;
+
+	// Z-Axis
+	obj_matrix->m[8] = vZ_Axis.x;
+	obj_matrix->m[9] = vZ_Axis.y;
+	obj_matrix->m[10] = vZ_Axis.z;
+
+	// Set the Center position
+	obj_matrix->m[12] = vObjectCenter.x;
+	obj_matrix->m[13] = vObjectCenter.y;
+	obj_matrix->m[14] = vObjectCenter.z;
+}

@@ -1,0 +1,10 @@
+Listing 1: The Particle Type
+
+// TYPE FOR A PHYSICAL PARTICLE IN THE SYSTEM
+struct tParticle
+{
+	tVector pos;		// Position of Particle
+    tVector v;			// Velocity of Particle
+	tVector f;			// Total Force Acting on Particle
+	float	oneOverM;	// 1 / Mass of Particle
+};

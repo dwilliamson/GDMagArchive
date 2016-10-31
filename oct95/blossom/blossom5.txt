@@ -1,0 +1,81 @@
+Listing 3.  CXSplat Window Constructor for Macintosh
+CXSplatWindow::CXSplatWindow(const char *Caption, int WindowWidth,
+	int WindowHeight, unsigned char const *Colors) :
+	WinPalette(0), Window(0), pOffscreenBuffer(0),
+	IsActiveFlag(0), MouseDownFlag(0)
+{
+	// Determine the screen size
+	int ScreenWidth = qd.screenBits.bounds.right -
+		qd.screenBits.bounds.left;
+	int ScreenHeight = qd.screenBits.bounds.bottom -
+		qd.screenBits.bounds.top;
+	
+	// Given a zero or negative dimension, fill the
+	// screen
+	if (WindowWidth <= 0)
+		WindowWidth = ScreenWidth;
+	if (WindowHeight <= 0)
+		WindowHeight = ScreenHeight;
+
+	// Create the window centered on the screen
+	int Left = (ScreenWidth - WindowWidth) / 2;
+	int Top = (ScreenHeight - WindowHeight) / 2;
+
+	Rect WindowRect = {Top, Left,
+		Top + WindowHeight, Left + WindowWidth};
+
+	// Convert the caption to a pascal string
+	// TODO: This doesn't do well with non-ASCII
+	// character sets...
+	char unsigned PascalCaption[256];
+	strcpy((char *)&PascalCaption[1], Caption);
+	PascalCaption[0] = (char unsigned)strlen(Caption);
+
+	// Create a new color document window with these
+	// dimensions
+	Window = NewCWindow(0, &WindowRect, PascalCap
+	  tion, TRUE, noGrowDocProc, WindowPtr(-1),
+	  TRUE, 0);
+	if (Window)
+	{
+		// Store a pointer back to the window
+		SetWRefCon(Window, (long)this);
+		
+		// TODO: Set up the palette from the given
+		// Colors
+		// TODO: We'll do this in a later article...
+		// For now, create a gray wash
+		// Create a palette for the window and make 
+		// sure it will give a 1:1 color mapping
+		// with pmExplicit | pmAnimated.
+		WinPalette = NewPalette(256, 0, pmExplicit | pmAnimated, 0);
+		if (WinPalette)
+		{
+			for (int i=0; i<256; ++i)
+			{
+				RGBColor rgb;
+				rgb.red = i << 8;
+				rgb.green = rgb.red;
+				rgb.blue = rgb.red;
+				
+				SetEntryColor(WinPalette, i, &rgb);
+			}
+			SetEntryUsage(WinPalette, 0, pmExplicit | pmAnimated, 0);
+			SetEntryUsage(WinPalette, 255, pmExplicit | pmAnimated, 0);
+			SetPalette(Window, WinPalette, FALSE);
+		}
+		
+		// Initialize the Window
+		SetPort(Window);
+		ForeColor(blackColor);
+		BackColor(whiteColor);
+		PenNormal();
+		
+		// Set up the offscreen
+		// environment. Note that because
+		// of the way COffscreenBuffer was
+		// originally defined, the window
+		// must be visible and active
+		pOffscreenBuffer = new COffscreenBuffer;
+	}
+}

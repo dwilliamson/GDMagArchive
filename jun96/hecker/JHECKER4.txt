@@ -1,0 +1,34 @@
+Listing 4: The KAPed Listing 2.
+void TransformVectors2( float *pDestVectors,
+const float (*pMatrix)[3], const float *pSourceVectors,
+int NumberOfVectors )
+{
+    int Counter, i, j;
+    float aTemp[3];
+    float Value, _Krr1, _Krr2, _Krr4, _Krr5;
+    long _Kii1, _Kii2;
+
+    for ( Counter = 0; Counter<NumberOfVectors; Counter++ ) {
+        _Krr1 = 0.0F; _Krr2 = 0.0F; Value = 0.0F;
+        _Kii1 = Counter * 3;
+        _Krr1 +=  pMatrix[0][0] * pSourceVectors[_Kii1];
+        _Krr2 +=  pMatrix[1][0] * pSourceVectors[_Kii1];
+        Value +=  pMatrix[2][0] * pSourceVectors[_Kii1];
+        _Krr1 +=  pMatrix[0][1] * pSourceVectors[_Kii1+1];
+        _Krr2 +=  pMatrix[1][1] * pSourceVectors[_Kii1+1];
+        Value +=  pMatrix[2][1] * pSourceVectors[_Kii1+1];
+        if (1) {
+            _Krr1 +=  pMatrix[0][2] * pSourceVectors[_Kii1+2];
+            _Krr2 +=  pMatrix[1][2] * pSourceVectors[_Kii1+2];
+            Value +=  pMatrix[2][2] * pSourceVectors[_Kii1+2];
+        } 
+        aTemp[0] = _Krr1; aTemp[1] = _Krr2; aTemp[2] = Value;
+        _Kii2 = Counter * 3;
+        for ( i = 0; i<=2; i++ ) {
+            _Krr5 = aTemp[i]; _Krr4 = _Krr5;
+            pDestVectors[_Kii2+i] = _Krr4;
+        }
+    }
+    pSourceVectors +=  NumberOfVectors * 3;
+    pDestVectors +=  NumberOfVectors * 3;
+}

@@ -1,0 +1,16 @@
+Listing  4. A motion callback
+
+LPJOYINFOEX joy_data;
+
+ case  MM_JOY1MOVE :  
+	    // I am using polling so I am only 
+	    watching for motion events
+ joy_data->dwFlags = JOY_RETURNALL  
+	    // Configures for the axis data to return
+ if((joy_error =joyGetPosEx(JOYSTICKID1,joy_data)))
+  	 {
+   return (-1); 
+	    // No Data
+    }
+	    // Process Data for your application
+		 return(0);

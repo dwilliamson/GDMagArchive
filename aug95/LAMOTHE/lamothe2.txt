@@ -1,0 +1,108 @@
+Listing 2.  A Demo of Deterministic Logic
+// Deterministic chasing algorithm demo
+// use numeric keypad to move player
+
+#include <io.h>
+#include <conio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <dos.h>
+#include <bios.h>
+#include <math.h>
+#include <string.h>
+
+#include "gmod.h" // include our graphics module
+
+int main(void)
+{
+
+int px=160, 	// starting position of player
+	py=100,
+	bx=0,   	// starting position of bad guy
+	by=0,
+	done=0;	 	// exit flag
+
+// set the video mode to 13h
+Set_Graphics_Mode(0x13);
+
+// main event loop
+while(!done)
+		{
+			// perform player logic
+
+			// get input from keyboard
+	if (kbhit())
+		
+			// which way is player moving?
+		switch(getch())
+				{
+				case '8': // up
+					{
+
+					if ((py-=2)<0)
+					py+=200;
+
+					} break;
+
+				case '2': // down
+					{
+
+					if ((py+=2)>=200)
+					py-=200;
+
+					} break;
+
+			case '6': // right
+				{
+
+				if ((px+=2)>=320)
+					px-=320;
+
+				} break;
+
+			case '4': // left
+				{
+
+				if ((px-=2)<0)
+					px+=320;
+
+				} break;
+
+			case 27: // exit
+					{
+					done=1;
+					} break;
+
+			} // end switch
+
+		} // end if
+
+	// perform bad guy logic
+	if (px>bx)
+		bx++;
+	else
+	if (px<bx)
+		bx-;
+
+	if (py>by)
+		by++;
+	else
+	if (py<by)
+		by-;
+
+	// draw player and bad guy
+	Plot_Pixel(bx,by,12);
+	Plot_Pixel(px,py,9);
+
+	// wait a bit
+	Time_Delay(1);
+
+	} // end main while
+
+// reset graphics back to text
+Set_Graphics_Mode(0x03);
+
+// return success to DOS
+return(0);
+
+} // end main

@@ -1,0 +1,115 @@
+Listing 6 (Corresponds to Listing 2 in article): the MUSH shovechars() main loop 
+function with TLI code removed:
+
+void 
+shovechars(port)
+    int port;
+{
+    [...]
+
+    while (mudstate.shutdown_flag == 0) {
+        get_tod(&current_time);
+        last_slice = update_quotas(last_slice, current_time);
+
+        process_commands();
+        if (mudstate.shutdown_flag)
+            break;
+
+        /* test for events */
+
+        dispatch();
+
+        /* any queued robot commands waiting? */
+
+        timeout.tv_sec = que_next();
+        timeout.tv_usec = 0;
+        next_slice = msec_add(last_slice, mudconf.timeslice);
+        slice_timeout = timeval_sub(next_slice, current_time);
+
+        FD_ZERO(&input_set);
+        FD_ZERO(&output_set);
+
+        /* Listen for new connections if there are free descriptors */
+
+        if (ndescriptors < avail_descriptors) {
+            FD_SET(sock, &input_set);
+        }
+        /* Mark sockets that we want to test for change in status */
+
+        DESC_ITER_ALL(d) {
+            if (!d->input_head)
+                FD_SET(d->descriptor, &input_set);
+            if (d->output_head)
+                FD_SET(d->descriptor, &output_set);
+        }
+
+        /* Wait for something to happen */
+        found = select(maxd, &input_set, &output_set, (fd_set *) NULL,
+                       &timeout);
+        if (found < 0) {
+            if (errno != EINTR) {
+                log_perror(ÒNETÓ, ÒFAILÓ,
+                           Òchecking for activityÓ, ÒselectÓ);
+            }
+            continue;
+        }
+        /* if !found then time for robot commands */
+
+        if (!found) {
+            do_top(mudconf.queue_chunk);
+            continue;
+        } else {
+            do_top(mudconf.active_q_chunk);
+        }
+
+        /* Check for new connection requests */
+
+        check = CheckInput(sock);
+        if (check) {
+            newd = new_connection(sock);
+            if (!newd) {
+                check = (errno && (errno != EINTR) &&
+                         (errno != EMFILE) &&
+                         (errno != ENFILE));
+                if (check) {
+                    log_perror(ÒNETÓ, ÒFAILÓ, NULL,
+                               Ònew_connectionÓ);
+                }
+            } else {
+                if (newd->descriptor >= maxd)
+                    maxd = newd->descriptor + 1;
+            }
+        }
+        /* Check for activity on user sockets 
+    /* DESC_SAFEITER_ALL() is a define which steps through the player 
+     * descriptors, which contain the sockets.
+     */
+        DESC_SAFEITER_ALL(d, dnext) {
+
+            /* Process input from sockets with pending input */
+
+            check = CheckInput(d->descriptor);
+            if (check) {
+
+                [...]
+
+                /* Process received data */
+
+                if (!process_input(d)) {
+                    shutdownsock(d, R_SOCKDIED);
+                    continue;
+                }
+            }
+            /* Process output for sockets with pending output */
+
+            check = CheckOutput(d->descriptor);
+            if (check) {
+                if (!process_output(d)) {
+                    shutdownsock(d, R_SOCKDIED);
+                }
+            }
+        }
+    }
+}
+
+

@@ -1,0 +1,16 @@
+Listing 6. The CGame::DPReceiveTurnMsg Member Function for TicTacToe
+BOOL
+CGame::DPReceiveTurnMsg(CPoint& ptTile)
+{
+  // Check remote turn message for valid tile bounds
+  if ((ptTile.x >= 0) && (ptTile.x <= 2) && (ptTile.y >= 0) &&
+    (ptTile.y <= 2))
+  {
+    // Update game with remote turn data
+    SetTileState(ptTile.x, ptTile.y);
+
+    return TRUE;
+  }
+
+  return FALSE;
+}

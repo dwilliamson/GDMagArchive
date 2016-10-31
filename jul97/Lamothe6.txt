@@ -1,0 +1,12 @@
+LISTING 6. Testing the status test of a thread.
+//...code
+
+DWORD state = WaitForSingleObject(thread_handle, 0);  // get the status
+
+// test the status
+
+if (state==WAIT_OBJECT_0) { // thread is signaled, i.e. terminated }
+else
+if (state==WAIT_TIMEOUT) { // thread is still running }
+
+//...code

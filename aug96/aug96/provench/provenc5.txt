@@ -1,0 +1,13 @@
+Listing 5. GetDC() and ReleaseDC()
+
+char*s = "Hello World.";
+HRESULT hResult;
+HDC hDC;
+hResult = pTextSurface->GetDC( &hDC );
+if ( FAILED( hResult ) )
+	return FALSE;
+PatBlt( hDC, 0, 0, TEXT_WIDTH, TEXT_HEIGHT, WHITENESS );
+TextOut( hDC, 0, 0, s, strlen( s ) );
+hResult = pTextSurface->ReleaseDC( hDC );
+if ( FAILED( hResult ) )
+	return FALSE;

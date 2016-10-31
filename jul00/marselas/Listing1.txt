@@ -1,0 +1,118 @@
+Herb Marselas
+"Profiling, Data Analysis, Scalability, and Magic Numbers, Part 2: Meeting the Minimum System Requirements for AGE OF EMPIRES 2: THE AGE OF KINGS"
+Game Developer magazine
+July 2000 issue.
+
+
+Listing 1. A simple memory instrumentation system from AoK.
+
+//================================================================
+// memory.h header
+//================================================================
+extern "C"
+{
+void *mymalloc( size_t size, const char *pfilename, const long dwline);
+void myfree( void *memblock, const char *pfilename, const long dwline);
+};
+//================================================================
+#ifdef _INSTRUMENTMEMORY
+#define malloc DEBUG_MALLOC
+#define free   DEBUG_FREE
+#endif
+
+#define DEBUG_MALLOC(size) mymalloc(size, __FILE__, __LINE__)
+#define DEBUG_FREE(block) myfree(block, __FILE__, __LINE__)
+//================================================================
+#ifdef _INSTRUMENTMEMORY 
+void MemoryInit(void);
+int  MemorySave(void);
+void MemoryUpdate(void);
+#else
+#define MemoryInit
+#define MemorySave
+#define MemoryUpdate
+#endif
+//================================================================
+// eof: memory.h
+//================================================================
+
+//================================================================
+// memory.cpp
+//================================================================
+#include <windows.h>
+#include <stdio.h>
+#include <io.h>
+// !!! DO NOT include memory.h header file here !!!
+//================================================================
+static FILE *pmemfile, *pupdatefile;
+static bool binitialized = false;
+//================================================================
+static DWORD gdwAllocCount;
+static DWORD gdwByteCount;
+static DWORD gdwDeletions;
+static DWORD gdwFrameCount;
+//================================================================
+void MemoryInit(void);
+//================================================================
+void MemoryUpdate(void)
+{
+   if (pupdatefile)
+   {
+      fprintf(pupdatefile, "%lu\t%lu\t%lu\t%lu\n", 
+              gdwFrameCount, gdwAllocCount, gdwDeletions, gdwByteCount);
+      gdwDeletions = 0;
+      gdwAllocCount = 0;
+      gdwByteCount = 0;
+      gdwFrameCount++;
+   }
+} // MemoryUpdate
+//=================================================================
+extern "C" void *mymalloc( size_t size, const char *pfilename, const long dwline)
+{
+   RGEMemoryEntry entry;
+   gdwAllocCount++;
+   gdwByteCount += size;
+   void *p = malloc(size);
+   if (!binitialized)
+      MemoryInit();
+   if (pmemfile)
+      fprintf(pmemfile, "malloc\t0x%X\t%ld\t%s\t%ld\n", p, size, pfilename, dwline);
+   return p;
+} // mymalloc
+//=================================================================
+extern "C" void myfree( void *memblock, const char *pfilename, const long dwline)
+{
+   RGEMemoryEntry entry;
+   gdwDeletions++;
+   if (!binitialized)
+      MemoryInit();
+   if (pmemfile)
+      fprintf(pmemfile, "free\t0x%x\t\t%s\t%ld\n", memblock, pfilename, dwline);
+   free(memblock);
+} // myfree
+//=================================================================
+void MemoryInit(void)
+{
+   if (binitialized)
+      return;
+   pmemfile = fopen("c:\\memory-alloc.txt", "wb");
+   pupdatefile = fopen("c:\\memory-update.txt", "wb");
+   if (pmemfile)
+      fputs("type\tptr\tbytes\tfilename\tline\n", p);
+   if (pupdatefile)
+      fputs("frame\tallocations\tdeletions\ttotal bytes\n", p);
+   binitialized = true;
+} // MemoryInit
+//=================================================================
+int MemorySave(void)
+{
+   fclose(pmemfile);
+   fclose(pupdatefile);
+   pmemfile = 0;
+   pupdatefile = 0;
+   return 0;
+} // MemorySave
+//=================================================================
+// eof: memory.cpp
+//=================================================================
+

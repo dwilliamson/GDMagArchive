@@ -1,0 +1,15 @@
+Listing 1.  Square.ASC
+1.		Ambient light color: Red=0.3 Green=0.3 Blue=0.3
+2.
+3.		Named object: "Flat Square"
+4.		Tri-mesh, Vertices: 8	Faces: 12
+5.		Vertex list:
+6.		Vertex 0:	X:1.000000	Y:1.000000	Z:1.000000
+7.		Vertex 1:	X:-1.000000	Y:1.000000	Z:1.000000
+8.		Vertex 2:	X:-1.000000	Y:-1.000000	Z:1.000000
+9.		Vertex 3:	X:1.000000	Y:-1.000000	Z:1.000000
+10.	Face list:
+11.	Face 0:	A:2 B:1 C:0 AB:1 BC:1 CA:1
+12.	Material:"Default"
+13.	Face 1:	A:3 B:2 C:0 AB:1 BC:1 CA:1
+14.	Material:"Default"

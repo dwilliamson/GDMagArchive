@@ -1,0 +1,57 @@
+
+PLIB for Windoze.
+~~~~~~~~~~~~~~~~~
+
+Let me first say that I (Steve Baker) don't own a copy
+of Windoze - so I have little or no ability to help
+Windoze owners with PLIB problems. It's especially
+important therefore that you direct problems and
+queries to the PLIB mailing lists.  Subscription
+information is on the PLIB homepage:
+
+   http://www.woodsoup.org/projs/plib
+
+
+CygWin:
+~~~~~~~
+The simplest way to build PLIB for Windoze is to
+use the CygWin compiler and toolset.  Since that
+environment is pretty close to UNIX/Linux, the
+
+  ./configure
+  make
+  make install
+
+...mechanism works perfectly.
+
+
+MingW32:
+~~~~~~~~
+A couple of people have asked about doing a MingW32 port - but
+as far as I can tell, the "configure/make/make install" approach
+*should* work.
+
+
+Microsoft Visual C++:
+~~~~~~~~~~~~~~~~~~~~~
+I am distributing a set of MSVC project files for PLIB that
+were kindly provided by Nate Robins. These are scattered
+down to the source directories with a workspace set up 
+in the PLIB root area.
+
+Nate says:
+
+> There is one dsp for each of the libraries, and for each of the example
+> executables.  Internally the dsp's are set up so that they depend on each
+> other (i.e., complex depends on pui and sg and fnt).  The plib.dsp contains
+> _all_ the other dsp's (it is essentially an "all" or "default" target).  So,
+> to build everything, select that project and build.
+
+Borland C++:
+~~~~~~~~~~~~
+As with MSVC, I'll need someone to send me an appropriate set
+of Borland project files in order to get this going.
+
+
+     Steve.
+

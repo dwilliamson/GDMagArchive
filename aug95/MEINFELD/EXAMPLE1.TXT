@@ -1,0 +1,18 @@
+Example 1: Creation of a TinyMUSH Object
+
+> @create A cute kitten
+A cute kitten created as object #803
+> @succ kitten=You bend down and pick up a cute kitten.
+Set.
+> @osucc Kitten=bends down and picks up a cute kitten.
+Set.
+> @asucc kitten=pose playfully bats at your fingers.; say Okay, put me
+down now.
+Set.
+> drop kitten
+Dropped.
+A cute kitten has arrived.
+> get kitten
+You bend down and pick up a cute kitten
+A cute kitten playfully bats at your fingers.
+A cute kitten says ÒOkay, put me down now.Ó

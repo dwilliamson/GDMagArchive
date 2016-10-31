@@ -1,0 +1,229 @@
+Using an Arithmetic Coder, Part 1
+---------------------------------
+
+The Arithmetic Coder
+--------------------
+When creating a networked game, we need to transmit messages between a client and server, or between peers.  Bandwidth is expensive on the server side and perhaps scarce on the client side; therefore we want our messages to be as small as possible, while containing as much information as possible.  In other words, we want those messages to be compressed.
+
+At present, most games do not do a good job of compression, even games that spend a lot of money for bandwidth and would benefit hugely from such compression.  Often, games will compose network messages using values that are multiples of a byte in size; more ambitious games will trim their values down to a 1-bit resolution using something like the Bit Packer I discussed last year ("Packing Integers", The Inner Product, May 2002).  But as I pointed out in that article, a 1-bit resolution still wastes significant bandwidth when your values are small.  I introduced the Multiplication Packer as a simple way to pack values without wasting space.
+
+Back then I only discussed packing, which is just one part of compression.  Statistical modeling is the other part: if data contains some values that are more common than others, we can exploit that fact to reduce the overall size.  That's where the Arithmetic Coder comes in.  You can think of the arithmetic coder as a more complex version of the Multiplication Packer that allows you to compose large messages and to use statistical modeling to crunch those messages into a small space.
+
+This month I'll provide some engineering reasons you want to use an arithmetic coder; I'll also talk about packing values in the absence of any statistical modeling.  We'll do modeling next month.
+
+
+Engineering Reasons to Use an Arithmetic Coder
+----------------
+The arithmetic coder is a plug-in replacement for the bit packer or other buffering scheme that your game already needs.  I've found my engine gets simpler when I switch to an arithmetic coder, due tothe coder's elegance.  I also gain confidence in the engine's solidity, since it becomes impossible to have range-checking problems.  Briefly, I'll explain the reason range-checking is necessary with a bit- or byte-packer.
+
+Someone who's attacking your system, or perhaps just a fouled-up packet transmission, can cause your game to receive a message filled with garbage values.  Therefore you can't trust any value you read from a network message.  Specifically, suppose you are unpacking a 4-byte value that indicates the length of some array.  You might know that a legitimate client will never pack a value higher than 5000, which you chose as the maximum array length.  But if you read the 4-byte quantity without range-checking it, and it consists of garbage data, you could get a number in the billions.  Subsequently attempting to allocate a billion-element array will cause you problems. 
+This basic phenomenon is the source of much grief in networked games.  As a recent example, the Unreal engine was shown to exhibit this problem in several ways; all networked games built on the engine were affected.  (See For More Information).  The problem isn't restricted to the case of 4-byte array lengths; range-checking is also necessary for smaller values, say, 4 bits wide.
+
+For today's discussion, the basic API for packing a value into a message looks like this:
+
+    void Arithmetic_Coder::pack(int value, int maximum_value);
+    int  Arithmetic_Coder::unpack(int maximum_value);
+
+Suppose that somewhere in my code I have defined:
+
+    const int ARRAY_LENGTH_MAX = 5000;
+    extern Arithmetic_Coder *coder;
+    extern Array array;
+
+If you want to put the length of an array into the current message, you do this:
+
+    coder->pack(array.length, ARRAY_LENGTH_MAX);
+
+The coder is probably written to assert if you pass a 'value' parameter that exceeds the 'maximum_value'.  When the guy receiving the message wants to get the length back out, he does this:
+     
+    int length = coder->unpack(ARRAY_LENGTH_MAX);
+
+At this point, 'length' will always be between 0 and ARRAY_LENGTH_MAX.  So long as you've defined ARRAY_LENGTH_MAX appropriately, you can't obtain horrible results.  Garbage input will just give you a garbage value within the legitimate range.  (Though you may wish to somehow detect garbage packets, it is now unlikely that improper detection will cause your game to crash).
+
+
+Once the arithmetic coder is in place, you can start feeding it probability tables that describe the input data, and your bandwidth usage will magically go down.  Generating these tables does take a little bit of effort, but the nice thing is that they are not required.  If you're prototyping, or you don't care about certain message types, you just don't supply tables for them.  You only compute the tables you need, and you don't bother with that until bandwidth conservation becomes a high priority.  This is all nice and ideal!
+
+It should be standard practice for networked games to use an arithmetic coder.  Despite all the benefits, though, I'm not aware of a single game that uses a full-blown arithmetic coder for networking.  That's a tragedy.  (I'm using one in my current project, but it's not done yet so it doesn't count!)
+
+
+How an Arithmetic Coder Works; 
+Relation to the Multiplation_Packer
+-----------------
+Lots of references out there will tell you various mechanisms for implementing an arithmetic coder; see for example the paper by Howard and Vitter (For More Information).  I don't want to flog that horse, so I'm hoping you'll read some references. Here I'll look at the coder from an untraditional viewpoint, and try to supply some less easily-found intuition about _why_ it works.
+
+Recall the basic functionality of the Multiplication Packer, shown in Listing 1.
+
+(Listing 1):
+
+    Multiplication_Packer::Multiplication_Packer() {
+        accumulator = 0;
+        range = 1;
+    }
+
+    void Multiplication_Packer::pack(u32 value, u32 limit) {
+        range *= limit;
+        accumulator = (limit * accumulator) + value;
+    }
+
+You call 'pack' repeatedly to create a message.  When you're done, you have an integer between 0 and range-1, which you somehow put into a network packet.  Back then we used the Bit_Packer to do this; the magnitude of 'range' tells us how many bits we need.  You can visualize the packing operation as indexing a 2D grid, as in Figure 1.  See last year's article for more detail.
+
+The multiplication packer was somewhat inconvenient; you can see that every time you pack a value, 'range' gets larger.  If you try to pack too much, the packer overflows the 32-bit integer and you're in trouble.  We would like to somehow spool the data into a buffer as we pack, to prevent overflow and eliminate the cumbersome use of a separate Bit Packer.  Unfortunately it's unclear how to do this; since all the bits of 'range' change every time you multiply, there seems to be nothing coherent to store in such a buffer.
+
+The arithmetic coder gets around this using a simple but effective trick: instead of packing an integer between 0 and range-1, we're going to pack a fixed-point binary number between 0 and 1.  With the multiplication packer we add information to a number by letting its magnitude grow divergently -- now, instead, we will add information by growing the number to the right of the decimal, in a way such that it converges toward a limit.  Because the number converges quickly, some of its most significant bits become stable after each packing step; those stable bits can be written into a buffer, freeing up space within the 32-bit integer.
+
+It's astonishing how easy it is to make this change when playing with the math.  The multiplication packer gives us a number in the interval [0, range) and we want a number in [0, 1) so we just divide by 'range'.
+
+If we write out the function of the multiplication packer as a recursive rule, we get this: 
+
+  [equation 1]:  accum_k = limit_k * accum_k-1 + value_k ; range_k = range_k-1 * limit_k
+
+After n total packing steps, range will be:
+
+  [equation 2]:  range_n = PI (k = 1 .. n) limit_k
+
+
+Now I am going to rewrite the equation for accum_n by expanding the definition of accum_n-1:
+
+  [equation 3]:  accum_n = limit_n * (limit_n-1 * accum_n-2 + value_n-1) + value_n
+
+We can repeat this expansion recursively, rewriting the term for accum_n-2 and so on.  I'll do it just once more:
+
+  [equation 4]:  accum_n = limit_n * (limit_n-1 * (limit_n-2 * accum_n-3 + value_n-2) + value_n-1) + value_n
+
+We refactor this equation by distributing the multiplication across the addition:
+
+  [equation 5]:  accum_n = limit_n * limit_n-1 * limit_n-2 * accum_n-3 + limit_n * limit_n-1 * value_n-2 + limit_n * value_n-1 + value_n
+
+Now an interesting pattern starts to become clear.  But the above equation still isn't fully expanded, because we have that accum_n-3 term that we could keep expanding all the way down to accum_1.  Let's do that:
+
+  [equation 6]:  accum_n = PI(n) limit / PI(1) limit * value_1 + PI(n) limit / PI(2) limit * value_2 + ... + PI(n) limit / PI(n) limit * value_n
+
+Recall that I am doing all this because I want to divide by (range_n = PI(n) limit).  And looking at the equation now, it's trivial.  This equation really wants to be divided by PI(n) limit.  It's _begging_ for it.  So:
+
+  [equation 7]:  accum_n / range_n = value_1/PI(1) limit + value_2/PI(2) limit + ... + value_n/PI(n)limit
+
+The terms of this sequence converge, because the denominator grows geometrically but the numerator doesn't in general grow.  The result is the value between 0 and 1 computed by an arithmetic coder.  To reiterate, it's the value computed by the multiplication packer, divided by range_n.  This divide allows us to incrementally save out the most significant bits of the result, achieving successful packing of arbitrarily many values.
+
+To me, the grid-ness of the multiplication packer is easy to visualize, but the shrinky-ness of the arithmetic coder is less so.  Being able to factor between them gives me comfort.
+
+The actual implementation of an arithmetic coder looks somewhat different from the multiplication packer; but you can see from the math that they're close relatives.  We'll talk about specific implementation trade-offs next month; for now you can look at the sample code, which illustrates a bare-bones arithmetic coder.
+
+
+A Tangential Rant about Online Security
+-----
+As I write this, one of the big news items is that the game Shadowbane, developed by Wolfpack and published by Ubi Soft, has been hacked in a highly amusing way.  A group of players managed to grant themselves game master priveleges; they proceeded to summon huge nasty monsters into safe zones to kill other players, and to teleport everyone down to the bottom of the sea for further carnage (see For More Information).
+
+In this case, it was clear that Wolfpack had placed far too much authority in the client side of their software.  They had failed to heed the number one rule of client/server system design: "The client is in the hands of the enemy." (See Jessica Mulligan's article in For More Information).  Yet no sooner had the hack occurred than Ubi Soft released a statement promising legal prosecution of the hackers.  I hope no such persecution comes to pass; it's ridiculous to sue someone for your own ignorance of sound engineering practices.
+
+Since security is such an important topic, I'll now discuss how arithmetic coders affect security.  This is a more involved topic than Shadowbane's specific problem; but I bring up Shadowbane because it's a clear illustration that, as Jessica laments, online game developers keep making the same mistakes.  But if we raise the general level of design consciousness vis-a-vis security, we can develop standard architectures that preclude these mistakes.
+
+
+Arithmetic Coders and Security
+-----
+As we've seen, when we use an arithmetic coder to pack up messages, individual data items get multiplied by arbitrary values before they are written into the output buffer.  To a casual viewer -- someone looking at your network transmissions with a packet sniffer or a hex editor -- the data will appear unstructured, since important fields will tend not to land on bit boundaries.  Since your game protocol is difficult to see, it is difficult to hack.
+
+This statement is more than anecdotal when you look at the situation from an information-theoretic viewpoint.  Compression works by exploiting and reducing predictable structure.  This increases the "entropy" of the data.  Data with no structure whatsoever is random and has maximum entropy.  Thus, perfectly compressed data appears completely random.
+
+This idea of maximum entropy comes up in another area we're familiar with: encryption.  Like compression, encryption is about crunching on data in a reversible way to produce maximum-entropy output.  So in a sense, perfect compression is equivalent to perfect encryption; the probability tables act as a secret key.
+
+Unfortunately, our current compression schemes are nowhere near perfect, so data that's "encrypted" via compression is very crackable.  Even high-order statistical models of the input data will leave a lot of structure in the output.  So you should not use just an arithmetic coder to encode life-or-death secrets and then consider them secure.  But the point I wish to make is, when you use an arithmetic coder hacking your protocol becomes a matter of employing statistical analysis, known-plaintext attacks, etc.  Either that, or reverse-engineering all your networking from assembly language.  Both of these options require substantial effort on the part of a would-be hacker; most of the people with enough knowledge to hack your protocol will be off programming their own games.  
+
+So just by using an arithmetic coder, with our primary goal being to save bandwidth, we also raise the barrier to entry for those who want to hack our game.  That's a nice side-benefit.
+
+Now suppose you do really want to secure your data stream.  You should use a hard encryption algorithm for this.  But even in that case, the arithmetic coder helps you out.  The reason is that hard cryptographic algorithms become easier to brute-force attack the more you know about the input data.  Suppose a hacker is playing your game and he types a chat message; this causes an encrypted network packet to be sent to the server.  He knows that the source data is mostly ASCII text, and he can use this knowledge to help break the encryption key.  But if you compress the data with an arithmetic coder prior to encyrption, the hacker must work a lot harder to break the key.  For more of an explanation of this, and some other benefits of using compression to precondition data before encryption, see section 8.5 of the sci.crypt FAQ (For More Information).
+
+Charles Bloom has pointed out to me that the preceding discussion is slightly dangerous, since there have been several attempts to use arithmetic coders as strong encryption, but all such systems have been shown to be breakable.  So I want to re-emphasize that I am not encouraging the use of such schemes.  If you need strong encryption, use a strong encryption algorithm.  If you don't need strong encryption, you can still take comfort in the fact that, by compressing your data, you've gained protection against the casual intruder.
+
+
+For More Information
+--------------------
+Paul G. Howard and Jeffrey Scott Vitter, "Practical Implementations of Arithmetic Coding", http://citeseer.nj.nec.com/howard92practical.html
+
+MACM-96 Arithmetic Coder, http://www.cbloom.com/news/macm.html
+
+Cryptography FAQ for sci.crypt, section 8.5: "How do I use compression with encryption?", http://www.faqs.org/faqs/cryptography-faq/part08/
+
+Auriemma Luigi, summary of Unreal network security bugs.  http://www.pivx.com/luigi/adv/ueng-adv.txt
+
+Background info and discussion on Shadowbane hacks: http://games.slashdot.org/games/03/05/28/1452201.shtml
+
+Jessica Mulligan, "EULAQuest: Part Two", Biting the Hand Volume 9, Issue 13, May 4, 2000.  http://www.skotos.net/articles/BTHarchives/BTH2000.pdf
+
+
+Bio
+---
+Jonathan Blow is hanging out at a coffee house.  And he's really hungry even though he just had a Bulgogi Burger at Burger-Tex down the street.  Send dinner suggestions to jon@number-none.com.
+
+
+
+
+
+Arithmetic Coding, Part 2
+
+Say we've got a client/server game system.  We want to transmit as much data as we can through a limited amount of bandwidth; an example of such data would be the server telling the client the states of all objects in the world.  Last month, we saw how an arithmetic coder can help us efficiently pack data values into network messages, at sub-bit precision.  This meant there were no gaps between the individual values, which saved space, especially when values were small.
+
+But if we want bigger space savings, the thought occurs that we can outright compress the transmitted data.  We might do this by a relatively brute-force approach, such as linking the free 'zlib' compression library into our game, passing it our network messages as arrays of bytes, and telling it to compress those arrays.  There are a lot of reasons why this isn't a good idea, some of which will become clear as we discuss alternatives today.
+
+Arithmetic coders are great at compression.  Once again I am going to refer you to some excellent references, like the CACM87 paper, to explain the basics of arithmetic coding compression (see For More Information).  Here I'll try to provide some alternative views not found in the references.  I'll also discuss ways we, as game programmers, need to approach arithmetic coding differently from the mainstream.
+
+Probabilities
+
+Just like last month, we encode a message by mapping it to a small piece of the interval [0, 1).  Compression occurs by transforming values so that common values take up large pieces of the interval, and rare values take small pieces.  The ideal amount of space that any value or message can be compressed into is -log2(p) bits, where p is the probability of that message.  Don't be confused by that minus sign; since p is always in [0, 1] by definition (it's a probability!), the log always produces a result that is negative or zero, and the minus sign just reverses that.  In Figure 1, I've tried to illustrate why it takes fewer bits to encode a bigger subset of the unit interval.  You can think of the active principle as: "the smaller something is, the more precisely you must describe its location in order to guide someone to it".
+
+We start with the interval [0, 1); for each value we want to pack, we pick a fraction of the current coding interval that's equal to that value's probability, and shrink the coding interval to that new subset.  Last month, in order to pack a value into a message, given n possibilities for the value, we would just subdivide the current coding interval by n.  That's the same as treating all the possibilities as though they were of equal probabilities.  So essentially, this month we're just improving our model of the data's statistics.
+	
+Conditional Probabilities
+
+In Figure 2, I've drawn two different illustrations of this process of encoding a string of values.  Figure 2a shows the recursiveness of the concept, showing how we zoom in on one tiny piece of the unit interval.  Figure 2b takes a more aloof viewpoint, looking at the set of all possible messages we could transmit, and their relative probabilities.  It's a little more cluttered, but it's useful because it helps clarify some aspects of message probabilities.
+
+To get the best compression, we want to look at the set of all possible messages we could transmit, and ensure that each of those messages maps to a piece of the unit interval of the exact size dictated by its probability.  Our goal is to compute P(y0 = k0 n y1 = k1 n … n yn = kn), the probability of the final composite message.  If the yi are statistically independent, the compound probability just becomes the product P(y0 = k0)P(y1 = k1) … P(yn = kn), and the answer is simple to compute since we don't need context around any single value.  But this criterion of independence almost never holds.  Instead there are dependencies in there.  In fact, thinking of this probability as being a divisible and well-ordered thing is probably a mistake.  Certainly, nothing in reality limits the dependencies to flowing forward along with our indices on y.  For some particular problem, we might need to compute P(y3 = k3 | (y5 = k5 n y9 = k9), n … n y1 = k1), and that is still a tremendously simplistic way of looking at the problem.
+
+I bring this up in such an annoying fashion because data modeling for arithmetic coders is usually explained in the way that text compression guys see the problem.  In that paradigm we have a bunch of uniformly-sized symbols and we run through some example data to build tables giving us a 0th order or 1st order or nth order model of the data, which we then use for compression, perhaps adaptively.  I find this mode of thought limiting when it comes to approaching general problems.  As an example, Claude Shannon, father of information theory, did a number of experiments to compute bounds on the actual information content of the English language.  The results of these experiments can tell you approximately what compression ratio you'd get out of a very good compressor.  Shannon found an upper bound of about 1.3 bits per character, and a lower bound of half that; these numbers are much lower than the ratios achieved by the current best compressors.  (For some example compression statistics see Charles Bloom's web page in For More Information).   Evidently, given an AI that understood English as well as a human, you could use its predictions of upcoming text to build a much better compressor than we currently know how to make. 
+
+Such an AI would perform well because it contains much knowledge about the behavior of English.  This is not strictly a model of the way letters tend to follow each other in text; it's a deeper thing, a model of what the author of the text was trying to do by writing the text.  Actually it's even deeper than that; it's a model of the kinds of ways people tend to behave, allowing us, upon encountering a text, to generate a more specific model of what the text is intended to achieve.  Overall, I wish to make this point: any knowledge you can exploit to predict the probability of a message is fair game.  It doesn't have to be information actually contained in the message.  
+
+Sample Code
+
+This month's sample code is a file compressor.  And to compress files, we will use … only information contained within the files.  But this is all because the code's written to be as simple as possible, to be easy to understand and build on.  It provides two options for compression: order 0 modeling (no context around each character) and order 1 modeling (one character of previous context is used to guess the probability of the current character).  The code reads from an example English text file, in order to build a static probability model for the expected data.  It then uses that model to compress a different file.
+
+Most arithmetic coding text compressors use adaptive modeling, but this one does not.  Adaptive modeling is a method of modifying  the probability tables to fit the file's usage patterns, as pieces of the file go streaming by.  The nice thing about this is that you don't need to store any probability tables; you just start the encoder and decoder in a context where all values are equally probable, then you just let them go and adapt.  Arithmetic coders are ideal for adaptive modeling, which is one reason why people like arithmetic coders so much.
+
+Unfortunately, in a high-performance networked game, adaptive modeling is not as straightforward as it is for a file compressor.  Because the probability tables are implicit, the decoder needs to see the entire stream transmitted by the encoder.  But in a networked game, we need to drop network messages or process them out of order.  An adaptive decoder could not do this, as its probability model would fall out of synch with the encoder's, causing it to produce garbage.
+
+Next month, we'll look at a scheme for adaptive modeling in a client/server environment. But you may decide that the necessary complication is not worthwhile; if so, a static probability model will still work for you.  And thus, one of the primary purposes of this month's sample code is to provide a simple example of a static modeler.
+
+Last month's encoder used an integer divide once per packed value to compute the new coding interval.  This month's code uses a bit shift instead, so it's faster in that sense.  Because we're multiplying probabilities, and those probabilities are necessarily approximate (because we must fit them into a piece of a machine word), we can ensure that they're represented as fractions whose denominators are a known power of 2.  Rounding the probabilities this way does distort them a little bit, resulting in a loss of compression efficiency; but that loss is so small as to be unnoticeable.
+
+Structured Data
+
+Now I'll talk about some ways in which the data you really want to transmit will differ from the sample code.
+
+Much real-game data will be hierarchical.  For example, to represent a game entity, we may have one object class definition per entity type; if the server wants to tell the client about this entity, it must transmit all the fields of that class definition.  Those fields might be { type = WIZARD, position = (x, y, z), angle = 1.12, health = 73 }.  If we transmit two entities to the client, we make a message that looks like: [ WIZARD, (x1, y1, z1), angle1, health1, BARBARIAN, (x2, y2, z2), angle2, health2 ].  Modeling this data as a linear sequence would be a mistake, since it's unlikely that the value of health1 is usefully correlated with the next value in the sequence, the entity type BARBARIAN.  But we may wish to draw correlations between parallel fields (members of a party traveling together are probably near each other, and are probably facing nearly the same direction).  And we may wish to draw correlations between certain data fields, and certain other protocol messages.  Consider a "drink potion" protocol message.  If a character has low health and high mana, and he drinks a potion, chances are good it's a potion of healing and not a potion of mana.  Or, perhaps characters located near town are usually drinking potions of speed, so that they can quickly leave the safe area and get to the fighting; but characters located out near the fighting are usually drinking potions of health and mana, and almost no potions of speed.
+
+Coherent Values
+
+This talk of position correlations brings up an important issue.  As discussed last year, positions are generally transmitted as tuples of integers.  Suppose I am camping with a party, we are moving about healing each other and keeping watch for monsters.  My current X position is 4155 out of 10000.  (This is just an example, and is likely to be too low-res a position for use in a real game).  Since I'm milling about, my next X position is likely to be near 4155, but it probably won't be 4155 exactly.  It might be 4156.  But a generalized data modeler, written in the way of file compressors, would treat 4155 and 4156 as unrelated "symbols".  Such an adaptive modeler, upon seeing the 4155, would increase the probability of 4155 coming again in the data stream; but implicitly, this decreases the probability of seeing 4156, thus hurting compression if I am moving at all.
+
+Because we move through space continuously, spatial values are correlated.  4155 is highly correlated with 4156, because those points are spatially nearby.  Thus when transmitting an X coordinate of 4155, an adaptive modeler should actually increase the subsequent probability of all X coordinates in the neighborhood, using a Gaussian centered at 4155.  Actually, we'd ideally want to intercorrelate X, Y, and Z, keeping the resulting probabilities in a 3D grid; this is expensive, though, and independent 1D tables for each coordinate are almost as good in practice.  (Though the higher the number of dimensions we work in, the worse this approximation becomes; so be hesitant when using it for a high-dimensional model!  This is related to the fact that as n grows, the unit sphere in n dimensions contains decreasing amounts of space compared to the unit cube.)
+
+I call this type of data a "coherent" value.  Another example of a coherent value is health; if you are at full health, and you're being attacked, probably your health will go down gradually.  It's much less probable to drop instantly from high health to 0 health.
+
+As mentioned earlier, good compression is all about making accurate predictions.  Predicting the change of continuous values over time has a history in online games; it's often known as "dead reckoning".  So as it happens, we want good dead reckoning not only to fill in the gaps between network messages, but to help encode and decode those messages too.
+
+
+Bio:
+
+Jonathan Blow says, "I forgot armed robbery was illegal."  Send accusatory email to jon@number-none.com.
+
+
+For Further Information:
+
+Khalid Sayood, Introduction to Data Compression 2nd Edition, Academic Press, 2000.
+
+Mark Nelson, "Arithmetic Coding + Statistical Modeling = Data Compression", Dr. Dobb's Journal January-February 1991.  Available at http://dogma.net/markn/articles/arith/part1.htm
+
+Ian Witten, Radford Neal and John Clearly, "Arithmetic Coding for Data Compression" (the CACM87 paper); University of Calgary technical report 1986-238-12, http://pharos.cpsc.ucalgary.ca/Dienst/UI/2.0/Describe/ncstrl.ucalgary_cs/1986-238-12
+
+Charles Bloom's compression page, http://www.cbloom.com/src/index.html
+
+

@@ -1,0 +1,89 @@
+Listing 5. The CGame::DPEventMsg Member Function for TicTacToe
+UINT
+CGame::DPEventMsgStart(LPVOID pData)
+{
+  // Call the DP event handler
+  ASSERT((CGame*)pData);
+  ((CGame*)pData)->DPEventMsg();
+  return 0;
+}
+void
+CGame::DPEventMsg()
+{
+  while(TRUE)
+  {
+    // Wait for event
+    if (::WaitForSingleObject(m_hDPEvent, INFINITE) !=
+      WAIT_TIMEOUT)
+    {
+      // Process event message
+      if (m_pDirectPlay)
+      {
+        DPID  dpidFrom, dpidTo;
+        BYTE  Msg[256];
+        DWORD dwLen = 128;
+        if (m_pDirectPlay->Receive(&dpidFrom, &dpidTo,
+          DPRECEIVE_ALL, Msg, &dwLen) == DP_OK)
+        {
+          if (dpidFrom == 0)
+          {
+            // Got a system message
+            DPMSG_GENERIC*  pmsgGeneric = (DPMSG_GENERIC*)Msg;
+            CString         sText;
+            switch(pmsgGeneric->dwType)
+            {
+              case DPSYS_CONNECT:
+                AfxGetMainWnd()->MessageBox("Connected!",
+                  AfxGetAppName());
+                break;
+              case DPSYS_SESSIONLOST:
+                AfxGetMainWnd()->MessageBox("Session lost!",
+                  AfxGetAppName());
+                DPCleanup();
+                break;
+              case DPSYS_ADDPLAYER:
+                // Notify of new player
+                sText.Format("New Player : %s", ((DPMSG_ADDPLAYER*)
+                  pmsgGeneric)->szShortName);
+                AfxGetMainWnd()->MessageBox(sText,
+                  AfxGetAppName());
+                // Set new player and start new game
+                if (((DPMSG_ADDPLAYER*)pmsgGeneric)->dpId !=
+                  m_dpidPlayer[0])
+                {
+                  m_dpidPlayer[1] = ((DPMSG_ADDPLAYER*)
+                    pmsgGeneric)->dpId;
+                  NewGame();
+                }
+                break;
+
+             case DPSYS_DELETEPLAYER:
+               AfxGetMainWnd()->MessageBox("Player Deleted!",
+                AfxGetAppName());
+              if (((DPMSG_DELETEPLAYER*)pmsgGeneric)->dpId ==
+                  m_dpidPlayer[1])
+                {
+                  m_dpidPlayer[1] = 0;
+                  DPEndSession();
+                }
+                break;
+            }
+          }
+          else
+            if (dpidTo == m_dpidPlayer[0])
+            {
+              // Got a remote player turn message
+              if (dwLen == sizeof(POINT))
+              {
+                CPoint ptTile(*((POINT*)Msg));
+                DPReceiveTurnMsg(ptTile);
+              }
+              else
+                AfxGetMainWnd()->MessageBox(
+                 "Unknown player message.", AfxGetAppName());
+            }
+        }
+      }
+    }
+  }
+}

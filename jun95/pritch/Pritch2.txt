@@ -1,0 +1,231 @@
+Listing 2.  VESADEMO.C (Continued on p. 49)
+/* ============================================================= */
+/* VESADEMO.C - A simple 640x480 VESA Graphics Demo              */
+/* ============================================================= */
+
+#include <stdio.h>
+#include <dos.h>
+#include <string.h>
+
+#define uchar unsigned char
+#define uint  unsigned int
+
+	/* Stucture to hold VESA VBE Get SVGA Info Results */
+
+typedef struct {
+
+	/* These items defined in the VESA VBE 1.2 Spec */
+
+	char			Vbe_Signature[4];		/* OVESAO */
+	int				Vbe_Version;			/* Vesa version */
+	char far *		Oem_String_Ptr;			/* Name of Video Card */
+	uchar			Capabilites[4];			/* Bitmapped features */
+	uint far *		Video_Mode_Ptr;			/* >List of Video Modes */
+	int				Total_Memory;			/* Video Mem / 64K */
+
+	/* These items added in the VESA VBE 2.0 Spec */
+
+	int				Oem_Software_Rev;
+	char far *		Oem_Vendor_Name_Ptr;
+	char far *		Oem_Product_Name_Ptr;
+	char far *		Oem_Product_Rev_Ptr;
+
+	uchar			reserved[222];			/* From the 1.2 spec */
+	uchar			Oem_Data[256];			/* VBE 2.0 OEM strings */
+
+} VbeInfoBlock;
+
+	/* Stucture to hold VESA VBE Get Mode Info Results */
+
+typedef struct {
+
+	/* This section available is all VESA revisions */
+
+	uint 			Mode_Attributes;
+	uchar			Win_A_Attributes;		/* Memory Window A */
+	uchar			Win_B_Attributes;		/* Memory Window B */
+	int				Win_Granularity;		/* in 1K units */
+	int				Win_Size;				/* Window Size in K */
+	uint 			Win_A_Segment;			/* Segment of Window A */
+	uint 			Win_B_Segment;			/* Segment of Window B */
+	void far *		Win_Func_Ptr;			/* Bank Switch func addr */
+	int				Bytes_Per_Scan_Line;	/* just what it says */
+
+	/* This section available is VBE revision 1.2 & up */
+
+	int				X_Resolution;
+	int				Y_Resolution;
+	char			X_Char_Size;
+	char			Y_Char_Size;
+	char			Number_Of_Planes;
+	char 			Bits_Per_Pixel;
+	char			Number_Of_Banks;
+	char			Memory_Model;
+	char			Bank_Size;
+	char 			Number_Of_Image_Pages;
+	char			Reserved1;
+
+	/* This section is used for Memory_Model 0x06 and 0x07 i.e. Direct
+	 Color and YUV color modes */
+
+	char			Red_Mask_Size;
+	char			Red_Field_Position;
+	char			Green_Mask_Size;
+	char			Green_Field_Position;
+	char			Blue_Mask_Size;
+	char			Blue_Field_Position;
+	char			Rsvd_Mask_Size;
+	char			Rsvd_Field_Position;
+	char			Direct_Color_mode_Info;
+
+	/* This section available is VBE revision 2.0 & up */
+
+	void far *		Physical_Base_Ptr;
+	void far *		Off_Screen_Mem_Offset;
+	int				Off_Screen_Mem_size;
+
+	char			Reserved[206];
+
+} ModeInfoBlock;
+
+	/* Global Registers for calling INT 10h */
+
+union REGS in_regs, out_regs;
+struct SREGS seg_regs;
+
+	/* Function Prototypes */
+
+int get_VESA_version(VbeInfoBlock far* , int*, int*);
+int check_VESA_Mode(int, ModeInfoBlock far* );
+int set_VESA_Mode(int);
+
+void main ( void )
+{
+
+	VbeInfoBlock	VESA_Info;
+	ModeInfoBlock	MODE_Info;
+
+	int				VESA_Version, MajorVer, MinorVer;
+
+	/* Check if VESA Video BIOS Extension installed */
+
+	if (!(VESA_Version = get_VESA_version(&VESA_Info,
+		&MajorVer, &MinorVer))) {
+		printf (OUnabale to run demo.\nO);
+		printf (OThis video card does not have VESA BIOS support\nO);
+		return;
+	}
+
+	/* Check if Mode 101h is available */
+
+	if (!check_VESA_Mode(0x0101, &MODE_Info)) {
+		printf (OOdd... This card has VESA BIOS extension but no O
+				Osupport for mode 101h\nO);
+		return;
+	}
+
+	/* Set display to VESA Mode 101h */
+
+	set_VESA_Mode(0x0101);
+
+	/* Draw our Test pattern and wait for a keypress */
+
+	draw_VESA_triangle_pattern(&MODE_Info,640,480);
+
+	/* restore text Mode */
+
+	set_VESA_Mode (0x03);
+	printf (Othis VESA 640x480x256 demo is done.\nO);
+ 
+	return;
+}
+
+	/* Function to get VESA VBE Mode Info for a given mode */
+
+int check_VESA_Mode(int Mode_Num, ModeInfoBlock far* MODE_Info)
+{
+
+	/* First we get info on the desired mode */
+
+	memset( MODE_Info, 0, 256);			/* Clear Mode Info */
+
+	in_regs.x.ax = 0x4F01;				/* Get mode Info Function */
+	in_regs.x.cx = Mode_Num;			/* Mode number */
+	seg_regs.es  = FP_SEG(VESA_Info);	/* Buffer to hold results */
+	in_regs.x.di = FP_OFF(VESA_Info);
+
+	int86x(0x10, &in_regs, &out_regs, &seg_regs);
+
+	if (out_regs.x.ax != 0x004F) {		/* Did an Error occur? */
+		return 0;
+	} else {
+		return Mode_Num;
+	}
+
+}
+
+	/* Function to perform VESA VBE Mode Set */
+
+int set_VESA_Mode(int Mode_Num)
+{
+
+	in_regs.x.ax = 0x4F02;				/* Get mode Info Function */
+	in_regs.x.bx = Mode_Num;			/* Mode number */
+
+	int86x(0x10, &in_regs, &out_regs, &seg_regs);
+
+	if (out_regs.x.ax != 0x004F) {		/* Did an Error occur? */
+		printf (OError attempting to set Mode %xh\nO, Mode_Num);
+		return 0;
+	} else {
+		return -1;
+	}
+
+}
+
+int get_VESA_version( VbeInfoBlock far* VESA_Info,
+						int * MajorVer, int * MinorVer )
+{
+
+	int   ver, m;
+
+	/* Prepare VESA info Buffer */
+
+	memset( VESA_Info, 0, 512);
+	memcpy( VESA_Info->Vbe_Signature, OVBE2O, 4);
+
+	/* Call Int 10, VBE Function (4F)00h */
+
+	in_regs.x.ax = 0x4F00;
+	seg_regs.es  = FP_SEG(VESA_Info);
+	in_regs.x.di = FP_OFF(VESA_Info);
+
+	int86x(0x10, &in_regs, &out_regs, &seg_regs);
+
+	/* Check if VBE Extions present & Get Revision Level */
+
+	if ( (out_regs.x.ax != 0x004F) ||
+		(memcmp(VESA_Info->Vbe_Signature,
+		  OVESAO, 4) != 0) )
+	{
+		return 0;
+	} else {
+		ver = VESA_Info->Vbe_Version;
+		*MajorVer = (ver >> 8);
+
+		/* bug check - Some BIOSes return
+		  0x0102 instead of 0x0120 */
+		/* Check for Minor version in
+		  wrong nibble and correct */
+
+		m = (ver & 0xFF);
+		if ((m != 0 ) && ((m & 0x0F) != 0))
+		{
+			*MinorVer = m * 10;
+		} else {
+			*MinorVer = (m >> 4) * 10;
+		}
+			return ver;
+	}
+}
+

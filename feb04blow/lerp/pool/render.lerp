@@ -1,0 +1,131 @@
+proc draw_entity(Entity e, Float alpha) {
+
+    Float x0 = (e.position)[1];
+    Float y0 = (e.position)[2];
+
+    // Draw the guy.
+
+    GL:{
+        begin(TRIANGLE_FAN);
+        color4f(e.r, e.g, e.b, alpha);
+
+        Float r = e.radius;
+        Float PI = 3.141592653589;
+
+        vertex2f(x0, y0);
+        Integer NSTEPS = 16;
+        each 0..NSTEPS {
+            Float t = $0 / (NSTEPS * 1.0);
+            Float theta = t * 2 * PI;
+
+            Float x = x0 + r*cos(theta);
+            Float y = y0 + r*sin(theta);
+
+            vertex2f(x, y);
+        }
+
+        end();
+    }
+}
+
+proc draw_playfield {
+    text_mode_begin(big_font);
+
+    String s = concat("Timestep: ", the_world.timestep);
+    draw_text_line(big_font, s, 0, 0);
+
+    GL:{
+        depthFunc(ALWAYS);
+        disable(LIGHTING);
+        disable(CULL_FACE);
+        disable(COLOR_MATERIAL);
+
+        enable(BLEND);
+        blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+        disable(TEXTURE_2D);
+
+        matrixMode(MODELVIEW);
+        loadIdentity();
+
+
+        Float degrees = (aim_theta - PI * 0.5) * (180.0 / PI);
+        rotatef(degrees, 0.0, 0.0, 1.0);
+
+
+        translatef(-play_field_width * 0.5, -play_field_height * 0.5, 10.0);
+        
+
+        matrixMode(PROJECTION);
+        loadIdentity();
+
+        Float kh = play_field_height * 0.6;
+        Float kw = (gl_window.width / (gl_window.height * 1.0)) * kh;
+        ortho(-kw, kw, -kh, kh, 0, -100.0);
+    }
+
+
+    // Draw the play field...
+    GL:{
+        Float x0 = 0.0;
+        Float x1 = play_field_width;
+        Float y0 = 0.0;
+        Float y1 = play_field_height;
+
+        begin(QUADS);
+        color3f(0.3, 0.6, 0.3);
+        vertex2f(x0, y0);
+        vertex2f(x1, y0);
+        vertex2f(x1, y1);
+        vertex2f(x0, y1);
+        end();
+    }
+}
+
+proc draw_entities(Database world, Float alpha) {
+    each world.['Entity ?x] draw_entity(x, alpha);
+//    draw_entity(each world.['Entity ?x] x);
+}
+
+proc draw_hud {
+    Float x0 = 0.9;
+    Float x1 = 0.95;
+    Float y0 = 0.2;
+    Float y1 = 0.5;
+
+    GL:{
+        depthFunc(ALWAYS);
+        disable(LIGHTING);
+        disable(CULL_FACE);
+        disable(COLOR_MATERIAL);
+
+        enable(BLEND);
+        blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA);
+        disable(TEXTURE_2D);
+
+        matrixMode(MODELVIEW);
+        loadIdentity();
+
+        scalef(2.0, 2.0, 1.0);
+
+        begin(QUADS);
+
+        Float range = y1 - y0;
+        Float y_mid = y0 + shot_power * range;
+
+        Float z = 0.0;
+        color4f(0.0, 0.8, 0.0, 0.8);
+        vertex3f(x0, y0, z);
+        vertex3f(x1, y0, z);
+        vertex3f(x1, y_mid, z);
+        vertex3f(x0, y_mid, z);
+
+        color4f(0.0, 0.5, 0.0, 0.5);
+        vertex3f(x0, y_mid, z);
+        vertex3f(x1, y_mid, z);
+        vertex3f(x1, y1, z);
+        vertex3f(x0, y1, z);
+
+        end();
+
+    }
+}

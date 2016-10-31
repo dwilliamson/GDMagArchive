@@ -1,0 +1,117 @@
+EXAMPLE 2
+* Sample code derived from Quake Client implementation 
+* This code shows how we integrated the TEN ARENA LIBRARY 
+* into the quake client.
+*
+* Additional documentation for this code may be found on the 
+* TEN developers website: http://www.ten.net 
+*
+* Two functions are called from Quake:
+*	NET_Init() and NET_Poll()
+* The other functions are callbacks, which are triggered by the
+* TEN ARENA library from various network events.
+*/
+/* TEN header files */
+#include "ten/environ.h"
+#include "ten/tendefs.h"
+#include "ten/tenaddr.h"
+#include "ten/tenutils.h"
+#include "ten/debuglib.h"
+#include "ten/arena.h"
+ 
+#define JOIN_GAME 0x20
+ 
+/*
+* Called at network initialization time
+* Two callback functions are specified before the 
+* TEN ARENA library is initialized
+*	doPregameHook is called when the TEN arena server
+*	 adds you to the game. 
+* doIncomingPacket handles all incoming data packets from the 
+*	 ARENA server.
+*/
+ 
+NET_Init(void)
+{	
+	int err;
+ 
+	tenArSetPregameHookRoutine(doPregameHook);
+	tenArSetIncomingPacketRoutine(doIncomingPacket);
+	err = tenArInitArena("quake");
+	if (err){
+		Sys_Error("error %d from tenArInitArena",err);
+	}
+}
+/*
+* Called periodically using a quake timer
+* We've got to do this because the ARENA LIBRARY will only 
+* make callbacks during the tenArIdleArena() call. 
+*/
+ 
+NET_Poll()
+{	tenArIdleArena();}
+/*
+* Triggered after connecting to a TEN arena server,
+* this callback provides the client with your user name, 
+* player options, game options, 
+*	user alias, and server address 
+* for your use.
+*/
+static void doPregameHook(char *joinType, char *gameTermOptions,
+char *playerTermOptions, char *name, char *alias, char *address)
+{
+int err;
+// set the username from the "name" parameter
+strcpy (username, name);
+// register the game only if we are the creator 
+if (! strcmp(joinType,"create"))
+{
+err = tenArRegisterGame("quake");
+if (err != eNoError)
+Sys_Error ("error %d from tenArRegisterGame",err);
+}
+	// process other options here 
+	// Team Play?
+if (!getStringParam(gameTermOptions, "teamplay",parm,sizeof(parm))){
+// enable teamplay here 
+}
+ 
+	// More options ....
+ 
+	// register the player 
+err = tenArRegisterPlayer("");
+if (err != eNoError)
+Sys_Error ("error %d from tenArRegisterPlayer",err);
+}
+/*
+* Handle messages from the arena server
+* In some games, the actual game data goes through this callback.
+* Since quake supplies it's own multiplayer networking we just 
+* use this callback to handle a "connect to quake server" message from
+* the ARENA server. 
+* The opcode for the JOIN_GAME message is 0x20, followed by a 
+*	string description of the quake server address and port.
+*/
+static void doIncomingPacket(int fromPid, void *buf, size_t size)
+{
+int err;
+char *cbuf = (char *) buf;
+if (cbuf[0] == JOIN_GAME) {
+char addrstr[50];
+char portstr[30];
+char cmdbuf[100];
+err = getStringParam(&(cbuf[1]),
+"address",addrstr,sizeof(addrstr));
+if (err) return;
+err = getStringParam(&(cbuf[1]),
+"port",portstr,sizeof(portstr));
+if (err) return;
+// set the server port number
+net_hostport = atoi(portstr);
+		// connect to host: addrstr, at port: net_hostport 
+// ... 
+}
+ 
+	// process other (Non JOIN_GAME) data packets }
+ 
+ 

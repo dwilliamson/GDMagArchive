@@ -1,0 +1,8 @@
+Example 5: Creation of a TinyMUSH Object
+
+> @asucc kitten=pose switch(%s,she,purrs lovingly.,he,piddles on %nÕs 
+hand.,it,hisses at %n.)
+Set.
+> get kitten
+You bend down and pick up a cute kitten.
+A cute kitten piddles on TangentÕs hand.

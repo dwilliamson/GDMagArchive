@@ -1,0 +1,16 @@
+Listing 4: Code snippet from do_teleport()
+
+        /* Validate type of victim */
+
+        switch (Typeof(victim)) {
+        case TYPE_PLAYER:
+        case TYPE_THING:
+                break;
+        default:
+                notify(player, “You can’t teleport that.”);
+                return;
+        }
+
+        /* In TinyMUSH, only Players and the Things may be teleported. */
+
+

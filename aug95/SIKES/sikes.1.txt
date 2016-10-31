@@ -1,0 +1,50 @@
+Listing 1.  WAD File Structures
+// Header structure.
+typedef struct
+{
+	char	identification[4];
+	long	numlumps;
+	long	infotableofs;
+} WADHEADER, *PWADHEADER;
+
+// Directory structure.
+typedef struct
+{
+		long 	filepos;
+		long 	size;
+		char 	name[8];
+} LUMPS, *PLUMPS;
+
+// Masked object (actors and sprites) structure.
+typedef struct
+{
+		short origsize;			// the orig size of "grabbed" gfx
+		short width; 				// bounding box size
+		short height;
+		short leftoffset;			// pixels to the left of origin
+		short topoffset; 			// pixels above the origin
+		short collumnofs[320];	// only [width] used, the [0] is
+									// &collumnofs[width]
+} PATCH, *PPATCH;
+
+// Transparent object structure.
+typedef struct
+{
+		short origsize;			// the orig size of "grabbed" gfx
+		short width; 				// bounding box size
+		short height;
+		short leftoffset;			// pixels to the left of origin
+		short topoffset;			// pixels above the origin
+		short translevel;
+		short collumnofs[320];	// only [width] used, the [0] is
+									// &collumnofs[width]
+} TRANSPATCH, *PTRANSPATCH;
+
+// Structure used for floor and ceiling data.
+typedef struct
+{
+		short	Width,Height;
+		short	Orgx,Orgy;
+} FLOORCEILING, *PFLOORCEILING;
+
+Note: These structure examples are given in the Official ROTT Specifications file, ROTSP1, by Apogee Software.

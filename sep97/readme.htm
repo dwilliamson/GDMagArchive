@@ -1,0 +1,223 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="Author" content>
+<meta name="GENERATOR" content="Microsoft FrontPad 2.0">
+<title>Mixed Rendering Demo Documentation (XDC 97)</title>
+</head>
+
+<body>
+
+<p align="center">&nbsp;</p>
+
+<p align="center"><font size="6">&quot;Marble Bagels in the
+Tunnel&quot;</font></p>
+
+<p align="center"><br>
+<marquee align="middle">Marble Bagels in the Tunnel... the next great cult movie coming to a computer near you ;-)</marquee><br>
+</p>
+
+<hr>
+
+
+<P><B>Note from Game Developer magazine editors:<BR> Corrections to the September "Mixed Rendering" article</B></A><BR>
+<FONT face="arial,helvetica">The article "Implementing Mixed Rendering," inadvertantly reversed figures 2a (pg. 36) and 2b (pg. 38).   Also, the title for figure 2b (the true figure 2b) should be "Texture mapping composite and double buffer in SW thread."  Second, we inadvertantly omitted credit for one of the authors, Herb Marselas.  Mr Marselas is a Senior Engineer with the Intel Platform Architecture Lab.  Having written a variety of software, Mr. Marselas is now focused on hardware and software issues in increasing 3D graphics performance.  He can be reached at <A HREF="mailto:Herb_Marselas@ccm.jf.intel.com">Herb_Marselas@ccm.jf.intel.com</A>.  </FONT></P>
+
+<HR>
+
+
+
+<p><font size="1"><i>Note: Information in this document is
+provided in connection with Intel products. No license, express
+or implied, by estoppel or otherwise, to any intellectual
+property rights is granted by this document or by the sale of
+Intel products. Except as provided in Intel's Terms and
+Conditions of Sale for such products, Intel assumes no liability
+whatsoever, and Intel disclaims any express or implied warranty,
+relating to sale and/or use of Intel products including liability
+or warranties relating to fitness for a particular purpose,
+merchantability, or infringement of any patent, copyright or
+other intellectual property right. Intel products are not
+intended for use in medical, life saving, or life sustaining
+applications. Intel retains the right to make changes to
+specifications and product descriptions at any time, without
+notice.</i></font> </p>
+
+<p><font size="1">OverDrive and Pentium are registered trademarks
+and Intel486, Intel487, Intel386, Intel387, and i486 are
+trademarks of Intel Corporation. </font></p>
+
+<p><font size="1">**Third-party brands and trademarks are the
+property of their respective owners.</font> </p>
+
+<p><font size="1">(C) Copyright 1997 Intel Corporation. All
+rights Reserved. <br>
+</font></p>
+
+<hr>
+
+<p><i>Note: This application has been tested on with a Diamond
+Monster (3Dfx), a 3D Blaster (Rendition) and a Matrox Mystique
+under DirectX release 5. The application requires a 3D HW card
+with at least 4 Mbytes of memory - 2 Mbyte cards are not
+adequate. It also requires a computer with a CPU enabled for
+Intel's MMX&trade; technology. Please remember that it is demo
+software and is only meant to illustrate the Mixed Rendering
+methodology. </i><b><i>Don't expect it to be bug free.</i></b><i>
+If you have particular questions or comments on the code, please
+feel free to contact me. - H. Barad </i><a
+href="mailto:%20barad@iil.intel.com"><i>barad@iil.intel.com</i></a>
+<br>
+</p>
+
+<p><font size="4">The torus in the mixed rendering application is
+made up of about 400 polygons. It's procedurally textured in
+real-time using Perlin noise that's been optimized for MMX&trade;
+technology. <br>
+</font></p>
+
+<p><font color="#0000FF" size="4" face="Courier New"><b><tt><u>User
+interface</u></tt></b></font></p>
+
+<ul>
+    <li><font size="4">To stop the mixed rendering app press
+        Alt+F4 or Esc.</font> </li>
+    <li><font size="4">When you start up the application, you
+        will notice that the polygon to texture to is completely
+        white. This illustrates the size and shape of the SPOT
+        (Single POlygon Texture) that is being used for the
+        composite. To enable the procedurally textured torus,
+        select the texture menu (&lt;Alt&gt;-T) and then select a
+        16-bit texture format (e.g. 565 format). You will then
+        see a lit, procedurally textured torus that is composited
+        using transparent texture mapping. You might want to play
+        with some of the lighting and texturing features as
+        described below.</font> </li>
+    <li><font size="4">The following keys are available for the
+        standalone app:</font> </li>
+</ul>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F1 -
+toggle lighting on/off</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F2 -
+change the power of cosine for illumination</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F3 -
+toggle complex/simple shading(only when light on)</tt></b></font>
+</p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F4 -
+cloud effect on torus</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F5 -
+toggle texture resolution fixed/changing</tt></b></font><font
+size="5"> </font></p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F6 -
+change the number of noise octaves 2,3,4,5,6</tt></b></font><font
+size="5"> </font></p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F7 -
+change the style/color of the marble texture</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F8 -
+toggle between marble and wood textures</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F9 -
+toggle Z-buffering on torus</tt></b></font> </p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F10 -
+toggle between BLT and texture/SPOT compositing methods</tt></b></font>
+</p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F11 -
+scale up the object</tt></b></font><font size="5"> </font></p>
+
+<p><font color="#000000" face="Courier New"><b><tt>Ctrl-F12 -
+scale down the object</tt></b></font><font size="5"> <br>
+</font></p>
+
+<p>When the wood is loaded, the light is shutoff.</p>
+
+<p><font size="4"><br>
+</font>The <font size="4">simple </font>shading is just (very)
+simplified Phong-like shading. The <font size="4">complex </font>one
+is based on object normal's perturbation by the noise. This
+affect can be done in two methods.</p>
+
+<p><font size="4"><br>
+</font>For more detailed documentation look at the code,
+procedural.c .</p>
+
+<p><font size="4"><br>
+<br>
+</font><font color="#0000FF" size="5" face="Courier New"><b><tt><u>Code</u></tt></b></font></p>
+
+<p><tt><br>
+</tt></p>
+
+<p>This code is quick illustration of procedural texture mapping
+using fixed-point arithmetic and MMX&trade; Technology. Some
+parts of the application were not optimized ,and we expect better
+performance after fine tuning.</p>
+
+<p><br>
+</p>
+
+<p>Note: some of the .c/.cpp files are D3D files from
+\dxsdk\sdk\samples\misc that were changed by us, so if you want
+to build the demo use the files provided in the zip file and not
+the regular D3D files from the misc directory. </p>
+
+<p><br>
+<br>
+<font color="#0000FF" size="5" face="Courier New"><b><tt><u>Compilation</u></tt></b></font></p>
+
+<p><tt><br>
+</tt></p>
+
+<p>To compile the code you should create a project of
+'application' kind under MSVC and insert all the .c, .cpp, .asm
+(or .obj if you don't want to deal with .asm compiling) files
+from the zip archive.</p>
+
+<p><br>
+</p>
+
+<p>To assemble the .asm files you will need MASM 6.11d and add to
+your MSCV setting: </p>
+
+<p><br>
+</p>
+
+<p><font color="#000000" size="2" face="Courier New"><b><tt>'path'\ml
+-c -Zi -coff -Fo$(TargetDir)\$(InputName).obj $(InputPath) under
+build command, under 'output files' add
+$(TargetDir)\$(InputName).obj</tt></b></font></p>
+
+<p><tt><br>
+</tt></p>
+
+<p>As well add:</p>
+
+<p>Under 'C/C++-preprocessor': 'path'\dxsdk\sdk\inc </p>
+
+<p>Under 'link': 'path'\dxsdk\sdk\lib\ddraw.lib </p>
+
+<p>In the mixed app put the .ppm files in the directory where the
+app(.exe) is, or in the directory where the .mdp is if you want
+to run it from msdev.</p>
+
+<p><font color="#0000FF" size="5"><strong><tt><u>Bugs</u></tt></strong></font></p>
+
+<p>When compiling under MSVC 4.2 under &quot;Release Mode,&quot;
+the optimizations cause a texture problem to the Tunnel texture.
+Therefore, we suggest compiling under &quot;Debug Mode&quot;
+without the optimizations. However, for added performance we
+suggest turning optimizations on for render.c.</p>
+</body>
+</html>

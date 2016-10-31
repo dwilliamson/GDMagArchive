@@ -1,0 +1,21 @@
+Example 6: An example of exit creation in TinyMUSH
+
+@open A Gaurded Cave;cave;n;north=#0
+@lock cave=#0
+@fail cave=You bravely venture forth to the cave, but the gaurds block 
+your path.
+@ofail cave=boldly strides up to the cave, but gaurds block %p way!
+@afail cave=@switch rand(4)=0,@pemit/contents %l=A group of bums laugh 
+at %n!
+
+Alaric and Tangent are both in the same room.  Alaric uses the
+newly-created north exit.  Alaric sees:
+
+> north
+You bravely venture forth to the cave, but the gaurds block your path.
+A group of bums laugh at Alaric!
+
+When Alaric attempts to leave the room, Tangent sees:
+
+Alaric boldly strides up to the cave, but gaurds block his way!
+A group of bums laugh at Alaric!

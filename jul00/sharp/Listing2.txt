@@ -1,0 +1,25 @@
+Brian Sharp
+"Go with the Flow: Improving Fluid Rendering Using Implicit Surfaces"
+Game Developer magazine
+July 2000 issue.
+
+
+Listing 2. Pseudocode to polygonize an implicit surface inside a single cubelet.
+
+polygonizeCubelet(vertices[8])
+{
+  unsigned char config = 0
+  for n = 0 to 7
+  {
+    if vertex[n] is outside the surface
+      set bit n of config to 1
+    (otherwise leave it as 0)
+  } 
+    
+    for each edge in edgesNeedingVertices[config]
+    linearly interpolate to find the vertex on that edge
+      
+    for each triplet of triangle indices in triIndices[config]
+    create a new triangle from those indices using the
+    new linearly interpolated edge vertices
+}

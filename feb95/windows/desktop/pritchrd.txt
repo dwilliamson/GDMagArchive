@@ -1,0 +1,239 @@
+Pritchard Listing 1 (Please provide title)
+
+
+void draw_tile (char* theTileData, int Xpos, int Ypos, int Xwide, int Ywide)
+{
+     int   x, y;
+     int   c = 0;
+ 
+     for  (y = 0; y < Ywide; y++) {
+          for (x = 0; x < Xwide; x++) {
+               set_point (Xpos + x, Ypos + y, theTileData[c++]);
+          }
+     }
+     return;
+}
+ 
+Pritchard Listing 2 (TITLE?)
+
+void Fast_Draw_Tile (char * TheTile, int Xpos, int Ypos, int Xwide, int 
+Ywide)
+{
+    int x, y, z;
+    int c = 0;
+ 
+    for (y = 0; y < Ywide; y++) {
+       for (x = 0; x < Xwide; x++) {
+          asm {
+            Push    SI                  /* Save SI & DI because */
+            Push    DI                  /* the compiler is using them */
+ 
+            Les     DI, dword ptr CURRENT_PAGE
+            Mov     AX, y               /* Get Line # of Pixel */
+            Add     AX, Ypos            /* Add Y position of Tile */
+            Mul     SCREEN_WIDTH        /* Get Offset to Line Start */
+            Mov     BX, x               /* Get X pos inside of tile */
+            Add     BX, Xpos            /* Add X position of Tile */
+            Mov     CX, BX              /* Save to get shift Plane # */
+            Shr     BX, 2               /* X offset (Bytes) = Xpos/4 */
+            Add     BX, AX              /* Offset = Offset + Xpos/4 */
+            Mov     AL, 2               /* Select Map Mask Register */
+            Mov     AH, 0x01            /* Start w/ Plane #0 (Bit 0) */
+            And     CL, 3               /* Get Plane Bits */
+            Shl     AH, CL              /* Get Plane Select Value */
+            Mov     DX, 0x03C4          /* then Select Register */
+            Out     DX, AX              /* Set I/O Register(s) */
+            Mov     SI, TheTile         /* Point to Tile */
+            Add     SI, c               /* Get current data byte # */
+            Inc     c                   /* Advance to next byte */
+            Mov     AL, byte ptr [SI]   /* Get Pixel Color */
+            Mov     ES:[DI+BX], AL      /* Draw Pixel */
+ 
+            Pop     DI                  /* Restore SI & DI */
+            Pop     SI
+          }
+       }
+    }
+    return;
+}
+ 
+
+Pritchard Listing 3 (Title?)
+
+void Faster_Draw_Tile (char * TheTile, int Xpos,
+	                int Ypos, in Xwide, int 
+Ywide)
+{
+    int x, y, p, c;
+ 
+    for (p = 0; p < 4; p++) {
+        asm {
+            Mov     AL, 2               /* Select Map Mask Register */
+            Mov     AH, 0x01            /* Start w/ Plane #0 (Bit 0) */
+            Mov     CX, p               /* Get Plane # */
+            Add     CX, Xpos            /* Adust to Image Xpos */
+            And     CL, 3               /* Get Plane Bits */
+            Shl     AH, CL              /* Get Plane Select Value */
+            Mov     DX, 0x03C4          /* then Select Register */
+            Out     DX, AX              /* Set I/O Register(s) */
+        };
+        for (y = 0; y < Ywide; y++) {
+           c = y * Xwide + p;
+           for (x = p; x < Xwide; x+=4) {
+              asm {
+ 
+                Push    SI                  /* Save SI & DI because */
+                Push    DI                  /* the compiler is using them */
+ 
+                Les     DI, dword ptr CURRENT_PAGE
+                Mov     AX, y               /* Get Line # of Pixel */
+                Add     AX, Ypos            /* Adjust to Image Y pos */
+                Mul     SCREEN_WIDTH        /* Get Offset to Line Start */
+                Mov     BX, x               /* Get X pos inside of tile */
+                Add     BX, Xpos            /* Add X position of Tile */
+                Shr     BX, 2               /* X offset (Bytes) = Xpos/4 */
+                Add     BX, AX              /* Offset = Offset + Xpos/4 */
+                Mov     SI, TheTile         /* Point to Tile */
+                Add     SI, c               /* Get current data Byte # */
+                Add     c, 4                /* Advance to next in plane */
+                Mov     AL, byte ptr [SI]   /* Get Pixel Color */
+                Mov     ES:[DI+BX], AL      /* Draw Pixel */
+ 
+                Pop     DI                  /* Restore SI & DI */
+                Pop     SI
+ 
+              }
+          }
+       }
+    }
+    return;
+}
+ 
+
+Pritchard Listing 4 (TITLE?)
+
+void EF_Draw_Tile (char * TheTile, int Xpos, int Ypos)
+{
+    int x, y, p;
+    int c = 0;
+ 
+    for (p = 0; p < 4; p++) {
+        asm {
+            Mov     AL, 2               /* Select Map Mask Register */
+            Mov     AH, 0x01            /* Start w/ Plane #0 (Bit 0) */
+            Mov     CX, p               /* Get Plane # */
+            Add     CX, Xpos            /* Adust to Image Xpos */
+            And     CL, 3               /* Get Plane Bits */
+            Shl     AH, CL              /* Get Plane Select Value */
+            Mov     DX, 0x03C4          /* then Select Register */
+            Out     DX, AX              /* Set I/O Register(s) */
+        };
+        c = p;                          /* we can do this because */
+        for (y = 0; y < 16; y++) {      /* we know the tile width */
+           for (x = p; x < 16; x+=4) {  /* and the tile height! */
+              asm {
+ 
+                Push    SI              /* Save SI & DI because */
+                Push    DI              /* the compiler is using them */
+ 
+                Les     DI, dword ptr CURRENT_PAGE
+                Mov     BX, y                   /* Get Line # of Pixel */
+                Add     BX, Ypos                /* Add Start Y position */
+                Add     BX, BX                  /* Scale to word offset */
+                Mov     AX, SCREEN_OFFSET[BX]   /* Lookup in Table */
+ 
+                Mov     BX, x               /* Get Xpos */
+                Add     BX, Xpos            /* Add in Image X Start */
+                Shr     BX, 2               /* X offset (Bytes) = Xpos/4 */
+                Add     BX, AX              /* Offset = Offset + Xpos/4 */
+                Mov     SI, TheTile         /* Point to Tile */
+                Add     SI, c               /* Point to correct byte */
+                Add     c, 4                /* Advance to Next in plane */
+                Mov     AL, byte ptr [SI]   /* Get Pixel Color */
+                Mov     ES:[DI+BX], AL      /* Draw Pixel */
+ 
+                Pop     DI                  /* Restore SI & DI */
+                Pop     SI
+ 
+              }
+          }
+       }
+    }
+    return;
+}
+ 
+
+Pritchard Listing 5 (TITLE?)
+
+
+ASM_STACK    STRUC
+                DW  ?,?,? ; saved BP, SI, DI
+                DD  ?     ; Caller Return Address
+    ADT_Ypos    DW  ?     ; Ypos of Tile to Draw
+    ADT_Xpos    DW  ?     ; Xpos of Tile to Draw
+    ADT_Tile    DW  ?     ; Near Prt to Tile Image
+ASM_STACK    ENDS
+ 
+ADT_DRAW_PLANE MACRO
+    REPT 15
+        MOV     AX, [SI]        ; Get 2 Pixels
+        MOV     CX, [SI+2]      ; Get 2 More Pixels
+        MOV     ES:[DI], AX     ; Write 2 Pixels
+        ADD     SI, 4           ; Update Source Address
+        MOV     ES:[DI+2], CX   ; Write 2 More Pixels
+        ADD     DI, 80          ; Advance to next line
+    ENDM
+        MOV     AX, [SI]        ; Get 2 Pixels
+        MOV     CX, [SI+2]      ; Get 2 More Pixels
+        MOV     ES:[DI], AX     ; Write 2 Pixels
+        ADD     SI, 4           ; Update Source Address
+        MOV     ES:[DI+2], CX   ; Write 2 More Pixels
+ENDM
+ 
+ADT_ADVANCE_PLANE MACRO
+        ROL     BH, 1       ; Rotate Map Mask
+        ADC     BP, 0       ; Adjust Start Address
+        MOV     AX, BX      ; Select New Video Plane
+        OUT     DX, AX      ; By OUTing to Map Mask
+        MOV     DI, BP      ; Start over at top
+ENDM
+ 
+ASM_DRAW_TILE   PROC    FAR
+ 
+    PUSH    BP, DI, SI          ; Preserve Registers
+    MOV     BP, SP              ; Set up Stack Frame
+ 
+    MOV     DX, 03C4h           ; VGA Map Mask Register
+    MOV     CX, [BP].ADT_Xpos   ; CX = Xpos
+    MOV     AX, CX              ; AX = Copy of Xpos
+ 
+    LES     DI, dword ptr CURRENT_PAGE
+    MOV     SI, [BP].ADT_Tile          ; DS:SI - Tile Data
+    MOV     BX, [BP].ADT_Ypos          ; BX = Ypos
+    ADD     BX, BX                     ; Scale to Word Offset
+    ADD     DI, SCREEN_OFFSET[BX]      ; Get Start of Line
+    SHR     AX, 2                      ; Add in Xpos / 4
+    ADD     DI, AX                     ; DI = Final Address
+    MOV     BP, DI                     ; Save to start each plane
+ 
+    AND     CL, 3               ; Get Plane Bits
+    MOV     BX, 1102h           ; Map Mask + Plane Select Bits
+    SHL     BH, CL              ; Rotate into position
+    MOV     AX, BX              ; Select video write plane
+    OUT     DX, AX              ; By OUTing to Map Mask
+ 
+    ADT_DRAW_PLANE              ; Draw 16 Lines of 4 pixels
+    ADT_ADVANCE_PLANE           ; Select Next Mode X Plane
+    ADT_DRAW_PLANE              ; Draw 16 Lines of 4 pixels
+    ADT_ADVANCE_PLANE           ; Select Next Mode X Plane
+    ADT_DRAW_PLANE              ; Draw 16 Lines of 4 pixels
+    ADT_ADVANCE_PLANE           ; Select Next Mode X Plane
+    ADT_DRAW_PLANE              ; Draw 16 Lines of 4 pixels
+ 
+    POP     SI, DI, BP          ; Restore Saved Registers
+    RET     6                   ; Exit and Clean up Stack
+ 
+ASM_DRAW_TILE   ENDP
+ 
+
+

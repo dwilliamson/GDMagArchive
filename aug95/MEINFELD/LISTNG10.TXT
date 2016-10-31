@@ -1,0 +1,10 @@
+Listing 10: Some definitions for the cache, from muddb.h.  The cache is
+transparently layed over the database.
+
+#define STORE(key, attr)        cache_put(key, attr)
+#define DELETE(key)             cache_del(key)
+#define FETCH(key)              cache_get(key)
+#define SYNC                    cache_sync()
+#define CLOSE                   { cache_sync(); dddb_close(); }
+
+

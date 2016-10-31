@@ -1,0 +1,31 @@
+void CPaddleGameWindow::InitGame(void)
+{
+	// Start the paddle in the middle of the play area, not moving
+	PaddleX = (kPlayAreaRight - kPlayAreaLeft)/2 + kPlayAreaLeft;
+	PaddleXSpeed = 0;
+	// Start the ball just above the paddle
+	BallX = (kPlayAreaRight - kPlayAreaLeft)/2 +
+		kPlayAreaLeft - kBallSize/2;
+	BallY = kPlayAreaBottom - kBallSize - kPaddleHeight;
+	// Move the ball towards the upper-left
+	// TODO: Randomize initial ball velocity
+	BallXSpeed = -1;
+	BallYSpeed = -1;
+	// Start Slowly - ball at 30 frames per second, increasing 7 fps every level
+	BallSpeed = 1000 / (30 + 7 * (CurrentLevel % 5));
+	NextBallTime = GetMillisecondTime() + BallSpeed;
+	// Initialize the game field
+	BlockCount = kWallWidthBlocks * kWallHeightBlocks;
+	int HitCount = CurrentLevel / 5 + 1;
+	int Count;
+	for (Count = 0; Count < BrickCount; ++Count)
+		GameField[Count] = HitCount;
+	// Draw the complete initial game state
+	COffscreenBuffer *pBuffer = GetOffscreenBuffer();
+	if (pBuffer)
+	{
+		pBuffer->Lock();
+		DrawCompleteGameState();
+		pBuffer->Unlock();
+	}
+}

@@ -1,0 +1,32 @@
+Listing 14: grow_bit()
+
+/* the database bitmap */
+static char *bitm = (char *) NULL;
+
+/* grow the bitmap to given size */
+
+static void
+growbit(maxblok)
+    int maxblok;
+{
+    int nsiz;
+    char *nbit;
+
+    /* round up to eight and then some */
+    nsiz = (maxblok + 15) & 0xfffffff8;
+
+    if (nsiz <= bitblox)
+        return;
+
+    if (bitm == (char *) NULL)
+        bitm = (char *) XMALLOC(nsiz / 8, ÒgrowbitÓ);
+    else
+        bitm = (char *) realloc(bitm, nsiz / 8);
+
+    if (bitm == (char *) NULL)
+        fatal(Òdb_init cannot grow bitmap Ò, (char *) -1, Ò\nÓ, (char *) NULL);
+
+    bzero(bitm + (bitblox / 8), (nsiz - bitblox) / 8);
+
+    bitblox = nsiz - 8;
+}

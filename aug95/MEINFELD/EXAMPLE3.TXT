@@ -1,0 +1,19 @@
+Example 3: The text produced by the “+help” global command on TooMUSH
+
+TooMANY TooMUSH Globals
+
++3look              +3who               +8ball
++actor              +altchar            +bamf
++bday               +bubble             +channel
++channels           +color              +deity
++email              +exclude            +finger
++gif                +grep               +gripe
++http               +last               +lwizards
++mail               +money              +mood
++mp                 +muds               +mutter
++places             +poem               +poll
++recipe             +song               +species
++tarot              +theme              +tidy
++who                +wiz                +wizards
+
+Type ‘+help <command name without +>‘ for more about that command.

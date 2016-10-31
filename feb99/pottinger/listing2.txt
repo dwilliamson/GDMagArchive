@@ -1,0 +1,43 @@
+//*****************************************************************************
+// BFormation Class
+//*****************************************************************************
+class BFormation
+{
+   public:
+      //The three formation states.
+      enum
+      {
+         cStateBroken=0,
+         cStateForming,
+         cStateFormed
+      };
+
+      BFormation( void );
+      ~BFormation( void );
+
+      //Accessors for the formation's orientation and state.  The expectation
+      //is that BFormation is really a data storage class; BGroup drives the
+      //state by calling the set method as needed.
+      BVector&    getOrientation( void ) { return(mOrientation); }
+      void        setOrientation( BVector& v ) { mOrientation=v; }
+      int         getState( void ) const { return(mState); }
+      void        setState( int v ) { mState=v; }
+
+      //The unit management functions.  These all return information for the
+      //canonical definition of the formation.  It would probably be a good
+      //idea to package the unit information into a class itself.
+      BOOL        setUnits( int num, BVector* pos, BVector* ori, int* types );
+      int         getNumberUnits( void ) const { return(mNumberUnits); }
+      BVector&    getUnitPosition( int index );
+      BVector&    getUnitOrientation( int index );
+      int         getUnitType( int index );
+
+protected:
+      BVector     mOrientation;
+      int         mState;
+      int         mNumberUnits;
+      BVector*    mPositions;
+      BVector*    mOrientations;
+      int*        mTypes;
+};
+

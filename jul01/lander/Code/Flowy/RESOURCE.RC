@@ -1,0 +1,201 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+APPICON                 ICON    DISCARDABLE     "Flowy.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New Simulation",             ID_FILE_NEWSIMULATION
+        MENUITEM "&Load Simulation",            ID_FILE_LOADSIMULATION
+        MENUITEM "&Save Simulation",            ID_FILE_SAVESIMULATION
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_FILE_EXIT
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Particles",                  ID_VIEW_PARTICLES
+        MENUITEM "&Draw Flow Elements",         ID_VIEW_DRAWFLOWELEMENTS
+        MENUITEM "&Sim Running",                ID_SIM_RUNNING
+    END
+    POPUP "&Flow Elements"
+    BEGIN
+        MENUITEM "&Add Element",                ID_ELEMENTS_ADDELEMENT
+        MENUITEM "&Edit Element",               ID_EDIT_ELEMENT
+        MENUITEM "&Delete Element\tDEL",        ID_ELEMENTS_DELETEELEMENT
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About",                      ID_HELP_ABOUT
+    END
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_ABOUT DIALOG DISCARDABLE  0, 0, 165, 106
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Flowy"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,108,84,50,14
+    LTEXT           "OpenGL Flowy Physics",IDC_STATIC,7,7,106,11
+    LTEXT           "Copyright (c) 2001 Darwin 3D, LLC",IDC_STATIC,7,26,114,
+                    8
+    LTEXT           "Left Mouse to paint particles\n\nRight Mouse to Add Control Element or select\n     and drag the current element around",
+                    IDC_STATIC,7,42,151,39
+    ICON            "APPICON",IDC_STATIC,117,7,21,20
+END
+
+IDD_DIALOG_ELEMENT DIALOG DISCARDABLE  0, 0, 165, 114
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Element Settings"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_ELEMSIZE,103,40,37,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_ELEMSTRENGTH,103,56,37,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,92,50,14
+    PUSHBUTTON      "CANCEL",IDCANCEL,108,92,50,14
+    LTEXT           "Strength / Direction",IDC_STATIC,7,57,87,8
+    LTEXT           "Size",IDC_STATIC,7,41,87,8
+    LTEXT           "Type",IDC_STATIC,8,22,37,8
+    COMBOBOX        IDC_ELEMTYPE,67,21,74,50,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Emit Particles",IDC_EMITPART,"Button",BS_AUTOCHECKBOX | 
+                    BS_LEFTTEXT | WS_TABSTOP,35,77,85,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 158
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 98
+    END
+
+    IDD_DIALOG_ELEMENT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 158
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 106
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_DIALOG_ELEMENT DLGINIT
+BEGIN
+    IDC_ELEMTYPE, 0x403, 8, 0
+0x4e55, 0x4649, 0x524f, 0x004d, 
+    IDC_ELEMTYPE, 0x403, 7, 0
+0x4f53, 0x5255, 0x4543, "\000" 
+    IDC_ELEMTYPE, 0x403, 7, 0
+0x4f56, 0x5452, 0x5845, "\000" 
+    IDC_ELEMTYPE, 0x403, 8, 0
+0x4f44, 0x4255, 0x454c, 0x0054, 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    ID_PHYSICS_USEFASTTIME  "1 Second = 1 Hour"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -1,0 +1,16 @@
+Listing 8. Response to a WM_LBUTTONDOWN message
+
+void Window1_OnLButtonDown(HWND hwnd, BOOL fDoubleClick, 
+  int x, int y, UINT keyFlags)
+{
+  HRESULT hr;
+
+  CoInitialize(NULL);
+  hr = CoCreateInstance(CLSID_ISPEEDDRAW, NULL, CLSCTX_INPROC_SERVER,
+                         IID_IUnknown, (VOID**) &P);
+  if (SUCCEEDED(hr))
+  {
+    P->InitParams(hwnd, "E:\\SRC\\BLAISE\\WINFIRE\\BACKGRD1.BMP", 254, "");
+    P->Run();
+  }
+}

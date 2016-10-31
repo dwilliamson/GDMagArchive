@@ -1,0 +1,19 @@
+Listing 1.
+
+typedef struct _D3DVECTOR {
+    union {
+        D3DVALUE x;
+        D3DVALUE dvX;
+    };
+    union {
+        D3DVALUE y;
+        D3DVALUE dvY;
+    };
+    union {
+        D3DVALUE z;
+        D3DVALUE dvZ;
+    };
+} D3DVECTOR, *LPD3DVECTOR;
+
+D3DVALUE
+typedef float D3DVALUE, *LPD3DVALUE;

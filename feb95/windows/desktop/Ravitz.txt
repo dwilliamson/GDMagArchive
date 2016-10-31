@@ -1,0 +1,209 @@
+1	Ravitz Listing 9	April 7, 1995  10:21 AM
+
+
+Listing 1.  The Basic Algorithm
+
+if distance_from_x1_to_x2 > distance_from_y1_to_y2 then
+	for x = x1..x2 draw a dot at x,y_value_at_x
+else
+	for y = y1..y2 draw a dot at x_value_at_y,y
+
+Listing 2.
+
+procedure drawline(x1,y1,x2,y2,w: integer):
+	var xr,yr,dxr,dyr: real:
+		x,y,dx,dy: integer
+	begin
+		if abs(x2-x1)>=abs(y2-y1) then begin { abs(slope) <= 1}
+			{	dx, dyr := change in x, y for each x step }
+				if x1<=2 then dx:=1 else dx:=-1;
+				if x1<>x 2 then dyr:=(y2-y1)/abs(x2-x1) else dyr: = 0;
+			x:=x1-dx
+			yr:=y1;
+			repeat { loop through x1..x2 }
+				x = x +dx;
+			until x=x2
+		end
+		else begin { abs(slope) > 1 }
+			{	dxr, dy := change in x, y for each y step }
+				dxr:=(x2-x1)/abs (y2-y1);
+				if y1<y2 then dy:=1 else dy:=-1;
+			y:=y1-dy;
+			xr:=x1;
+			repeat { loop through y1..y2 }
+				y:=y1+dy
+				drawdot(round(xr),y,w);
+				xr:=xr+dxr;
+			until y = y2;
+		end;
+	end;
+
+Listing 3
+
+
+00000000	00000000	00000000	00111100	scan line 1
+00000000	00000000	00000000	01111110	scan line 2
+00000000	00000000	00011000	11111111	scan line 3
+00001000	00011000	00111100	11111111	scan line 4
+00000000	00011000	00111100	11111111	scan line 5
+00000000	00000000	00011100	11111111	scan line 6
+00000000	00000000	00000000	01111110	scan line 7
+00000000	00000000	00000000	00111100	scan line 8
+
+Listing.4
+
+var bitmap: array[0..479,0..79] of byte absolute [$A0000:00];
+	{	bit map overlaid on a VGA screen in mode $12	}
+	{	y max = 479, x max = 631					}
+
+procedure drawdot(x,y,width: integer);
+	const
+		dot: array[1..4] of array[0..7] of word= (
+			($0000,$0000,$0000,$1000, $0000,$0000,$0000,$0000),	{ 1 pel }
+			($0000,$0000,$0000,$1800,$1800,$0000,$0000,$0000),	{ 2 pel }
+			($0000,$0000,$0800,$3C00,$3C00,$1800,$0000,$0000),	{ 4 pel }
+			($3C00,$7E00,$FF00,$FF00,$FF00,$FF00,$7E00,$3C00));	{ 8 pel }
+	var i,j,k,l,m: word;
+	begin
+		k:=x shr 3; 1:=x and 7;
+		for 1:=0 to 7 do begin
+			m:=dot[width,i] shr 1;
+			bitmap[y+i,k]:=bitmap[y+i,k] or hi(m);
+			bitmap[y+i, k+1]:=bitmap[y+i, k+1] or lo(m);
+		end;
+	end
+
+Listing .5
+
+//	Shading patterns in hex
+		$AA,$55,$AA,$55	$CC,$CC,$33,$33	$11,$AA,$44,$AA
+		$AA,$55,$AA,$55	$CC,$CC,$33,$33	$11,$AA,$44,$AA
+
+//	Shading patterns in binary
+		10101010	11001100	00010001
+		01010101	11001100	10101010
+		10101010	00110011	01000100
+		01010101	00110011	10101010
+		10101010	11001100	00010001
+		01010101	11001100	10101010
+		10101010	00110011	01000100
+		01010101	00110011	10101010
+
+procedure drawdot(x,y,width,shade: integer);
+	const
+		dot: array[1..4] of array[0..7] of word= (
+			($0000,$0000,$0000,$1000,$0000,$0000,$0000,$0000),	{1 pel }
+			($0000,$0000,$0000,$1800,$1800,$0000,$0000,$0000),	{ 2 pel }
+			($0000,$0000,$1800,$3C00,$3C00,$1800,$0000,$0000),	{ 4 pel }
+			($3C00,$7E00,$FF00,$FF00,$FF00,$FF00,$7E00, $3C00)),	{ 8 pel }
+		shademask: array[0..3] of array[0..7] of word= (
+			($FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF),	{ solid }
+			($AAAA,$5555,$AAAA,$5555,$AAAA,$5555,$AAAA,$5555),	{ 1 pel cb }
+			($CCCC,$CCCC,$3333,$3333,$CCCC,$CCCC,$3333,$3333),	{ 2 pel cb }
+			($1111,$AAAA,$4444,$AAAA,$1111,$AAAA,$4444,$AAAA));	{ x grid }
+	var i,j,k,l,m,n: word;
+	begin
+		k:=x shr 3; 1:=x and 7;
+		n:= y and 7;	{ shade mask staring point }
+		for i:=0 to 7 do begin
+			m:=(dot[width,i] shr 1) and shademask[shade,n];
+			bitmap[ y+i,k]:=bitmap[y+i,k] or hi(m);
+			bitmap[y+i,k+1]:=bitmap[y+i,k+1] or lo(m);
+			n:=(n+1) and 7;
+		end
+	end;
+
+Listing.6
+
+
+pattern:	true, true, true, false, false, true, false, false
+pattern length pl
+
+loop through points on line
+	distance from current x,y to start of line x1,y1:
+		dc:=sqrt(sqr(xc-x1)+sqr(yc-y1))
+	distance from current x,y to start of line x1,y1 in pattern steps
+		pd:=dc/pl*8
+	distance reduced to position in pattern array
+		pa:=trunc(pd) and 7
+	if pattern[pa] is on then draw dot else do nothing
+
+Listing 7.
+
+
+procedure drawline(x1,y1,x2,y2,w,p,pl: integer);
+	const pattern: array[0..3,0..7] of boolean=
+		((true,true,true,true,true,true,true,true),			{ solid }
+		 (true,false,false,false,false,false,false,false)	{ dots }
+		 (true,true,true,true,false,false,false,false)		{ dash }
+		 (true,true,true,false,false,true,false,false));		{ dash dot }
+	var, xr,yr,dxr,dyr,pd,dpd: real;
+		x,y,dx,dy: integer;
+	begin
+		if abs(x2-x1)=abs(y2-y1) then begin
+			{ dx, dyr, dpd := change in x, y, pd for each x step }
+				if x1<= x2 then dx:=1 else dx:=-1;
+				if x1<>x2 then dyr:=(y2-y1)/abs(x2-x1) else dyr:=0;
+				dpd:=sqrt(1+sqr(dyr))/p1*8;
+			x:=x1-dx
+			yr:=y1;
+			pd:=0;
+			repeat
+				x:=x+dx
+				if pattern[p,trunc(pd) and 7] then drawdot(x,round(yr),w):
+				yr:=yr+dyr;
+				pd:=pd+dpd;
+			until x=x2
+		end
+		else begin
+			{ dxr, dy, dpd := change in x, y, pd, for each y step }
+				dxr:=(x2-x1)/abs(y2-y1);
+				if y1<y2 then dy:=1 else dy:= -1;
+				dpd:=sqrt(sqr(dxr)+1)/pl*8;
+			xr:=x1;
+			y:=y1-dy;
+			pd:=0;
+			repeat
+				y:=y+dy;
+				if pattern[p,trunc(pd) and 7] then drawdot(round(xr),y,w);
+				xr:=xr+dxr;
+				pd:=pd+dpd
+			until y=y2;
+		end;
+	end;
+
+Listing 8.
+
+procedure drawlinecolor(x1,y1,x2,y2,w,s,p,p1:integer; c: char);
+	begin
+		if upcase(c) in [ORO,OMO,OYO,OWO] then begin
+			setplane(ORO); drawline(x1,y1,x2,y2,s,p,p1);
+		end
+		if upcase(c) in [OGO,OCO,OY,OWO] then begin
+			setplane(OGO); drawline((x1,y1,x2,y2,w,s,p,p1);
+		end;
+		if upcase(c) in [OBO,OCO,OMO,OWO] then begin
+			setplane(OBO); drawline((x1,y1,x2,y2,w,s,p,p1);
+		end
+	end
+
+Listing 9.
+
+procedure setplane(c: char);
+	begin
+		case upcase(c) of
+			OBO: begin
+				port[$3C4]:=2; port[$3C5]:=1;
+				portw[$3CE]:=5; portw[$3CE]:=$004;
+			end
+			OGO: begin
+				port[$3C4]:=2;  port[$3C5]:=2;
+				portw[$3CE]:=5; portw[$3CE]:=$104;
+			end
+			ORO: begin
+				port[$3C4]:=2; port[$3C5]:=4;
+				portw[$3CE]:=5; portw[$3CE]:=$204;
+			end;
+		end;
+	end;
+

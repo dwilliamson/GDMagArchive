@@ -1,0 +1,27 @@
+Listing 2. The Optimized Code
+oid TransformVectors5( float  *pDestVectors,
+const float  (*pMatrix)[3],
+const float  *pSourceVectors, int NumberOfVectors )
+{
+    int Counter;
+    float Value;
+    float _Krr1;
+    float _Krr2;
+    
+    for ( Counter = 0; Counter<NumberOfVectors; Counter++ ) {
+        _Krr1 =  pMatrix[0][0] * pSourceVectors[0];
+        _Krr2 =  pMatrix[1][0] * pSourceVectors[0];
+        Value =  pMatrix[2][0] * pSourceVectors[0];
+        _Krr1 +=  pMatrix[0][1] * pSourceVectors[1];
+        _Krr2 +=  pMatrix[1][1] * pSourceVectors[1];
+        Value +=  pMatrix[2][1] * pSourceVectors[1];
+        _Krr1 +=  pMatrix[0][2] * pSourceVectors[2];
+        _Krr2 +=  pMatrix[1][2] * pSourceVectors[2];
+        Value +=  pMatrix[2][2] * pSourceVectors[2];
+        
+        *pDestVectors++ = _Krr1;
+        *pDestVectors++ = _Krr2;
+        *pDestVectors++ = Value;
+        pSourceVectors += 3;
+    }
+}

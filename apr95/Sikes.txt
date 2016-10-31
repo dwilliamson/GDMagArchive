@@ -1,0 +1,92 @@
+Listing 1. General Flight Group Parameters
+General Flight Group Parameters
+STRUCTURE 			DATA		DESCRIPTION
+OFFSET (DECIMAL)		TYPE*
+
+0-11					byte		Flight Group Name.  12-byte null-terminated array.
+24-35					byte		Cargo 1 text.  12-byte null-terminated array.
+36-47					byte		Cargo 2 text.  12-byte null-terminated array.
+48						byte		Special Craft Position.
+50						byte		Vehicle.  1=X-Wing, 2=Y-Wing, 3=A-Wing, etc.
+51						byte		Vehicles Per Wave.
+52						byte		Starting Configuration. 0=Normal -> 8=Shields off
+53						byte		Weapons. 0=None -> Magnetic Pulse
+54						byte		Beam Weapons. 0=None -> 3=Decoy Beam
+55						byte		Affiliation. 0=Rebel, 1=Imperial, 2=Neutral, etc.
+56						byte		Artificial Intelligence. 0=Novice -> 5=Super Ace
+58						byte		Talk Flag. 0=Talk off. 1=Talk on.
+60						byte		Formation. 0=Vic -> 9=Vertical
+64						byte		Number Of Waves.
+66						byte		Player Position.
+73						byte		Difficulty. 0=All Levels -> 5=<Hard Levels
+96						byte		Arrival Mother Ship Flight Group.
+97						byte		Arrival Method. 0=Hyperspace. 1=Mothership
+98						byte		Departure Mother Ship Flight Group.
+99						byte		Departure Method. 0=Hyperspace. 1=Mothership
+
+*  ObyteO references an unsigned character.
+
+Listing 2 Start Condition Data
+StartCondition Data
+STRUCTURE			DATA		DESCRIPTION
+OFFSET (DECIMAL)	TYPE*
+
+74	 				byte 		Primary Start Condition. 0=Always. 1=Arrived, etc.
+75					byte		Primary Dependency Type. 0=no dependence, 1=flight
+								group dependence, 2=vehicle type dependence, etc.
+76					byte		Primary Start Data.
+78					byte 		Secondary Start Condition. 0=Always. 1=Arrived, etc.
+79					byte 		Secondary Dependency Type. 0=no dependence, 1=flight
+								group dependence, 2=vehicle type dependence, etc.
+80					byte		Secondary Start Data.
+82					byte		Primary And Secondary Logic Switch. 0=AND. 1=OR.
+84					byte		Start Minute Delay.
+85					byte		Start Second Delay.
+
+*  ObyteO references an unsigned character.
+
+Listing 3. The Orders Structure
+The Orders Structure
+STRUCTURE			DATA		DESCRIPTION
+OFFSET (DECIMAL)	TYPE*
+
+0					byte		Order. 0=remain stationary, 1=fly home, 2=fly loop,
+								3=fly loop and evade, 4=rendezvous, etc.
+1					byte		Commanded Speed.  0=stopped -> 10=100% velocity
+2					byte		Indicator1. General timer, loop counter, etc.
+3					byte		Indicator2. General timer, loop counter, etc.
+4					byte 		Indicator3. General timer, loop counter, etc.
+6					byte		Target 1 Type. 1=flight group, 2=type of craft,
+								5=allegiance, 7=global, 8=flight group range
+7					byte 		Target 2 Type. 1=flight group, 2=type of craft,
+								5=allegiance, 7=global, 8=flight group range
+8					byte		Target 1 Data. flight group, vehicle, etc.
+9					byte 		Target 2 Data. flight group, vehicle, etc.
+10 				byte 		Targets 1 And 2 Logic Flag. 0=AND, 1=OR
+12					byte		Target 3 Type. 1=flight group, 2=type of craft,
+								5=allegiance, 7=global, 8=flight group range
+13					byte		Target 3 Data. flight group, vehicle, etc.
+14					byte		Target 4 Type. 1=flight group, 2=type of craft,
+								5=allegiance, 7=global, 8=flight group range
+15					byte 		Target 4 Data. flight group, vehicle, etc.
+16 				byte 		Targets 3 And 4 Logic Flag. 0=AND, 1=OR
+
+*  ObyteO references an unsigned character. 
+
+Listing 4. Win and Bonus Variables
+Win and Bonus Variables
+STRUCTURE 			DATA			DESCRIPTION
+OFFSET (DECIMAL)		TYPE*
+
+158					byte			Win 1 Condition. 1=created, 2=destroyed, etc.
+159					byte			Win 1 Detail.  1=50%, 4=special vehicle, etc.
+160					byte			Win 2 Condition. 1=created, 2=destroyed, etc.
+161					byte			Win 2 Detail.  1=50%, 4=special vehicle, etc.
+162					byte			Possible Win 3 Condition.
+163					byte			Possible Win 3 Detail. 
+164					byte			Bonus Condition. 1=created, 2=destroyed, etc.
+165					byte			Bonus Detail.  1=50%, 4=special vehicle, etc.
+166					signed char	Bonus Points.  1 increment = 50 points.
+
+*  ObyteO references an unsigned character.
+

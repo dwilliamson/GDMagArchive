@@ -1,0 +1,102 @@
+// In these code examples, it will be assumed that the filter width and height are 
+// odd numbers (so there is a distinct center value).
+
+// filterImage
+//
+// This function takes a stream of image values (unsigned shorts in this case...feel free to 
+// modify according to your needs), applies a filter of some kind to it, and returns the
+// resulting stream of new image values
+unsigned short* filterImage ( unsigned short *image, int imageWidth, int imageHeight, 
+							  float *filter, int filterWidth, int filterHeight )
+{
+	int i, j, a, b, idx;
+
+	// allocate memory for our resulting filtered image
+	unsigned short *rsltImage = (unsigned short *) malloc ( sizeof ( unsigned short ) * imageWidth * imageHeight );
+
+	int filterStartX = -(filterWidth / 2);
+	int filterStartY = -(filterHeight / 2);
+
+	idx = 0;
+	for ( j = 0; j < imageHeight; j++ )
+	{
+		for ( i = 0; i < imageWidth; i++ )
+		{
+			float val = 0.0f;
+			float filterSum = 0.0f;
+
+			for ( b = filterStartY; b <= (filterHeight / 2); b++ )
+			{
+				for ( a = filterStartX; a <= (filterWidth / 2); a++ )
+				{
+					int filterIdx = (b - filterStartY) * filterWidth + a - filterStartX;
+					int imageIdx = (b + j) * imageWidth + a + i;
+
+					if ( imageIdx >= 0 && imageIdx < (imageHeight * imageWidth) )
+					{
+						val += image[imageIdx] * filter[filterIdx];
+						filterSum += filter[filterIdx];
+					}
+				}
+			}
+
+			// make sure to divide the value by the sum of the filter weights
+			rsltImage[idx] = val / filterSum;
+
+			idx++;
+		}
+	}
+
+	return rsltImage;
+}
+
+
+
+// createGaussianFilter
+//
+// This function takes a width, height, and gamma value for the Gaussian filter needed,
+// and returns a stream of values (floats in this case...again modify according to your needs)
+// that represents the Gaussian filter
+float* createGaussianFilter ( int width, int height, float gamma )
+{
+	int i, j, idx;
+
+	float *rsltFilter = (float *) malloc ( sizeof ( float ) * width * height );
+
+	int startX = -(width / 2);
+	int startY = -(height / 2);
+
+	idx = 0;
+
+	for ( j = startY; j <= (height / 2); j++ )
+	{
+		for ( i = startX; i <= (width / 2); i++ )
+		{
+			float val = (float)-(i * i + j * j) / (2.0f * gamma * gamma);
+			rsltFilter[idx] = exp ( val );
+			idx++;
+		}
+	}
+
+	return rsltFilter;
+}
+
+
+// createGaussianFilter
+//
+// This function takes a width and height for the average filter needed,
+// and returns a stream of values (floats in this case...again modify according to your needs)
+// that represents the average filter
+float* createAverageFilter ( int width, int height )
+{
+	int i, j, idx;
+
+	float *rsltFilter = (float *) malloc ( sizeof ( float ) * width * height );
+
+	float filterSize = width * height;
+
+	for ( i = 0; i < filterSize; i++ )
+		rsltFilter[i] = 1.0f / filterSize;
+
+	return rsltFilter;
+}

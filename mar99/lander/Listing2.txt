@@ -1,0 +1,33 @@
+Listing 2: My simple Euler Integrator
+
+///////////////////////////////////////////////////////////////////////////////
+// Function:	Integrate 
+// Purpose:		Calculate new Positions and Velocities given a deltatime
+// Arguments:	DeltaTime that has passed since last iteration
+// NoteS:		This integrator uses Euler's method
+///////////////////////////////////////////////////////////////////////////////
+void CPhysEnv::Integrate( float DeltaTime)
+{
+/// Local Variables ///////////////////////////////////////////////////////////
+	int loop;
+	tParticle *source,*target;
+///////////////////////////////////////////////////////////////////////////////
+	source = m_CurrentSys;	// CURRENT STATE OF PARTICLE
+	target = m_TargetSys;	// WHERE I AM GOING TO STORE THE NEW STATE
+	for (loop = 0; loop < m_ParticleCnt; loop++)
+	{
+		// DETERMINE THE NEW VELOCITY FOR THE PARTICLE
+		target->v.x = source->v.x + (DeltaTime * source->f.x * source->oneOverM);
+		target->v.y = source->v.y + (DeltaTime * source->f.y * source->oneOverM);
+		target->v.z = source->v.z + (DeltaTime * source->f.z * source->oneOverM);
+
+		// SET THE NEW POSITION
+		target->pos.x = source->pos.x + (DeltaTime * source->v.x);
+		target->pos.y = source->pos.y + (DeltaTime * source->v.y);
+		target->pos.z = source->pos.z + (DeltaTime * source->v.z);
+
+		source++;
+		target++;
+	}
+}
+

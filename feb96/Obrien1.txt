@@ -1,0 +1,20 @@
+Turn 1
+Sub R1 notmy Factory
+R1 contains:
+		0	0	-3
+		0	-5	0
+		-3	0	-10
+Add R1 my Army
+R1 contains:
+		10	0	-3
+		0	-5	0
+		-3	0	-10
+Build Army 1
+	built=0
+Move Army 1
+	moved=8
+R1 contains:
+		2	1	-3
+		1	1	0
+		-3	0	-10
+Halt

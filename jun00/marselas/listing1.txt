@@ -1,0 +1,321 @@
+Herb Marselas
+"Profiling, Data Analysis, Scalability, and Magic Numbers: Meeting the Minimum System Requirements for AGE OF EMPIRES 2: THE AGE OF KINGS"
+Game Developer magazine
+June, 2000 issue.
+
+Listing 1. An abbreviated example of using the profiling code.
+ 
+
+//==============================================================================
+// prof.h header
+// herb marselas (hmarselas@ensemblestudios.com)
+// june 2000
+// listing 1
+//==============================================================================
+
+#ifndef __PROFHDR
+
+#define __PROFHDR
+
+//==============================================================================
+enum ProfileGroup
+{
+   PGROUP_PROGRAM,
+   PGROUP_WNDPROC,
+   PGROUP_GAMELOOP,
+   PGROUP_PATHING,
+   PGROUP_MOVEMENT,
+   PGROUP_MOVEMENT_PATHING,
+   PGROUP_RETARGETING,
+   PGROUP_RETARGETING_PATHING,
+   PGROUP_LASTGROUP
+};
+//==============================================================================
+class GroupList
+{
+   public:
+      __int64        mqwStart;
+      __int64        mqwEnd;
+      __int64        mqwTotal;
+      DWORD          mdwCalls;
+      ProfileGroup   mMajorSection; // identifies the parent group id
+      const char     *mpMajorSection; // string name of the parent group
+};
+//==============================================================================
+void _ProfInit(void);
+void _ProfStart(ProfileGroup group);
+void _ProfStop (ProfileGroup group);
+void _ProfSave(void);
+
+//==============================================================================
+#ifdef _PROFILE
+#define ProfInit() _ProfInit();
+#define ProfStart (group) _ProfStart (group);
+#define ProfStop (group) _ProfStop (group);
+#define ProfSave() _ProfSave();
+#else
+#define ProfInit()
+#define ProfStart(group)
+#define ProfStop (group)
+#define ProfSave()
+#endif // !_PROFILE
+
+//==============================================================================
+#endif // __PROFHDR
+
+//==============================================================================
+// eof: prof.h header
+//==============================================================================
+
+
+//==============================================================================
+// prof.cpp
+// herb marselas (hmarselas@ensemblestudios.com)
+// june 2000
+//==============================================================================
+
+#include "prof.h"
+
+//==============================================================================
+static GroupList groupList[PGROUP_LASTGROUP];
+
+//==============================================================================
+static void GetTimeStamp(__int64 *pdwtime);
+static double GetFrequency(void);
+
+//==============================================================================
+#define SetMajorSection(entry, major) \
+        { groupList[ entry ].mMajorSection = major ; \
+          groupList[ entry ].mpMajorSection = #major ; }
+
+//==============================================================================
+void _ProfInit(void)
+{
+   // clear everything out
+   memset(&groupList[0], 0, sizeof(groupList));
+
+   // get cpu frequency
+   GetFrequency();
+
+   // set groups and parents for timing
+   SetMajorSection(EVENT_PROGRAM, EVENT_PROGRAM);
+   SetMajorSection(EVENT_WNDPROC, EVENT_PROGRAM);
+   SetMajorSection(PGROUP_GAMELOOP, EVENT_PROGRAM);
+   SetMajorSection(PGROUP_PATHING, PGROUP_GAMELOOP);
+   SetMajorSection(PGROUP_MOVEMENT, PGROUP_GAMELOOP);
+   SetMajorSection(PGROUP_MOVEMENT_PATHING, PGROUP_MOVEMENT);
+   SetMajorSection(PGROUP_RETARGETING, PGROUP_GAMELOOP);
+   SetMajorSection(PGROUP_RETARGETING_PATHING, PGROUP_RETARGETING);
+} // ProfInit
+
+//==============================================================================
+void _ProfStart (ProfileGroup group)
+{
+   // make sure this hasn't been incorrectly started twice
+   if (groupList[group].mqwStart)
+   {
+      _asm int 3
+   }
+
+   // get the start time
+   GetTimeStamp(&groupList[group].mqwStart);
+
+} // _ProfStart
+
+//==============================================================================
+void _ProfStop(ProfileGroup group)
+{
+   // make sure we called start first
+   if (!groupList[group].mqwStart)
+   {
+      _asm int 3
+   }
+
+   // get ending time
+   GetTimeStamp(&groupList[group].mqwEnd);
+
+   // calculate this latest elapsed interval
+   groupList[group].mqwTotal += groupList[group].mqwEnd - groupList[group].mqwStart;
+
+   // reset starting time
+   groupList[group].mqwStart = 0;
+
+   // incr the number of calls made
+   groupList[group].mdwCalls++;
+
+} // _ProfStop
+
+//==============================================================================
+#define proftrace(id) \
+        fprintf(p, #id "\t%lu\t%12.6f\t%18.14f\t%6.2f%%\tof %s\n",  \
+                groupList[ id ].mdwCalls, \
+               (double) groupList[ id ].mqwTotal / GetFrequency(), \
+               ((double) groupList[ id ].mqwTotal / GetFrequency()) / \
+                (double) groupList[ id ].mdwCalls, \
+               100.0f * (double) groupList[ id ].mqwTotal /  \
+                (double) groupList[ groupList[ id ].mMajorSection ].mqwTotal, \
+               groupList[ id ].mpMajorSection);
+
+//==============================================================================
+void _ProfSave(void)
+{
+   FILE *p = fopen("c:\\profile.txt", "wt");
+
+   if (!p)
+   return;
+
+   fputs("\n\nProfile Data:\n", p);
+   fputs("description\tcalls\ttotal time (sec)\ttime per call\t%%\tof section\n", p);
+
+   proftrace(EVENT_PROGRAM);
+   proftrace(EVENT_WNDPROC);
+   proftrace(PGROUP_GAMELOOP);
+   proftrace(PGROUP_PATHING);
+   proftrace(PGROUP_MOVEMENT);
+   proftrace(PGROUP_MOVEMENT_PATHING);
+   proftrace(PGROUP_RETARGETING);
+   proftrace(PGROUP_RETARGETING_PATHING);
+
+   fputs("=== end of profile list ===\n\n", p);
+
+   fclose(p);
+
+} // _ProfSave
+
+//==============================================================================
+static void GetTimeStamp(__int64 *pdwtime)
+{
+    DWORD   dwLoDword;
+    DWORD   dwHiDword;
+        
+    _asm 
+    {
+	rdtsc   // use _emit 0x0f _emit 0x31 if not supported by asmblr
+        mov dwLoDword, eax              // Move Lo Timestamp into mem
+        mov dwHiDword, edx              // Move Hi Timestamp into mem
+    }
+
+   *pdwtime = dwHiDword;
+   *pdwtime = *pdwtime << 32;
+   *pdwtime |= dwLoDword;
+
+} // GetTimeStamp
+
+//==============================================================================
+static double GetFrequency(void)
+{
+   static double ffreq = 0.0;
+   static bool bcalculated = false;
+
+   HANDLE hSemaphore;
+   __int64 mqwStart, mqwEnd;
+   HANDLE hthread;
+   HANDLE hprocess;
+   long nOldPriority;
+   DWORD dwOldClass;
+   HCURSOR hcursor;
+
+   if (bcalculated)
+      if (ffreq > 0.0)
+         return ffreq;
+
+   hcursor = SetCursor(LoadCursor(0, IDC_WAIT));
+   hthread = GetCurrentThread();
+   hprocess = GetCurrentProcess();
+   hSemaphore = CreateSemaphore(0, 1, 1, 0);
+   WaitForSingleObject(hSemaphore, 1000);
+
+   nOldPriority = GetThreadPriority(hthread);
+   dwOldClass = GetPriorityClass(hprocess);
+
+   SetPriorityClass(hprocess, REALTIME_PRIORITY_CLASS);
+   SetThreadPriority(hthread, THREAD_PRIORITY_TIME_CRITICAL);
+
+   GetTimeStamp(&mqwStart);
+   WaitForSingleObject(hSemaphore, 5000);
+   GetTimeStamp(&mqwEnd);
+
+   SetPriorityClass(hprocess, dwOldClass);
+   SetThreadPriority(hthread, nOldPriority);
+
+   ReleaseSemaphore(hSemaphore, 0, 0);
+   CloseHandle(hSemaphore);
+
+   ffreq = (double) (mqwEnd - mqwStart) / 5000000.0;
+
+   bcalculated = true;
+   SetCursor(hcursor);
+
+   return ffreq;
+
+} // GetFrequency
+
+//==============================================================================
+// eof: profile.cpp
+//==============================================================================
+
+//==============================================================================
+// profexample.cpp
+// herb marselas (hmarselas@ensemblestudios.com)
+// june 2000
+//==============================================================================
+#include "prof.h"
+
+...
+
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                     LPSTR lpCmdLine, int nCmdShow)
+{
+   MSG msg;
+   HACCEL hAccelTable;
+
+   ProfInit();
+
+   ProfStart(PGROUP_PROGRAM);
+
+   // Perform application initialization:
+   if (!InitInstance (hInstance, nCmdShow)) 
+      return FALSE;
+
+   // Main message loop:
+   ProfStart(PGROUP_WNDPROC);
+
+   while (GetMessage(&msg, NULL, 0, 0)) 
+   {
+      if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+      {
+          TranslateMessage(&msg);
+          DispatchMessage(&msg);
+      }
+      else 
+         if (gbRunGame)
+         {
+            ProfStart(PGROUP_GAMELOOP);
+
+            runGameLoop();
+
+            ProfStop(PGROUP_GAMELOOP);
+         }
+         else
+         {
+            WaitMessage();
+         }
+
+   }
+
+   ProfStop(PGROUP_WNDPROC);
+
+   ProfStop(PGROUP_PROGRAM);
+
+   ProfSave();
+
+   return msg.wParam;
+
+} // WinMain
+
+//==============================================================================
+// eof: profexample.cpp
+//==============================================================================
+
+
+

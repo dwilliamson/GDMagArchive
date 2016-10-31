@@ -1,0 +1,51 @@
+Listing 1.  XSplat Windowing and Messaging System Declaration
+class CXSplatWindow
+{
+public:
+	CXSplatWindow(char const *Caption, int WindowWidth=0,
+		int WindowHeight=0, unsigned char const *Colors = 0);
+	~CXSplatWindow(void);
+
+	void Activate(void);
+	void Deactivate(void);
+	void Terminate(void);
+
+	void KeyDown(char Key, int RepeatCount);
+
+	void MouseDown(int x, int y);
+	void MouseUp(int x, int y);
+	void MouseMove(int x, int y);
+
+	COffscreenBuffer *GetOffscreenBuffer(void)
+		{ return pOffscreenBuffer; };
+
+protected:
+	int IsActiveFlag;
+	int MouseDownFlag;
+	COffscreenBuffer *pOffscreenBuffer;
+
+#if defined(_WINDOWS)
+// Windows implementation details
+
+	HPALETTE Palette;
+	HWND Window;
+
+	friend LONG PASCAL XSplatWindowProc(HWND, UINT, WPARAM, LPARAM);
+
+#elif defined(_MACINTOSH)
+// Macintosh implementation details
+
+	WindowPtr Window;
+	PaletteHandle WinPalette;
+
+	friend void HandleMouseDown(EventRecord *pEvent);
+
+#endif
+};
+
+// This is the XSplat message processing system
+void DispatchEvents(void);
+
+// This is the XSplat main function, called from WinMain or
+// from main after platform-specific setup
+void XSplatMain(void);

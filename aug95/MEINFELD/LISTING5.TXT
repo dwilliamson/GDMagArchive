@@ -1,0 +1,30 @@
+Listing 5: Example of TinyMUSH object manipulation
+
+/* An object is moved and associated contents lists are updated */
+
+void move_object (dbref thing, dbref dest)
+{
+dbref   src;
+
+        /* Remove from the source location */
+
+        src = Location(thing);
+        if (src != NOTHING)
+                s_Contents(src, remove_first(Contents(src), thing));
+
+        /* Special check for HOME */
+
+        if (dest == HOME)
+                dest = Home(thing);
+
+        /* Add to destination location */
+
+        if (dest != NOTHING) {
+                s_Contents(dest, insert_first(Contents(dest), thing));
+        } else {
+                s_Next(thing, NOTHING);
+        }
+        s_Location(thing, dest);
+}
+
+

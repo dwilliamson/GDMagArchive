@@ -1,0 +1,28 @@
+Listing 3: Database definitions from mushdb.h
+
+typedef struct object OBJ;
+  struct object {
+      dbref location;           /* PLAYER, THING: where it is */
+                                   /* ROOM: dropto: */
+                                   /* EXIT: where it goes to */
+      dbref contents;           /* PLAYER, THING, ROOM: head of contentslist */
+                                   /* EXIT: unused */
+      dbref exits;              /* PLAYER, THING, ROOM: head of exitslist */
+                                   /* EXIT: where it is */
+      dbref next;               /* PLAYER, THING: next in contentslist */
+                                   /* EXIT: next in exitslist */
+                                   /* ROOM: unused */
+      dbref link;               /* PLAYER, THING: home location */
+                                   /* ROOM, EXIT: unused */
+      dbref parent;             /* ALL: defaults for attrs, exits, $cmds, */
+      dbref owner;              /* PLAYER: domain number + class + moreflags */
+                                   /* THING, ROOM, EXIT: owning player number */
+      FLAG flags;               /* ALL: Flags set on the object */
+      FLAG flags2;              /* ALL: even more flags */
+  };
+
+These are system-dependent defines, found in autoconf.h:
+
+typedef int  dbref;
+typedef int  FLAG;
+

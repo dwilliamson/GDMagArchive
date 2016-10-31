@@ -1,0 +1,14 @@
+Example 2: TinyMUSH commands used to create, a player-defined command
+
+> &multi-page me=$mp *=*: @dolist %0=@pemit ##=%n pages: %1; @pemit %#=You
+   paged: %0, with Ô%1Õ
+Set.
+
+Now, Alaric, using the newly created ÒmpÓ command, types:
+
+> mp Shadow Tangent=Hola!
+You paged: Shadow Tangent, with ÔHola!Õ
+
+Shadow and Tangent would see:
+
+Alaric pages: Hola!

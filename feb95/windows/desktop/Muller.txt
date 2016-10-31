@@ -1,0 +1,29 @@
+1	Muller Listing 1	April 7, 1995  10:15 AM
+
+
+Listing 1.  A Useful makefile
+
+# Define location of output data files
+D = DATA
+# Define location of temporary files
+T = E:\temp
+
+# Define the data we require
+PANELDATA = $(D)\panel._pl $(D)\panel._sc $(D)\panel._c4
+
+# Define what we have to do
+All: $(PANELDATA)
+	@ echo All done!
+
+# Grab palette from an LBM file
+{graphics\intro}.lbm{data}._pl :
+	extract $@ -pak [ -pal SFX [ -c $< CMAP ] ]
+
+# Convert LBM to _C4 and _SC
+{graphics\intro}.lbm{$(D)}._c4 :
+	pix3map -sf4 -horiz -vert -o $(T)\$(<B) -d $(T) $<
+	extract $(@R)._sc -pak [ -swapc $(T)\$(<B).map BODY ]
+	extract $@ -pak $(T)\$(<B).sf4
+	del $(T)\$(<B).map
+	del $(T)\$(<B).sf4
+

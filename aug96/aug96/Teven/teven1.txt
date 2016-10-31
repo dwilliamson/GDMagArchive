@@ -1,0 +1,496 @@
+/*-- LISTING 1 ------- MSCDEX.MAK ------------------------------------------*/
+
+# MSCDEX.MAK: Watcom makefile for MSCDEX.LIB.
+
+mscdex.lib: mscdex.obj .AUTODEPEND
+     wlib -b -n -q $@ +mscdex.obj
+
+mscdex.obj: mscdex.c .AUTODEPEND
+     wcc386 -d2 -5r -w4 -e10 -zq -zm -mf -bt=dos -oe=16 -oailr -s -os $[*
+
+
+/*-- LISTING 1 ------- MSCDEX.H --------------------------------------------*/
+
+// MSCDEX.H
+// Copyright (C) 1995,1996 by Dan Teven.
+// You may use this code freely in your own applications, commercial and
+// otherwise, as long as you don't remove this copyright message.
+
+#if defined(__cplusplus)
+     extern "C" {
+#endif
+
+#if !defined(__WATCOMC__)
+     #error "Watcom C/C++ is the only supported compiler.";
+#endif
+
+#include <sys/types.h>
+
+#define CDROM_SUCCESS           0x100
+#define CDROM_BUSY_BIT          0x200
+#define CDROM_ERROR_BIT         0x8000
+#define CDROM_ERR_BAD_UNIT      0x8101 // unknown unit
+#define CDROM_ERR_NOT_READY     0x8102 // drive not ready
+#define CDROM_ERR_BAD_CRC       0x8104 // CRC error
+#define CDROM_ERR_SEEK          0x8106 // seek error
+#define CDROM_ERR_NOT_FOUND     0x8108 // sector not found
+#define CDROM_ERR_RD_FAULT      0x810B // read fault
+#define CDROM_ERR_GEN_FAIL      0x810C // general failure
+#define CDROM_ERR_INV_CHG       0x810F // invalid disk change
+
+#if !defined(TRUE)
+#define TRUE                                    1
+#define FALSE                                   0
+#endif
+
+#pragma pack(1)
+
+#define CD_SECTOR_SIZE          2048
+typedef char Sector[CD_SECTOR_SIZE];
+typedef unsigned long SectorNumber;
+typedef unsigned short RealModeSegment;
+typedef void __far *ProtectedModeAddress;
+
+ typedef struct {
+     ProtectedModeAddress ptr;          // memory model-independent pointer
+     RealModeSegment seg;               // real mode segment value
+} RealPtr;
+
+typedef enum {
+     SUCCESS = 0,
+     GENERAL_FAILURE,                   // bad input data, usually
+     LOW_MEMORY_FAILURE,                // failure to allocate low memory
+     MSCDEX_FAILURE,                    // MSCDEX not running or old version
+     UNKNOWN_DRIVE_FAILURE,             // drive not supported by MSCDEX
+     UNKNOWN_FILE_FAILURE,              // file not found
+     SEEK_FAILURE,                      // seek request failed
+     DRIVER_FAILURE                     // device driver returned an error
+} ErrorCode;
+
+//--------------- Programming interface ------------------------------------
+
+RealPtr __cdecl AllocateLow (size_t bytes);
+void __cdecl FreeLow (RealPtr p);
+
+ErrorCode __cdecl BeginCDAccess (unsigned char driveLetter, 
+     RealModeSegment *pCS);
+ErrorCode __cdecl EndCDAccess (void);
+ErrorCode __cdecl ReadCD (char *pathName, SectorNumber startSector,
+     SectorNumber numSectors, ProtectedModeAddress pBuffer);
+ErrorCode __cdecl GetLastCDError (unsigned short *pError);
+
+#if defined (__cplusplus)
+     };
+#endif
+
+
+/*-- LISTING 1 ------- MSCDEX.C---------------------------------------------*/
+
+// MSCDEX.C
+// Copyright (C) 1995,1996 by Dan Teven.
+// You may use this code freely in your own applications, commercial and
+// otherwise, as long as you don't remove this copyright message.
+
+#include <dos.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include "mscdex.h"
+
+#define MSCDEX_INTERRUPT      0x2F
+#define INSTALLATION_CHECK    0x1500   // MSCDEX function codes
+#define GET_DEVICE_LIST       0x1501
+#define DRIVE_CHECK           0x150B
+#define GET_VERSION           0x150C
+#define GET_DRIVE_LETTERS     0x150D
+#define GET_DIRECTORY_ENTRY   0x150F
+#define DRIVER_REQUEST        0x1510
+
+#define CD_READ               128      // device driver function code
+
+#define MSCDEX_DIRENTRY_SIZE  256      // in bytes
+#define MSCDEX_BUFFER_SIZE    256      // at least MSCDEX_DIRENTRY_SIZE
+#define TRANSFER_BUFFER_SIZE  8        // in sectors
+
+#pragma pack(1)
+
+typedef unsigned char Boolean;
+typedef unsigned char SmallNumber;
+typedef unsigned short ModestNumber;
+typedef unsigned short RealModeOffset;
+typedef unsigned short Selector;
+typedef unsigned long Register;
+typedef void *FlatPtr;
+
+typedef struct {
+     RealModeOffset off;
+     RealModeSegment seg;
+} RealModeAddress;
+
+typedef struct _dpmi_callregs {
+     Register edi, esi, ebp, esp;
+     Register ebx, edx, ecx, eax;
+     unsigned short flags;
+     unsigned short es, ds;
+     unsigned short fs, gs;
+     unsigned short ip, cs;
+     unsigned short sp, ss;
+} DPMI_REGS;
+
+typedef struct {
+     SmallNumber len;                   // length of packet
+     SmallNumber unit;                  // unit code (block devices)
+     SmallNumber cmd;                   // device driver command
+     ModestNumber status;               // returned by device driver
+     long res[2];                       // reserved
+     SmallNumber address_mode;          // 0 for HSG CD type
+     RealModeOffset buffer_off;         // offset address of DTA
+     RealModeSegment buffer_seg;        // segment address of DTA
+     ModestNumber count;                // sector count
+     SectorNumber start;                // starting sector
+     SmallNumber read_mode;             // read mode (0 = cooked, 1 = raw)
+     SmallNumber interleave_size;       // interleave size
+     SmallNumber interleave_skip;       // interleave skip factor
+} ReadRequest;                         // device request header for read
+
+typedef struct {
+     RealModeAddress next;
+     unsigned short attribute;
+     RealModeOffset strat_off;
+     RealModeOffset int_off;
+     char name[8];
+} Device_Header;                       // DOS device driver header
+
+typedef struct {
+     SmallNumber subunit;
+     RealModeAddress header;
+} DriveDevice;                         // MSCDEX drive-device table
+
+
+static RealPtr sMscdexLowMemory;       // pointer to low memory buffer
+static SectorNumber sFileStartSector;  // start sector of last file read
+static SectorNumber sFileLength;       // length of last file in sectors
+static unsigned short sLastError;      // last error code from driver
+static SmallNumber sNumDrives;         // number of CD-ROM drives in use
+static unsigned char sCurrentDrive;    // current CD-ROM drive in use
+static SmallNumber sCurrentSubunit;    // current subunit of device driver
+static char sLastFileName[_MAX_PATH];  // name of last file looked up
+
+
+// Allocate a block of low (DOS) memory.  The block is rounded up in size
+// to the nearest paragraph, and is paragraph-aligned.
+RealPtr __cdecl AllocateLow (size_t bytes) {
+     RealPtr p;
+     union REGS r;
+
+     p.ptr = (ProtectedModeAddress) 0L;
+     p.seg = 0;
+     r.x.eax = 0x100;
+     r.x.ebx = (bytes + 15) / 16;
+     int386 (0x31, &r, &r);             // DPMI Allocate DOS Memory
+     if (! r.x.cflag) {
+         p.ptr = MK_FP (r.w.dx, 0);
+         p.seg = r.w.ax;
+     }
+     return (p);
+}
+
+// Free DOS memory previously allocated with AllocateLow().
+void __cdecl FreeLow (RealPtr p) {
+     union REGS r;
+
+     r.x.eax = 0x101;
+     r.x.edx = FP_SEG (p.ptr);
+     int386 (0x31, &r, &r);             // DPMI Free DOS Memory
+}
+
+// Convert an arbitrary protected-mode pointer to the equivalent
+// linear address.
+static Register GetLinearAddress (ProtectedModeAddress p) {
+     Register selectorBase;
+     union REGS r;
+
+     r.w.ax = 0x0006;
+     r.w.bx = FP_SEG(p);
+     int386 (0x31, &r, &r);             // DPMI Get Segment Base Address
+     selectorBase = (r.x.ecx << 16) | r.w.dx;
+     return (selectorBase + FP_OFF(p));
+}
+
+// Given a real-mode pointer, returns a protected-mode pointer to that
+// address, using a global zero-based selector.  The protected-mode
+// address returned by this function points to memory not owned by
+// the caller, so it should never be freed.
+static ProtectedModeAddress MapLow (RealModeAddress p) {
+     static Selector sFirstMegSel;
+     union REGS r;
+
+     if (! sFirstMegSel) {
+         r.w.ax = 0x0000;
+         r.w.cx = 1;
+         int386 (0x31, &r, &r);         // DPMI Allocate Descriptor
+         sFirstMegSel = r.w.ax;
+         r.w.ax = 0x0007;
+         r.w.bx = sFirstMegSel;
+         r.w.cx = r.w.dx = 0;           // base (CX:DX) of 0
+         int386 (0x31, &r, &r);         // DPMI Set Segment Base
+         r.w.ax = 0x0008;
+         r.w.cx = 0xF;                  // limit (CX:DX) of 0FFFFFh
+         r.w.dx = 0xFFFF;
+         int386 (0x31, &r, &r);         // DPMI Set Segment Limit
+     }
+     return (MK_FP (sFirstMegSel, (((unsigned long) p.seg << 4) + p.off)));
+}
+
+static Boolean CallMscdex (DPMI_REGS __far *pDPMI) {
+     union REGS r;
+     struct SREGS sr;
+
+     r.x.eax = 0x300;
+     r.x.ebx = MSCDEX_INTERRUPT;
+     r.x.ecx = 0;
+     r.x.edi = FP_OFF(pDPMI);
+     sr.es = FP_SEG(pDPMI);
+     sr.ds = 0;
+     int386x (0x31, &r, &r, &sr);       // DPMI Simulate Real Mode Interrupt
+     return (r.x.cflag == 0);
+}
+
+// Get the device list into the low memory transfer buffer.
+static Boolean MscdexGetDeviceList (void) {
+     DPMI_REGS dr;
+
+     if (! sMscdexLowMemory.ptr)
+         return (FALSE);
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = GET_DEVICE_LIST;
+     dr.es = sMscdexLowMemory.seg;
+     dr.ebx = 0;
+     return (CallMscdex (&dr));
+}
+
+// Get the drive list into the low memory transfer buffer.
+static Boolean MscdexGetDriveList (void) {
+     DPMI_REGS dr;
+
+     if (! sMscdexLowMemory.ptr)
+         return (FALSE);
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = GET_DRIVE_LETTERS;
+     dr.es = sMscdexLowMemory.seg;
+     dr.ebx = 0;
+     return (CallMscdex (&dr));
+}
+
+// Obtain the code segment address of the CD-ROM driver which handles
+// the specified drive letter.  The driver's code segment is used for
+// finding (and calling) the device driver entry points.
+static RealModeSegment GetDriverCS (unsigned char driveLetter) {
+     int i;
+     DriveDevice __far *driveList;
+     SmallNumber __far *driveIndexList;
+     Device_Header __far *pDevice;
+     SmallNumber driveIndex;
+
+     if (! sMscdexLowMemory.ptr)
+         return ((RealModeSegment) 0);
+     MscdexGetDriveList ();
+     driveIndexList = (SmallNumber __far *) sMscdexLowMemory.ptr;
+     driveIndex = toupper(driveLetter) - 'A';
+
+     // Search the list for the drive in question
+     for (i = 0; i < sNumDrives; i++) {
+         if (driveIndexList[i] == driveIndex) {
+             MscdexGetDeviceList ();     // get the drive device list
+             driveList = (DriveDevice __far *) sMscdexLowMemory.ptr;
+
+             // Perform a sanity check on the device header.  Treat the
+             // pointer returned by MSCDEX as valid, and check that the
+             // attribute word has the Character, IOCTL Supported,
+             // and Open/Close/Removable bits set.  (All three bits are
+             // characteristics of a CD-ROM device.)
+             pDevice = (Device_Header __far *) MapLow (driveList[i].header);
+             if ((pDevice->attribute & 0xFF1F) != 0xC800)
+                 break;
+             sCurrentSubunit = driveList[i].subunit;
+             return (driveList[i].header.seg);
+         }
+     }
+     return ((RealModeSegment) 0);      // not found
+}
+
+static Boolean MscdexDriveCheck (unsigned char driveLetter) {
+     DPMI_REGS dr;
+
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = DRIVE_CHECK;
+     dr.ecx = toupper(driveLetter) - 'A';
+     return (CallMscdex (&dr) && (dr.ebx == 0xADAD) &&
+         ((dr.eax & 0xFFFF) != 0));
+}
+
+// Issue a command to the device driver. The request should already
+// be in the low memory transfer buffer.
+static Boolean MscdexDriverRequest (void) {
+     DPMI_REGS dr;
+
+     if (! sMscdexLowMemory.ptr)
+         return (FALSE);
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = DRIVER_REQUEST;
+     dr.ecx = sCurrentDrive - 'A';
+     dr.es = sMscdexLowMemory.seg;
+     dr.ebx = 0;
+     return (CallMscdex (&dr));
+}
+
+static unsigned int MscdexGetVersion (void) {
+     DPMI_REGS dr;
+
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = GET_VERSION;
+     if (! CallMscdex (&dr))
+         return (0);
+     return (dr.ebx);
+}
+
+static Boolean MscdexInstallationCheck (SmallNumber *pNumDrives) {
+     DPMI_REGS dr;
+
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = INSTALLATION_CHECK;
+     dr.ebx = 0;
+     if (! CallMscdex (&dr))
+         return (FALSE);
+     if (pNumDrives)
+         *pNumDrives = dr.ebx & 0xFF;
+     return (TRUE);
+}
+
+// Look up a file in the CD-ROM directory.  Pass the name in the low
+// memory transfer buffer on input, and the raw directory entry will be
+// left there on output.
+static Boolean MscdexLookupFile (char *pathName, FlatPtr buffer) {
+     DPMI_REGS dr;
+     char __far *lp = (char __far *) sMscdexLowMemory.ptr;
+
+     if (! sMscdexLowMemory.ptr)
+         return (FALSE);
+     lp[0] = 'D';                       // put a signature in the buffer so
+     lp[1] = 'T';                       // we can be sure the call works!
+     _fstrcpy (&lp[2], (pathName[1] == ':') ? &pathName[2] : pathName);
+     memset (&dr, 0, sizeof(dr));
+     dr.eax = GET_DIRECTORY_ENTRY;
+     dr.ecx = toupper (pathName[0]) - 'A';
+     dr.es = sMscdexLowMemory.seg;
+     dr.ebx = 2;
+     dr.esi = sMscdexLowMemory.seg;
+     dr.edi = 0;
+     if ((! CallMscdex (&dr)) || ((lp[0] == 'D') && (lp[1] == 'T')))
+         return (FALSE);
+     _fmemcpy (buffer, sMscdexLowMemory.ptr, MSCDEX_DIRENTRY_SIZE);
+     return (TRUE);
+}
+
+// Prepare to access the CD-ROM device denoted by driveLetter directly.
+// This function verifies that MSCDEX 2.10 or better is running, asks
+// MSCDEX to verify that he driveLetter is a CD-ROM device, and returns
+// the code segment value for the corresponding device driver in
+// *pCS.  It allocates 256 bytes of DOS memory, which is used
+// as a communication buffer between MSCDEX and the application.
+ErrorCode __cdecl BeginCDAccess (unsigned char driveLetter,
+     RealModeSegment *pCS) {
+     if (sMscdexLowMemory.ptr)
+         return (GENERAL_FAILURE);
+     if ((! MscdexInstallationCheck (&sNumDrives)) ||
+         (sNumDrives == 0) ||
+         (MscdexGetVersion () < 0x20A))
+         return (MSCDEX_FAILURE);
+     if (! MscdexDriveCheck (driveLetter))
+         return (UNKNOWN_DRIVE_FAILURE);
+
+     // Allocate a block of low memory for communicating with MSCDEX.
+     // We will use the block for identifying the device driver which
+     // handles this drive, looking up files in the drive's directory,
+     // and passing data directly to the driver.
+     sMscdexLowMemory = AllocateLow (MSCDEX_BUFFER_SIZE);
+     if (! sMscdexLowMemory.ptr)
+         return (LOW_MEMORY_FAILURE);
+
+     // Get the address of the CD-ROM driver.  (If we are unable to find
+     // the driver's code segment, *pCS will be set to zero.)
+     if (pCS)
+         *pCS = GetDriverCS (driveLetter);
+     _fmemset (sMscdexLowMemory.ptr, 0, MSCDEX_BUFFER_SIZE);
+     sCurrentDrive = toupper(driveLetter);
+     return (SUCCESS);
+}
+
+// Free the communication buffer in low memory and otherwise terminates
+// a CD-ROM session begun with BeginCDAccess().
+ErrorCode __cdecl EndCDAccess (void) {
+     if (! sMscdexLowMemory.ptr)
+         return (GENERAL_FAILURE);
+     FreeLow (sMscdexLowMemory);
+     sMscdexLowMemory.ptr = NULL;
+     return (SUCCESS);
+}
+
+// Reads a number of sectors from a file on the CD-ROM into the specified
+// buffer.  Files are assumed to be contiguous.  You must pass in a pointer
+// to a pre-allocated low memory buffer of sufficient size (2048 bytes
+// per sector read).
+ErrorCode __cdecl ReadCD (char *pathName, SectorNumber startSector,
+     SectorNumber numSectors, ProtectedModeAddress pBuffer) {
+     char dirEntry[MSCDEX_DIRENTRY_SIZE];
+     ReadRequest __far *p;
+     Register lin;
+
+     if (! sMscdexLowMemory.ptr)
+         return (GENERAL_FAILURE);      // must call BeginCDAccess() first
+     if (pBuffer == NULL)
+         return (GENERAL_FAILURE);      // pBuffer is NULL
+     lin = GetLinearAddress (pBuffer);
+     if (lin >= 1 * 1024 * 1024L)
+         return (GENERAL_FAILURE);      // pBuffer is not in low memory
+     if (pathName == NULL) {            // if no file name specified, take
+         sLastFileName[0] = '\0';       // offset relative to start of CD
+         sFileStartSector = 0;
+     }
+     else {                             // if new file, get start & length
+         if (strcmp (pathName, sLastFileName)) {
+             if (! MscdexLookupFile (pathName, dirEntry))
+                 return (UNKNOWN_FILE_FAILURE);
+             strcpy (sLastFileName, pathName);
+             sFileStartSector = *((SectorNumber *) &dirEntry[2]);
+             sFileLength = (*((SectorNumber *) &dirEntry[10]) +
+                 sizeof(Sector) - 1) / sizeof(Sector);
+         }
+         if (startSector >= sFileLength)
+             return (SEEK_FAILURE);     // read starts past end of file
+         if ((startSector + numSectors) > sFileLength)
+             numSectors = sFileLength - startSector;
+     }
+     p = (ReadRequest __far *) sMscdexLowMemory.ptr;
+     _fmemset (p, 0, sizeof(*p));
+     p->len = sizeof(*p);
+     p->unit = sCurrentSubunit;
+     p->status = CDROM_SUCCESS;         // in case driver doesn't set
+     p->start = sFileStartSector + startSector;
+     p->cmd = CD_READ;
+     p->count = numSectors;
+     p->buffer_seg = lin >> 4;          // pass real-mode address of buffer
+     p->buffer_off = lin & 0xF;         // to the driver
+     MscdexDriverRequest ();            // call the driver - do the read
+     if (p->status != CDROM_SUCCESS) {
+         sLastError = p->status;        // driver failed the request
+         return (DRIVER_FAILURE);       // (call GetLastCDError for details)
+     }
+     return (SUCCESS);
+}
+
+ErrorCode __cdecl GetLastCDError (unsigned short *pError) {
+     *pError = sLastError;
+     return (SUCCESS);
+}
+

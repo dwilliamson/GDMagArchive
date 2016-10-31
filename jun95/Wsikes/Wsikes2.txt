@@ -1,0 +1,28 @@
+Listing 2.  The Mission Look-Up Form
+RECORD NAME						RECORD DATA (MISSION FILE NAMES)
+
+LOOK0000 0001 0002 0003			misna001 misna002 misna003 misna004
+0004 0005 0006 0007				misnb001 misnb002 misnb003 misnb004
+0008 0009 0010 0011				misnc001 misnc002 misnc003 misnc004
+0012 0013 0014						misnd001 misnd002 misnd003
+0015 0016 0017 					misne001 misne002 misne003
+0018 0019 0020 					misnf001 misnf002 misnf003
+0021 0022 0023 					misng001 misng002 misng003
+0024 0025 0026 					misnh001 misnh002 misnh003
+0027 0028 0029 					misni001 misni002 misni003
+0030 0031 0032						misnj001 misnj002 misnj003
+0033 0034 0035 					misnk001 misnk002 misnk003
+0036 0037 0038 0039 				misnl001 misnl002 misnl003 misnl004
+0040 0041 0042 					misnm001 misnm002 misnm003
+0043 0044 0045 					misnn001 misnn002 misnn003
+0046 0047 0048 					misnp001 misnp002 misnp003
+0049 0050 							misnr001 misnr002
+0051 								misnb2ne
+0052								misnc2ne
+0053 								misnd3bd
+0054								misnd1b
+0055 0056 0057 0058 0059 0060 	tsim001  tsim002 tsim003 tsim004 tsim005 tsim006
+0061 								misnl01d
+0062 0063 0064 0065				tsim007  tsim008 tsim009 tsim010
+0066 								misnp000
+

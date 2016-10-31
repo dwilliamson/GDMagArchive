@@ -1,0 +1,53 @@
+Listing 4.  Gathering Statistics for a Colorspace Box
+/*--------------------------------------------------------------------------*/
+/* Calculate statistics over the specified box.                               */
+/*--------------------------------------------------------------------------*/
+static void sum(int ir, int ig, int ib,
+				int jr, int jg, int jb,
+				uint *total_weight,
+				uint *tt_sum, uint *t_ur, uint *t_ug, uint *t_ub)
+{
+	int i, j, r, g, b;
+	uint rs, ts;
+	uint w, tr, tg, tb;
+	uint *rp, *gp, *bp;
+
+	j = 0;
+
+	tr = tg = tb = i = 0;
+
+	rp = hist + ((ir * R_STRIDE) + (ig * G_STRIDE) + ib);
+
+	for (r = ir; r <= jr; r++)
+	{
+		rs = r * r;
+		gp = rp;
+
+		for (g = ig; g <= jg; g++)
+		{
+			ts = rs + (g * g);
+			bp = gp;
+
+		for (b = ib; b <= jb; b++)
+			if (*bp++)	/* was this cell used at all? */
+			{
+				w   = *(bp - 1);
+				j  += w;
+				tr += r * w;
+				tg += g * w;
+				tb += b * w;
+				i  += (ts + b * b) * w;
+			}
+
+		gp += G_STRIDE;
+		}
+
+		rp += R_STRIDE;
+	}
+
+	*total_weight	= j;
+	*tt_sum 			= i;
+	*t_ur 			= tr;
+	*t_ug 			= tg;
+	*t_ub 			= tb;
+}

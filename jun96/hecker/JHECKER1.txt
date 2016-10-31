@@ -1,0 +1,17 @@
+Listing 1: The test function.
+void TransformVectors( float *pDestVectors,
+float const (*pMatrix)[3], float const *pSourceVectors,
+int NumberOfVectors )
+{
+	int Counter, i, j;
+	for(Counter = 0;Counter < NumberOfVectors;Counter++) {
+		for(i = 0;i < 3;i++) {
+			float Value = 0;
+			for(j = 0;j < 3;j++) {
+				Value += pMatrix[i][j] * pSourceVectors[j];
+			}
+			*pDestVectors++ = Value;
+		}
+		pSourceVectors += 3;
+	}
+}

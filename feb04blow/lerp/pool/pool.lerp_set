@@ -1,0 +1,11 @@
+#module "gl_and_windows_0";
+#module "billiards_sim";
+
+#load "main.lerp" "render.lerp" "text.lerp" "math.lerp" "ui.lerp" "world.lerp";
+
+#import GL_and_Windows.Keyboard;
+#import GL_and_Windows.Mouse_Pointer;
+#import GL_and_Windows.Window;
+#import GL_and_Windows.Font;
+#import GL_and_Windows.Font_Character_Info;
+#import GL_and_Windows.GL;

@@ -1,0 +1,34 @@
+Listing 4. The InitObjects Method
+
+procedure TSpeedDraw.InitObjects;
+var
+  hr: hResult;
+  Flags: DWORD;
+begin
+  FHandle := TForm(Owner).Handle;
+  ASpeedDraw := Self;
+
+  DDTest(DirectDrawCreate(nil, FDirectDraw, nil), 'InitObjects1');
+
+  if not FUseExclusive then
+    Flags := DDSCL_NORMAL
+  else
+    Flags := DDSCL_EXCLUSIVE or DDSCL_FULLSCREEN;
+  DDTest(FDirectDraw.SetCooperativeLevel(FHandle, Flags), 'InitObjects2');
+  if FUseExclusive then begin
+    hr := FDirectDraw.SetDisplayMode(640, 480, 8);
+    if(hr <> DD_OK) then
+      raise EDDError.CreateFmt('TSpeedDraw.InitObjects: %d %s', [hr, GetOleError(hr)]);
+  end;
+  
+  CreatePrimary;
+  SetUpBack;
+  SetUpWorkSurface;
+
+  if FUseTimer then
+    SetTimer(Handle, Timer1, FTimerInterval, @Timer2Timer);
+  if Assigned(InitObjectsProc) then
+    InitObjectsProc(Self);
+
+  FActive := True;
+end;

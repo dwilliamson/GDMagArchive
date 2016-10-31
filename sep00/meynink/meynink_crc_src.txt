@@ -1,0 +1,348 @@
+Game Developer Magazine, September 2000
+"Mission: Compressible -- Achieving Full-Motion Video on the Nintendo 64"
+by Todd Meynink
+
+
+
+/*****************************************************************************
+ * Procedure: YCbCr_to_Frame_Buffer                                            *
+ * Purpose  : YCbCr->24bpp RGB->32bpp RGB->Frame Buffer                        *
+ *                                                                           *
+ * Author   : Todd Meynink                                                   *
+ * Last Edit: June 1 99 @ 13:30                                              *
+ *****************************************************************************/
+#include <rsp.h>
+#include <rcp.h>
+#include <regs.s>
+
+/* DMEM organisation (12-bit offsets)*/
+#define DMEM_LUMINANCE  0x0000
+#define DMEM_CB         0x0200
+#define DMEM_CR         0x0280
+#define DMEM_RGB        0x0300
+#define DMEM_SCRATCH    0x0F80
+
+#define EXIT            beq     zero, zero, Done        \
+                        nop
+
+.text
+
+.name   nPitch,                 $20
+.name   pLuminance,             $21     /* arguments */
+.name   pCb,                    $22
+.name   pCr,                    $23
+.name   pDestination,           $24
+.name   nMovieWidth,            $25
+.name   nMovieHeight,           $26
+.name   nRowsPerDMEM,           $27
+.name   nDMEMPerFrame,          $28
+.name   nLengthSkipCount,       $29
+.name   nScreenDMAIncrement,    $30     /* screen ptr increment per DMA of data */
+
+.name   pWkLuminanceA,          $12     /* variables */
+.name   pWkLuminanceB,          $13
+.name   pWkCb,                  $14
+.name   pWkCr,                  $15
+.name   pWkRGB_A,               $16
+.name   pWkRGB_B,               $17
+.name   nXCounter,              $18
+.name   nDMEMCounter,           $19
+
+.name   vZero,                  $v0     /* constants */
+.name   vMultipliers,           $v1
+.name   vConstants,             $v2
+
+.name   vCr_R,                  $v3     /* variables */
+.name   vCr_G,                  $v4
+.name   vCb_G,                  $v5
+.name   vCb_B,                  $v6
+.name   vLumDataA,              $v7
+.name   vLumDataB,              $v8
+.name   vRedA,                  $v9
+.name   vRedB,                  $v10
+.name   vGreenA,                $v11
+.name   vGreenB,                $v12
+.name   vBlueA,                 $v13
+.name   vBlueB,                 $v14
+.name   temp,                   $v15
+
+
+        /* copy arguments in DMEM to registers */
+        lw      pLuminance,             ARG0(zero)
+        lw      pCb,                    ARG1(zero)
+        lw      pCr,                    ARG2(zero)
+        lw      pDestination,           ARG3(zero)
+        lw      nMovieWidth,            ARG4(zero)
+        lw      nMovieHeight,           ARG5(zero)
+        lw      nRowsPerDMEM,           ARG6(zero)
+        lw      nDMEMPerFrame,          ARG7(zero)
+        lw      nLengthSkipCount,       ARG8(zero)
+        lw      nScreenDMAIncrement,    ARG9(zero)        
+        
+        vsub    vZero, vZero, vZero
+        lqv     vMultipliers[0], CONST0(zero)       
+        lqv     vConstants[0], CONST1(zero)
+        
+       
+GetDMASemaphore:
+        mfc0    $11, SP_RESERVED
+        bne     $11, zero, GetDMASemaphore
+        sll     nPitch, nMovieWidth, 2
+        
+        /* clear RGB DMEM */
+        addi    $8, zero, DMEM_RGB
+        addi    $9, zero, DMEM_RGB+2048-64
+ClearDMEM:
+        sqv     vZero[0], 0($8)
+        sqv     vZero[0], 16($8)
+        sqv     vZero[0], 32($8)
+        sqv     vZero[0], 48($8)
+        bne     $8, $9, ClearDMEM
+        addi    $8, $8, 64
+        
+yLoop:        
+        add     nDMEMCounter, zero, nRowsPerDMEM
+        
+        /* setup Wk pointers (in DMEM) */
+        addi    pWkLuminanceA, zero, DMEM_LUMINANCE
+        addi    pWkRGB_A, zero, DMEM_RGB
+        addi    pWkCb, zero, DMEM_CB
+        addi    pWkCr, zero, DMEM_CR        
+        add     pWkLuminanceB, pWkLuminanceA, nMovieWidth
+        add     pWkRGB_B, pWkRGB_A, nPitch         /* sizeof(long) x width */
+        
+        /* DMA luminance/chrominance data into DMEM to work on */
+        addi    $10, zero, DMEM_LUMINANCE       /* DMEM addr */
+        add     $9, zero, pLuminance            /* DRAM addr */
+        sll     $8, nMovieWidth, 1              /*addi    $8, zero, DMEM_LUM_SIZE-1       /* length - 1 */
+        bgezal  $10, DMA_Read                   /* relative branch and link */
+        addi    $8, $8, -1
+        
+        addi    $10, zero, DMEM_CB              /* DMEM addr */
+        add     $9, zero, pCb                   /* DRAM addr */
+        bgezal  $10, DMA_Read                   /* relative branch and link */
+        addi    $8, nMovieWidth, -1
+        
+        addi    $10, zero, DMEM_CR              /* DMEM addr */
+        bgezal  $10, DMA_Read                   /* relative branch and link */
+        add     $9, zero, pCr                   /* DRAM addr */
+        
+        DMEM_Loop:
+                add     nXCounter, zero, nMovieWidth
+.align 8                
+                xLoop:        
+                        /* load chrominance info into vectors */
+                        luv     vCr_R[0], 0(pWkCr)
+                        addi    pWkCr, pWkCr, 8
+                        luv     vCb_G[0], 0(pWkCb)
+                        addi    pWkCb, pWkCb, 8
+                        
+                        /* convert chrominance */
+                        vsub    vCr_R, vCr_R, vConstants[0] /*vSubCrCb*/
+                        vsub    vCb_G, vCb_G, vConstants[0] /*vSubCrCb*/
+                        
+                        vadd    vCr_G, vZero, vCr_R
+                        vadd    vCb_B, vZero, vCb_G
+                        
+                        /* load luminance data for 8*2 = 16 pixels */
+                        lhv     vLumDataA[0], 0(pWkLuminanceA)
+                        lhv     vLumDataB[0], 0(pWkLuminanceB)
+                        
+                        vmudm   vCr_R, vCr_R, vMultipliers[0] /*vMultCr_R*/
+                        vmudm   vCr_G, vCr_G, vMultipliers[1] /*vMultCr_G*/
+                        vmudm   vCb_G, vCb_G, vMultipliers[2] /*vMultCb_G*/
+                        vmudm   vCb_B, vCb_B, vMultipliers[3] /*vMultCb_B*/
+                        
+                        /* convert luminance */
+                        vmudm   vLumDataA, vLumDataA, vMultipliers[4] /*vMultLum*/
+                        vmudm   vLumDataB, vLumDataB, vMultipliers[4] /*vMultLum*/
+                                        
+                        /* calculate RGB */
+                        addi    pWkLuminanceA, pWkLuminanceA, 1
+                        vadd    vRedA, vLumDataA, vCr_R
+                        addi    pWkLuminanceB, pWkLuminanceB, 1               /* <-- shift to odd address */
+                        vsub    vGreenA, vLumDataA, vCr_G
+                        addi    nXCounter, nXCounter, -16
+                        vsub    vGreenB, vLumDataB, vCr_G
+                        vadd    vBlueA, vLumDataA, vCb_B
+                        
+                        vadd    vRedB, vLumDataB, vCr_R
+                        vadd    vBlueB, vLumDataB, vCb_B
+                        vsub    vGreenA, vGreenA, vCb_G
+                        vsub    vGreenB, vGreenB, vCb_G
+                        
+                        /* clamping */
+                        vge     vRedA, vRedA, vZero
+                        vlt     vRedA, vRedA, vConstants[3]
+                        vge     vRedB, vRedB, vZero
+                        vlt     vRedB, vRedB, vConstants[3]
+                        vge     vGreenA, vGreenA, vZero
+                        vlt     vGreenA, vGreenA, vConstants[3]
+                        vge     vGreenB, vGreenB, vZero
+                        vlt     vGreenB, vGreenB, vConstants[3]                        
+                        vge     vBlueA, vBlueA, vZero
+                        vlt     vBlueA, vBlueA, vConstants[3]                        
+                        vge     vBlueB, vBlueB, vZero
+                        vlt     vBlueB, vBlueB, vConstants[3]
+                                                   
+                        /* load luminance data for 8*2 = 16 pixels */
+                        lhv     vLumDataA[0], 0(pWkLuminanceA)
+                        lhv     vLumDataB[0], 0(pWkLuminanceB)
+                        
+                        .name   pScratch, $11
+                        addi    pScratch, zero, DMEM_SCRATCH
+                        shv     vRedA[0], 0(pScratch)
+                        shv     vRedB[0], 64(pScratch)
+                        shv     vGreenA[0], 16(pScratch)
+                        shv     vGreenB[0], 80(pScratch)
+                        shv     vBlueA[0], 32(pScratch)
+                        shv     vBlueB[0], 96(pScratch)
+                        
+                        /**************************/
+                        /* repeat with odd pixels */
+                        /**************************/
+                        /* convert luminance */
+                        vmudm   vLumDataA, vLumDataA, vMultipliers[4] /*vMultLum*/
+                        vmudm   vLumDataB, vLumDataB, vMultipliers[4]
+                        
+                                        
+                        /* calculate RGB */
+                        addi    pScratch, pScratch, 1
+                        vadd    vRedA, vLumDataA, vCr_R
+                        addi    pWkLuminanceA, pWkLuminanceA, 15        /* increment source ptrs */
+                        vsub    vGreenA, vLumDataA, vCr_G
+                        addi    pWkLuminanceB, pWkLuminanceB, 15
+                        vsub    vGreenB, vLumDataB, vCr_G
+                        vadd    vBlueA, vLumDataA, vCb_B
+                        
+                        vadd    vRedB, vLumDataB, vCr_R
+                        vadd    vBlueB, vLumDataB, vCb_B
+                        vsub    vGreenA, vGreenA, vCb_G
+                        vsub    vGreenB, vGreenB, vCb_G
+                        
+                        /* clamping */
+                        vge     vRedA, vRedA, vZero
+                        vlt     vRedA, vRedA, vConstants[3]
+                        vge     vRedB, vRedB, vZero
+                        vlt     vRedB, vRedB, vConstants[3]
+                        vge     vGreenA, vGreenA, vZero
+                        vlt     vGreenA, vGreenA, vConstants[3]
+                        vge     vGreenB, vGreenB, vZero
+                        vlt     vGreenB, vGreenB, vConstants[3]
+                        vge     vBlueA, vBlueA, vZero
+                        vlt     vBlueA, vBlueA, vConstants[3]
+                        vge     vBlueB, vBlueB, vZero
+                        vlt     vBlueB, vBlueB, vConstants[3]
+                                    
+                        shv     vRedA[0], 0(pScratch)
+                        shv     vRedB[0], 64(pScratch)
+                        shv     vGreenA[0], 16(pScratch)
+                        shv     vGreenB[0], 80(pScratch)
+                        shv     vBlueA[0], 32(pScratch)
+                        shv     vBlueB[0], 96(pScratch)
+                       
+                        /* copy to RGB buffer in DMEM */
+                        addi    pScratch, zero, DMEM_SCRATCH
+                        luv     vRedA[0], 0(pScratch)
+                        addi    $9, pWkRGB_A, 1
+                        luv     vRedB[0], 8(pScratch)
+                        addi    $10, pWkRGB_A, 2
+                        luv     vGreenA[0], 16(pScratch)
+                        luv     vGreenB[0], 24(pScratch)
+                        luv     vBlueA[0], 32(pScratch)
+                        luv     vBlueB[0], 40(pScratch)
+                        
+                        sfv     vRedA[0], 0(pWkRGB_A)
+                        sfv     vGreenA[0], 0($9)
+                        sfv     vBlueA[0], 0($10)
+                        
+                        sfv     vRedB[0], 32(pWkRGB_A)
+                        sfv     vGreenB[0], 32($9)
+                        sfv     vBlueB[0], 32($10)
+                        
+                        sfv     vRedA[8], 16(pWkRGB_A)
+                        sfv     vGreenA[8], 16($9)
+                        sfv     vBlueA[8], 16($10)
+                        
+                        sfv     vRedB[8], 48(pWkRGB_A)
+                        sfv     vGreenB[8], 48($9)
+                        sfv     vBlueB[8], 48($10)
+                        
+                        addi    $9, pWkRGB_B, 1
+                        luv     vRedA[0], 64(pScratch)
+                        addi    $10, pWkRGB_B, 2
+                        luv     vRedB[0], 72(pScratch)
+                        luv     vGreenA[0], 80(pScratch)
+                        luv     vGreenB[0], 88(pScratch)
+                        luv     vBlueA[0], 96(pScratch)
+                        luv     vBlueB[0], 104(pScratch)
+                        
+                        addi    pWkRGB_A, pWkRGB_A, 64                  /* increment destination ptrs */
+                        sqv     vZero[0], 0(pWkRGB_B)
+                        sqv     vZero[0], 16(pWkRGB_B)
+                        sqv     vZero[0], 32(pWkRGB_B)
+                        sqv     vZero[0], 48(pWkRGB_B)
+                        
+                        sfv     vRedA[0], 0(pWkRGB_B)
+                        sfv     vGreenA[0], 0($9)
+                        sfv     vBlueA[0], 0($10)
+                        
+                        sfv     vRedB[0], 32(pWkRGB_B)
+                        sfv     vGreenB[0], 32($9)
+                        sfv     vBlueB[0], 32($10)
+                          
+                        sfv     vRedA[8], 16(pWkRGB_B)
+                        sfv     vGreenA[8], 16($9)
+                        sfv     vBlueA[8], 16($10)
+                        
+                        sfv     vRedB[8], 48(pWkRGB_B)
+                        sfv     vGreenB[8], 48($9)
+                        sfv     vBlueB[8], 48($10)
+                          
+                        /* handle loop counters */
+                        bgtz    nXCounter, xLoop                  /* end xLoop */
+                        addi    pWkRGB_B, pWkRGB_B, 64
+        
+                /* handle loop counters */
+                addi    nDMEMCounter, nDMEMCounter, -1
+                
+                /* handle ptrs */
+                add     pWkLuminanceA, pWkLuminanceA, nMovieWidth
+                add     pWkLuminanceB, pWkLuminanceB, nMovieWidth
+                add     pWkRGB_A, pWkRGB_A, nPitch
+                
+                bgtz    nDMEMCounter, DMEM_Loop           /* end DMEM_Loop */
+                add     pWkRGB_B, pWkRGB_B, nPitch
+        
+        /* DMA DMEM back out */
+        add     $9, zero, pDestination          /* DRAM addr */
+        addi    $10, zero, DMEM_RGB             /* DMEM addr */
+        bgezal  $10, DMA_Write                  /* relative branch and link */
+        add     $8, zero, nLengthSkipCount
+        
+        /* handle ptrs */
+        add     pDestination, pDestination, nScreenDMAIncrement
+        sll     $8, nMovieWidth, 1 /*2              /*addi    pLuminance, pLuminance, DMEM_LUM_SIZE*/
+        add     pLuminance, pLuminance, $8
+        srl     $8, $8, 2
+        add     pCr, pCr, $8           /*addi    pCr, pCr, DMEM_CR_SIZE*/
+        
+        /* handle loop counter */
+        addi    nDMEMPerFrame, nDMEMPerFrame, -1
+        bgtz    nDMEMPerFrame, yLoop              /* end yLoop */
+        add     pCb, pCb, $8           /*addi    pCb, pCb, DMEM_CB_SIZE*/
+        
+        
+Done:   /* all done -- ready for next RSP task *
+         * relinquish DMA and RSP to CPU       */
+        mtc0    zero, SP_RESERVED
+        ori     $1, zero, SP_SET_TASKDONE
+        mtc0    $1, SP_STATUS
+        break
+        nop
+
+#include <dma_ucode.s>
+
+
+
+

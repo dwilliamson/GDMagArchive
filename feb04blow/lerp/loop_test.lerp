@@ -1,0 +1,5 @@
+proc main {
+    each (1..10) {
+        print("i is ", $0, "\n");
+    }
+}

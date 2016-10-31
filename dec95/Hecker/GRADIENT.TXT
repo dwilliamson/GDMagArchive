@@ -1,0 +1,197 @@
+/*
+
+This material is Copyright 1995, 1996 Chris Hecker, All Rights Reserved.
+It's for you to read and learn from, not to put in your own articles
+or books or on your website, etc.  Thank you.
+
+Chris Hecker
+checker@netcom.com
+
+*/
+
+This is the description for the rounding modifier setup in the
+subafxfl.cpp source file.  You'll remember that I ran out of space in
+the Dec/Jan column so I couldn't describe the fix for the texture
+direction bug.  See the Aug/Sep issue for a description of the bug.
+
+
+The Rounding Rules
+
+First, let's deal with the rounding rule itself.  I mentioned that there
+are two rules to consider:
+
+                    Cint = floor(C + 1/2)                           (1)
+
+                            and
+
+                    Cint = ceil(C - 1/2)                            (2)
+
+Before we show how we'll pick the rule we want on the fly, I'll show you
+how these two rules can be handled by a single floor expression.
+
+We'll need to use the ceiling to floor conversion equation in our
+derivation, so here it is from previous articles.  If a and b are
+integers, then:
+
+                    ceil(a/b) = floor((a - 1 + b)/b)                (3)
+
+Because a and b must be integers for Equation 3 to work, we can't
+directly apply it to convert Equation 2 into a floor.  However, we can
+use a result derived in Concrete Mathematics (Addison Wesley, 1994) by
+Knuth, Graham, and Patashnik to help us in the conversion.
+
+If we have a function f that is monotonically decreasing, and it has the
+additional property that if f(x) is an integer, then x is an integer, we
+can prove that:
+                    ceil( f(x) ) = ceil( f( floor(x) ) )            (4)
+
+We won't go into the proof here, but you can look it up in Concrete
+Mathematics or try to derive it yourself.  We're interested in a
+specific f for Equation 4, namely, for integers a and b:
+
+                    f(x) = (a - x)/b                                (5)
+
+Equation 5 obeys the restrictions for Equation 4; as x increases f(x)
+decreases monotonically, and if f(x) is an integer, then x must be an
+integer as well (since a and b are integers).
+
+Let's combine these equations.  We know we'll be using fixedpoint at the
+point where we'll be applying the rounding rule, so our real value is a
+rational number N/D, and D is a power of 2.  If we take Equation 2 in
+rational form:
+
+                Cint = ceil(N/D - 1/2) = ceil((N - D/2)/D)          (6)
+
+Equation 6 matches Equation 5, with a = N, b = D, and in this case, x =
+D/2.  This means we can use Equation 4 to convert Equation 6 to:
+
+                ceil((N - D/2)/D) = ceil((N - floor(D/2))/D)        (7)
+
+The numerator and denominator of Equation 7 are integers, so now we can
+use Equation 3 to convert it to a floor:
+
+    ceil((N - floor(D/2))/D) = floor((N - floor(D/2) - 1 + D)/D)    (8)
+
+We can simplify the numerator of Equation 8 by realizing that for powers
+of 2, floor(D/2) = D/2:
+
+        N - floor(D/2) - 1 + D = N - D/2 - 1 + D = N + D/2 - 1      (9)
+
+Giving us:
+
+                    Cint= floor(N/D + 1/2 - 1/D)                    (10)
+
+This is identical to Equation 1 in rational form, with the exception of
+the minus 1/D.  In other words, if we want to choose Equation 1 for our
+rounding rule at runtime, we add 1/2 and floor.  If we want to choose
+Equation 2, we add 1/2 - 1/D instead.  This lets us use a single inner
+loop with floor functions and we can choose the rounding rule using a
+"modifier" value--equal to 1/2 for the floor rule, and equal to 1/2 - 1/D 
+for the ceiling rule--instead of having different inner loops
+implementing each rounding rule for both the U and V texture
+coordinates.
+
+
+Choosing a Rounding Rule
+
+Now that we can easily switch between the rounding rules at runtime, how
+do we determine which rule to use in the first place?  The gradients are
+the key to this decision.  The Aug/Sep article details the problem, so
+we'll just talk about the solution here.  First, the rules for choosing
+a rounding rule for a parameter c (either u or v in our case) are:
+
+    - if dc/dx is positive, use Equation 1
+    - if dc/dx is negative, use Equation 2
+    - if dc/dx is zero and dc/dy is positive or zero, use Equation 1
+    - if dc/dx is zero and dc/dy is negative, use Equation 2
+
+I derived these rules by looking at a bunch of diagrams I drew of
+rectangles with texture axes on them.  I noticed that since we're always
+sampling as we move in x, the primary determining factor for our
+rounding rule is the dc/dx gradient.  If, as we move positively in x,
+we're moving positively in our texture coordinate, then we need to floor
+(as we showed in the first example in the Aug/Sep article).  Likewise,
+if we're moving negatively we need to use the ceiling rule.  However, if
+we're not moving in the texture coordinate at all as we move in x, we
+need to check the dc/dy gradient for our rule.  This should come clear
+if you read the Aug/Sep article's examples and draw out some diagrams
+for yourself.
+
+If we were doing affine texture mapping we'd be finished, since we have
+the du/dx, du/dy, dv/dx/ and dv/dy gradients sitting around.  With
+perspective texture mapping, however, we have d(u/z)/dx, d(1/z)/dx, and
+the other projected gradients, which are not the same thing.  We can't
+just use the sign of d(u/z)/dx and get the right results because the
+sign of d(1/z)/dx and its magnitude matters in the calculation.  We need
+to calculate the real sign of du/dx for our polygon.  Note that du/dx
+changes depending on where we are in the polygon since this is
+perspective texture mapping, but the sign of du/dx does not change,
+since the perspective function is monotonic.
+
+We'll use a standard delta computation to figure out a single du/dx
+somewhere on the polygon, and use its sign in our calculation.  We know
+that for any point on the polygon:
+
+                        u0 = (u0/z0)/(1/z0)                         (11)
+
+We also know that the next pixel over in x is given by:
+
+                u1 = (u0/z0 + d(u/z)/dx)/(1/z0 + d(1/z)/dx)         (12)
+
+Let's use the following definitions to simplify our equations:
+
+            A = u0/z0, B = d(u/z)/dx, C = 1/z0, D = d(1/z)/dx       (13)
+
+We can take the difference to get du/dx, and with a bit of algebraic
+manipulation, we get:
+
+        du/dx = u1 - u0 = (A+B)/(C+D) - A/B = (BC - AD)/(C(C + D))  (14)
+    
+If we calculate the sign of Equation 14 using one of the vertices of our
+polygon and its gradients, we'll have the correct sign for our rounding
+rules...or will we?  Clearly if both u0 and u1 are in the z > 0
+halfspace, the denominator is positive, so the sign of the numerator
+determines the sign of the equation.  If both points are in the z < 0
+halfspace, the denominator is also positive (since C and C + D are
+negative, their product is positive), so the numerator wins again.
+
+You might expect to always have your points in the same halfspace, but
+that won't always happen if your polygon is close to edge-on.  A single
+gradient step in x might put your other point on the other side of z = 0
+and what happens when u0 is on one side of z = 0, and u1 is on the
+other, or worse yet, what if one of the points is on z = 0?
+
+I didn't have an intuitive feel for what would happen, so I wrote a
+program to print out the numerator, denominator, and quotient in
+Equation 14 as the points moved from one halfspace to the other.  As
+you'd expect, the value of Equation 14 changed as the point moved, and
+went a bit nuts at the crossover point.  But, much to my surprise, the
+numerator was constant regardless of the starting point!
+
+Once I saw this, I just needed to prove the numerator is independent of
+the starting position, and then I could use its sign for choosing
+rounding rule and not worry about problems with the z = 0 plane.
+
+To prove the numerator is constant, we notice that, given arbitrary A
+and C from Equation 13 as starting points, we choose other points as we
+move along x by adding in the gradients B and D.  We can choose any
+point along the line formed by these points by scaling the gradients:
+
+                        u/z = A + kB, 1/z = C + kD                  (15)
+
+Now, let's substitute these arbitrary points into the numerator of
+Equation 14:
+
+        B(C + kD) - D(A + kB) = BC + kBD - AD - kBD = BC - AD       (16)
+
+We get the numerator itself, proving that we can choose any starting
+point and still get the same result for the numerator.  And if the
+numerator is constant, that means if it ever works (for example for two
+points in the z > 0 halfspace) then it will always work.
+
+That's it.  The code in subafxfl.cpp calculates the numerator of
+Equation 14 and uses its sign to determine which rounding modifier to
+add to the interpolation.  You can see the results by comparing the
+"Div fix,fl" mapper to the "SubAff fix,fl" mapper; use the Test menu
+item to see the difference.
+

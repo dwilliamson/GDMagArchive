@@ -1,0 +1,120 @@
+Listing 2.  CXSplatWindow Constructor for Win32
+// This will be used as the window class name for CXSplatWindows
+static char XSplatWindowClassName[] = "XSPLAT";
+
+// This will be the window style of all new created CXSplatWindows
+// For now, don't allow the window to be resized
+static const DWORD XSplatWindowStyle =
+	WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME;
+
+CXSplatWindow::CXSplatWindow(const char *Caption, int WindowWidth,
+	int WindowHeight, unsigned char const *Colors) :
+	Palette(0), Window(0), pOffscreenBuffer(0),
+	IsActiveFlag(0), MouseDownFlag(0)
+{
+	extern HINSTANCE ghInstance;
+	assert(ghInstance);
+
+	// Register the XSplatWindow class if it isn't already registered
+	int Success = 1;
+	WNDCLASS ClassInfo;
+	if (!GetClassInfo(ghInstance, XSplatWindowClassName, &ClassInfo))
+	{
+		ClassInfo.hCursor			= LoadCursor(0, IDC_ARROW);
+		ClassInfo.hIcon				= LoadIcon(ghInstance, IDI_APPLICATION);
+		ClassInfo.lpszMenuName		= 0;
+		ClassInfo.lpszClassName		= XSplatWindowClassName;
+		ClassInfo.hbrBackground		= HBRUSH(GetStockObject(WHITE_BRUSH));
+		ClassInfo.hInstance			= ghInstance;
+		ClassInfo.style				= CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
+		ClassInfo.lpfnWndProc		= WNDPROC(XSplatWindowProc);
+		ClassInfo.cbWndExtra		= 0;
+		ClassInfo.cbClsExtra		= 0;
+		
+		Success = RegisterClass(&ClassInfo);
+	}
+
+	if (Success)
+	{
+		// Determine screen dimensions
+		int ScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+		// Given a zero or negative dimension, fill the screen
+		if (WindowWidth <= 0)
+			WindowWidth = ScreenWidth;
+		if (WindowHeight <= 0)
+			WindowHeight = ScreenHeight;
+
+		// Determine the window size for the requested client area
+		RECT WindowRect = { 0, 0, WindowWidth, WindowHeight };
+		AdjustWindowRect(&WindowRect, XSplatWindowStyle, 0);
+
+		// Make sure it's not larger than the screen
+		int WindowWidth = WindowRect.right - WindowRect.left;
+		if (WindowWidth > ScreenWidth) WindowWidth = ScreenWidth;
+
+		int WindowHeight = WindowRect.bottom - WindowRect.top;
+		if (WindowHeight > ScreenHeight) WindowHeight = ScreenHeight;
+
+		// Create the window centered on the screen
+		int Left = (ScreenWidth - WindowWidth) / 2;
+		int Top = (ScreenHeight - WindowHeight) / 2;
+
+		Window = CreateWindow(XSplatWindowClassName, Caption,
+			XSplatWindowStyle, Left, Top, WindowWidth, WindowHeight,
+			0, 0, ghInstance, 0);
+
+		if (Window)
+		{
+			// Store a pointer back to this object in GWL_USERDATA
+			SetWindowLong(Window, GWL_USERDATA, (long)this);
+
+			// TODO: Set up the palette from the given Colors
+			// TODO: We'll do this in a later article...
+			// For now, create a gray wash
+			struct
+			{
+				WORD Version;
+				WORD NumberOfEntries;
+				PALETTEENTRY aEntries[256];
+			} LogPalette =
+			{
+				0x300, // Palette version
+				256    // Number of colors
+			};
+
+			for (int i=0; i<256; ++i)
+			{
+				LogPalette.aEntries[i].peRed =
+					LogPalette.aEntries[i].peGreen =
+					LogPalette.aEntries[i].peBlue = i;
+
+				LogPalette.aEntries[i].peFlags = 0;
+			}
+			Palette = CreatePalette((LOGPALETTE *)&LogPalette);
+
+			// Initialize the Window's DC as necessary
+			// Since it's a CS_OWNDC, these settings will last
+			// forever
+			HDC hdc = GetDC(Window);
+			if (hdc)
+			{
+				SetMapMode(hdc, MM_TEXT);
+				SelectPalette(hdc, Palette, FALSE);
+				RealizePalette(hdc);
+
+				// This isn't really necessary, but...
+				ReleaseDC(Window, hdc);
+			}
+
+			// All ready to go, show the window
+			ShowWindow(Window, SW_NORMAL);
+
+			// Set up the offscreen environment. Note that because
+			// of the way COffscreenBuffer was originally defined, 				// the window  must be visible and active
+			assert(GetActiveWindow() == Window);
+			pOffscreenBuffer = new COffscreenBuffer;
+		}
+	}
+}

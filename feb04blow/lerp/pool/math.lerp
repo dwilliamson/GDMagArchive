@@ -1,0 +1,78 @@
+struct Vector3 {
+    [(1..3)  |  ?Float];
+
+//    default [? 0.0];
+} 
+
+proc make_vector3(Float x, Float y, Float z) {
+    Vector3 result;
+    result[1] = x;
+    result[2] = y;
+    result[3] = z;
+    return result;
+}
+
+proc +(Vector3 a, Vector3 b) {
+    Vector3 c;
+    each a[?i] c[i] = a[i] + b[i];
+    return c;
+}
+
+proc -(Vector3 a, Vector3 b) {
+    Vector3 c;
+    each a[?i] c[i] = a[i] - b[i];
+    return c;
+}
+
+proc *(Vector3 v, Float factor) {
+    Vector3 c;
+    each v[?i] c[i] = v[i] * factor;
+    return c;
+}
+
+proc *(Float factor, Vector3 v) {
+    Vector3 c;
+    each v[?i] c[i] = v[i] * factor;
+    return c;
+}
+
+proc length(Vector v) {
+    Float sum = + each v.[?i ?x] x*x;
+    return sqrt(sum);
+}
+
+proc normalize(Vector v) {
+    Float len = length(v);
+
+    if len then {
+        each v[?i] v[i] /= len;
+    }
+
+    return v;
+}
+
+proc cross_product(Vector3 a, Vector3 b) {
+// @Parse: we would like:    Float x, y, z;
+
+    Float x = 0.0;
+    Float y = 0.0;
+    Float z = 0.0;
+
+    x = a[2] * b[3] - a[3] * b[2];
+    y = a[3] * b[1] - a[1] * b[3];
+    z = a[1] * b[2] - a[2] * b[1];
+
+    return make_vector3(x, y, z);
+}
+
+proc dot_product(Vector a, Vector b) {
+    return + each a[?i]  a[i] * b[i];
+};
+
+
+proc -(Vector3 a) {
+    Vector3 c;
+    each a[?i] c[i] = -a[i];
+    return c;
+}
+

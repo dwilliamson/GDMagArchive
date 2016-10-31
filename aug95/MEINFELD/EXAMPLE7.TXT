@@ -1,0 +1,32 @@
+Example 7: @edit, a command that does not evaluate arguements
+
+Below, when the user sets an ofail attribute, a typo is made.  Instead of %n, %%n 
+is used, which will evaluate to %n, rather than the enacting playerÕs name. The 
+command, @edit can rectify this.
+
+> @ofail me=tries to grab Tangent! Tangent deftly trips %%n, foiling %p plans.
+Set.
+
+If Shadow tried to get Tangent, and Tangent was locked against Shadow, 
+everyone in the room would see:
+
+Shadow tries to grab Tangent! Tangent deftly trips %n, foiling his plans.
+
+> @edit me/ofail=%%n,%n
+Set - Ofail: tries to grab Tangent! Tangent deftly trips %n, foiling %p plans.
+
+Now everyone will see the correct text:
+
+Shadow tries to grab Tangent! Tangent deftly trips Shadow, foiling his plans.
+
+
+The typo is fixed, but only because @edit does not evaluate the two arguements. 
+If @edit did evaluate, the command would be, after evaluation, Ò@edit 
+me/ofail=%n,TangentÓ. Notice that the command to set the ofail attribute also doe 
+not evaluate its arguem!
+ ent.  Most commands, like say, do:
+
+> say %n and %%n
+You say ÒTangent and %%nÓ
+
+

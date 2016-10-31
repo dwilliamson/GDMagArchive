@@ -1,0 +1,42 @@
+Listing 2. Code for Z Buffer Classes
+
+
+#include "ZBuffer.HPP"
+
+BOOL ZBuffer::Clear ( unsigned int FrameCount )
+   {
+   // Function clears -- if necessary -- the Z-buffer to
+   // zero (infinity):
+
+   // Calculate the number of frames before each Z buffer
+   // clear:
+   unsigned int MaxWait = pow ( 2.0F, ( 31.0F - ZPREC ) );
+   unsigned int N, Length, Rem;
+
+   // Determine if a clear is in order:
+   if ( MaxWait == 0 )
+      Rem = 0;
+   else Rem = FrameCount % MaxWait;
+
+   Length = Width * Height;
+   if ( Init )
+      {
+      if ( Rem == 0 )
+         {
+         // If clear reduction is enabled, there is no need
+         // for an assembly Z buffer clear function as the
+         // Z buffer is cleared only once per so many frames.
+         for ( N = 0; N < Length; N++ )
+             ZBuff [ N ] = 0;
+         ZTrans = 0;
+         }
+      // Else no clear - adjust translate value:
+      else ZTrans += ( 1 << ZPREC );
+
+      // Return success:
+      return TRUE;
+      }
+
+   // Return failure:
+   return FALSE;
+   }

@@ -1,0 +1,25 @@
+
++============+
+| TO BE DONE |
++============+
+
+  * Lines in ASCII files are terminated...
+
+          With '\n' under UNIX/Linux
+          With '\r' under MacOS
+          With BOTH under Windoze.
+
+    Hence, UNIX/Linux does no conversions of either '\r' or '\n'.
+    and    MAC swaps '\r' and '\n' on input.
+    and    Windoze dumps '\r' if it follows a '\n'.
+
+    This is a mess - so I'm changing all the ASCII I/O code
+    to allow either or both '\n' or '\r' and I'm reading the
+    ASCII files in BINARY mode.
+ 
+  * Array deletion requires '[]' after 'delete' on Mac.
+
+  * Scaling really makes a mess of SSG bounding sphere tests
+
+  * ssgLOS is really broken.
+

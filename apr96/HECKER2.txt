@@ -1,0 +1,11 @@
+Listing 2, The x86 Asm Inner Loop
+add		edx,[DeltaVFrac]			; add in dVFrac
+
+sbb		ebp,ebp				; store carry
+mov		[edi],al				; write pixel n
+
+mov		al,[esi]				; fetch pixel n+1
+add		ecx,ebx				; add in dUFrac
+
+adc		esi,[4*ebp + UVStepVCarry]	; add in steps
+

@@ -1,0 +1,10 @@
+Listing 3, Adding Numbers Naively
+fld   [a1]	; 1
+fadd  [b1]	; 3
+fstp  [a1]	; 2+1
+fld   [c1]	; 1
+fadd  [d1]	; 3
+fstp  [c1]	; 2+1
+fld   [e1]	; 1
+fadd  [f1]	; 3
+fstp  [e1]	; 2+1
